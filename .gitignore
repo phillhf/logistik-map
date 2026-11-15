@@ -1,0 +1,13 @@
+.venv/
+__pycache__/
+*.pyc
+.pytest_cache/
+# lokale Daten – echte Gebäudepläne gehören nie ins Repository
+data/
+*.pdf
+*.db
+*.db-wal
+*.db-shm
+installer/build/
+build/
+dist/

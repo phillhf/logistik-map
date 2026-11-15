@@ -1,0 +1,68 @@
+# Konzept
+
+Logistik Map macht Warenflüsse in großen Gebäuden sichtbar, vor allem im Krankenhaus. Es zeigt,
+wann welche Lieferung wo ankommt, welchen Weg sie durch das Haus nimmt und wo dabei
+Engpässe entstehen, zum Beispiel bei Aufzügen.
+
+## Ziel
+
+Beispiel: Um 8:00 Uhr kommt der Wäschedienstleister an der Rampe im Untergeschoss an. Die Wäsche
+geht ins Wäschelager im 2. OG. Gleichzeitig kommen 20 weitere Lieferungen. Schaffen die Aufzüge
+das? Wer steht um 8:20 Uhr noch und wartet?
+
+## Bausteine
+
+### 1. Gebäude und Pläne ✅ (Version 0.1)
+- **Gebäudeteile** (z. B. Haus A, Haus B) → **Stockwerke** (Ebene −1, 0, 1 …).
+- Jedes Stockwerk bekommt eine Seite aus einem **PDF-Plan**. Große Pläne (A0 und größer) werden
+  einmalig in Kartenkacheln umgewandelt und lassen sich danach flüssig zoomen.
+- **Maßstab** je Stockwerk: Du klickst zwei Punkte an und gibst den Abstand in Metern ein.
+  Erst damit lassen sich Wegezeiten berechnen.
+
+### 2. Bereiche, Räume und Punkte
+- **Bereiche** (z. B. Warenannahme, Station 3B) als Flächen auf dem Plan. Ein Bereich kann
+  Räume enthalten, ein Raum kann aber auch allein stehen.
+- **Punkte** mit Rolle: Startpunkt (Rampe, Anlieferung), Zielpunkt (Lager, Station),
+  Übergang (Aufzug, Treppe, Durchgang zwischen Gebäudeteilen).
+
+### 3. Wegenetz
+- Flure werden als Linien eingezeichnet. Aufzüge und Treppen verbinden die Stockwerke.
+- Wege berechnet das System selbst (kürzester bzw. schnellster Weg). Bei Bedarf werden sie
+  von Hand festgelegt.
+- Sperren je Transportart (z. B. „Flur X nicht für FTS“).
+
+### 4. Stammdaten und Rechengrundlagen (jederzeit änderbar)
+- **Transportarten**: FTS (fahrerlose Transportsysteme), Materialtransportdienst, weitere.
+  Je Art: Geschwindigkeit, Lade- und Entladezeit, Anzahl verfügbarer Fahrzeuge bzw. Personen.
+- **Wagentypen** (Wäschewagen, Rollcontainer, Palette …) mit Platzbedarf im Aufzug.
+- **Aufzüge**: Plätze, Fahrzeit je Stockwerk, Tür- und Wartezeit, erlaubte Transportarten.
+  **FTS reservieren den Aufzug für sich allein.** Das Personal wird per Ansage zum Aussteigen
+  aufgefordert, dafür gibt es eine einstellbare Räumzeit. Der Materialtransportdienst teilt sich
+  den Aufzug nach Plätzen.
+- **Engstellen**: Flure, Türen und Rampen mit Kapazität („max. 1 Wagen gleichzeitig“).
+
+### 5. Lieferungen und Regeln
+- Eine Lieferung hat eine Uhrzeit, Start und Ziel, eine Ladung (z. B. „3× Wäschewagen + 1× Rollcontainer“)
+  und eine Transportart.
+- Jeder Transport hat eine Richtung: **Versorgung** (ins Haus) oder **Entsorgung** (aus dem Haus).
+- **Rückwege** (leere Wagen zurück, Schmutzwäsche hinaus) mit eigener Zeit oder „direkt danach“.
+- **Wiederholungsregeln**: täglich, bestimmte Wochentage, Wochenende, nicht an Feiertagen, nur in
+  bestimmten Zeiträumen.
+- **Feiertage** je Bundesland werden ohne Internet berechnet ✅. Eigene Sondertage lassen sich
+  zusätzlich eintragen ✅.
+
+### 6. Auswertung
+- Datum und Uhrzeit (oder einen Zeitraum) wählen und alle Flüsse auf den Plänen sehen.
+- Zeitschieber, um den Tagesablauf abzuspielen.
+- **Engpass-Anzeige**: Auslastung von Aufzügen und Engstellen, Wartezeiten, verspätete Ankünfte.
+- Filter nach Startpunkt, Lieferant und Transportart.
+
+## Technik
+
+- Python-Server (FastAPI) mit SQLite, Oberfläche im Browser (Leaflet für die Pläne).
+- Läuft lokal auf einem Windows-Server als Dienst. Der Installer fragt den Port ab.
+- Kein Internet nötig, alle Daten bleiben auf dem Server.
+- Benutzer und Rollen: Administrator (alles), Betrachter (nur ansehen). Weitere Rollen sind vorgesehen.
+- Oberfläche zunächst auf Deutsch. Alle Texte stehen in `logistikmap/static/i18n/de.json`,
+  weitere Sprachen kommen als eigene Datei dazu.
+- Lizenz: AGPL-3.0.

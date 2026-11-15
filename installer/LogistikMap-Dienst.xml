@@ -1,0 +1,24 @@
+<!--
+  Windows-Dienst "LogistikMap" (WinSW). %BASE% = Ordner dieser Datei ({app}\service).
+  Port und Datenordner stehen in C:\ProgramData\Logistik Map\config.json.
+-->
+<service>
+  <id>LogistikMap</id>
+  <name>Logistik Map</name>
+  <description>Logistik Map - Webserver fuer Warenfluesse und Transportwege</description>
+  <executable>%BASE%\..\LogistikMap.exe</executable>
+  <arguments>serve</arguments>
+  <workingdirectory>%BASE%\..</workingdirectory>
+  <startmode>Automatic</startmode>
+  <delayedAutoStart>true</delayedAutoStart>
+  <stoptimeout>30 sec</stoptimeout>
+  <onfailure action="restart" delay="10 sec"/>
+  <onfailure action="restart" delay="30 sec"/>
+  <onfailure action="restart" delay="60 sec"/>
+  <resetfailure>1 hour</resetfailure>
+  <logpath>%ProgramData%\Logistik Map\logs</logpath>
+  <log mode="roll-by-size">
+    <sizeThreshold>10240</sizeThreshold>
+    <keepFiles>5</keepFiles>
+  </log>
+</service>

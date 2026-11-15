@@ -1,0 +1,204 @@
+"""SQLite-Datenbank mit fortlaufenden Migrationen.
+
+Neue Tabellen oder Spalten immer als neuen Eintrag in MIGRATIONEN anhängen,
+bestehende Einträge nie ändern – installierte Datenbanken haben sie schon.
+"""
+
+from __future__ import annotations
+
+import json
+import sqlite3
+import threading
+from pathlib import Path
+
+# Rechte, die eine Rolle haben kann. Neue Rechte hier ergänzen.
+RECHTE = ("ansehen", "bearbeiten", "verwalten")
+
+MIGRATIONEN: list[str] = [
+    # 1 – Grundgerüst: Einstellungen, Benutzer, Rollen, Gebäude, Stockwerke, Pläne
+    """
+    CREATE TABLE einstellungen (
+        schluessel TEXT PRIMARY KEY,
+        wert       TEXT NOT NULL
+    );
+    CREATE TABLE rollen (
+        id         INTEGER PRIMARY KEY,
+        schluessel TEXT NOT NULL UNIQUE,
+        name       TEXT NOT NULL,
+        rechte     TEXT NOT NULL,
+        system     INTEGER NOT NULL DEFAULT 0
+    );
+    CREATE TABLE benutzer (
+        id             INTEGER PRIMARY KEY,
+        benutzername   TEXT NOT NULL UNIQUE COLLATE NOCASE,
+        anzeigename    TEXT NOT NULL,
+        passwort_hash  TEXT NOT NULL,
+        rolle_id       INTEGER NOT NULL REFERENCES rollen(id),
+        aktiv          INTEGER NOT NULL DEFAULT 1,
+        sprache        TEXT,
+        erstellt       TEXT NOT NULL DEFAULT (datetime('now'))
+    );
+    CREATE TABLE sitzungen (
+        token_hash  TEXT PRIMARY KEY,
+        benutzer_id INTEGER NOT NULL REFERENCES benutzer(id) ON DELETE CASCADE,
+        erstellt    TEXT NOT NULL DEFAULT (datetime('now')),
+        zuletzt     TEXT NOT NULL DEFAULT (datetime('now'))
+    );
+    CREATE TABLE sondertage (
+        id     INTEGER PRIMARY KEY,
+        datum  TEXT NOT NULL,
+        name   TEXT NOT NULL
+    );
+    CREATE TABLE dokumente (
+        id              INTEGER PRIMARY KEY,
+        dateiname       TEXT NOT NULL,
+        groesse         INTEGER NOT NULL,
+        seiten          TEXT NOT NULL,
+        hochgeladen     TEXT NOT NULL DEFAULT (datetime('now')),
+        hochgeladen_von INTEGER REFERENCES benutzer(id) ON DELETE SET NULL
+    );
+    CREATE TABLE plaene (
+        id          INTEGER PRIMARY KEY,
+        dokument_id INTEGER NOT NULL REFERENCES dokumente(id),
+        seite       INTEGER NOT NULL,
+        breite      REAL NOT NULL,
+        hoehe       REAL NOT NULL,
+        max_zoom    INTEGER NOT NULL,
+        status      TEXT NOT NULL DEFAULT 'wartet',
+        fortschritt REAL NOT NULL DEFAULT 0,
+        fehler      TEXT,
+        erstellt    TEXT NOT NULL DEFAULT (datetime('now'))
+    );
+    CREATE TABLE gebaeudeteile (
+        id          INTEGER PRIMARY KEY,
+        name        TEXT NOT NULL,
+        kuerzel     TEXT NOT NULL DEFAULT '',
+        reihenfolge INTEGER NOT NULL DEFAULT 0
+    );
+    CREATE TABLE stockwerke (
+        id              INTEGER PRIMARY KEY,
+        gebaeudeteil_id INTEGER NOT NULL REFERENCES gebaeudeteile(id) ON DELETE CASCADE,
+        name            TEXT NOT NULL,
+        ebene           INTEGER NOT NULL DEFAULT 0,
+        plan_id         INTEGER REFERENCES plaene(id) ON DELETE SET NULL,
+        meter_pro_punkt REAL
+    );
+    """,
+]
+
+STANDARD_ROLLEN = [
+    ("admin", "Administrator", ["ansehen", "bearbeiten", "verwalten"]),
+    ("betrachter", "Betrachter", ["ansehen"]),
+]
+
+STANDARD_EINSTELLUNGEN = {
+    "bundesland": "NW",
+    "sprache": "de",
+}
+
+
+class Datenbank:
+    """Eine Verbindung für den ganzen Prozess, Zugriffe über eine Sperre serialisiert.
+
+    Für ein Werkzeug mit einer Handvoll gleichzeitiger Nutzer ist das schnell genug
+    und vermeidet "database is locked" zwischen Webanfragen und Kachel-Erzeugung.
+    """
+
+    def __init__(self, pfad: Path):
+        self.pfad = Path(pfad)
+        self._sperre = threading.RLock()
+        self._con = sqlite3.connect(self.pfad, check_same_thread=False, isolation_level=None)
+        self._con.row_factory = sqlite3.Row
+        self._con.execute("PRAGMA foreign_keys = ON")
+        self._con.execute("PRAGMA journal_mode = WAL")
+        self._migrieren()
+
+    def _migrieren(self) -> None:
+        with self._sperre:
+            self._con.execute("CREATE TABLE IF NOT EXISTS schema_version (version INTEGER NOT NULL)")
+            row = self._con.execute("SELECT version FROM schema_version").fetchone()
+            if row is None:
+                self._con.execute("INSERT INTO schema_version VALUES (0)")
+                version = 0
+            else:
+                version = row[0]
+            for nr, sql in enumerate(MIGRATIONEN, start=1):
+                if nr <= version:
+                    continue
+                self._con.execute("BEGIN")
+                try:
+                    # einzeln ausführen: executescript() würde die Transaktion vorzeitig committen
+                    for befehl in _sql_befehle(sql):
+                        self._con.execute(befehl)
+                    self._con.execute("UPDATE schema_version SET version = ?", (nr,))
+                    self._con.execute("COMMIT")
+                except Exception:
+                    self._con.execute("ROLLBACK")
+                    raise
+            self._standarddaten()
+
+    def _standarddaten(self) -> None:
+        for schluessel, name, rechte in STANDARD_ROLLEN:
+            self._con.execute(
+                "INSERT OR IGNORE INTO rollen (schluessel, name, rechte, system) VALUES (?, ?, ?, 1)",
+                (schluessel, name, json.dumps(rechte)),
+            )
+        for k, v in STANDARD_EINSTELLUNGEN.items():
+            self._con.execute(
+                "INSERT OR IGNORE INTO einstellungen (schluessel, wert) VALUES (?, ?)", (k, json.dumps(v))
+            )
+
+    # -- Zugriff -------------------------------------------------------------
+    def eins(self, sql: str, params: tuple = ()) -> dict | None:
+        with self._sperre:
+            row = self._con.execute(sql, params).fetchone()
+        return dict(row) if row else None
+
+    def alle(self, sql: str, params: tuple = ()) -> list[dict]:
+        with self._sperre:
+            return [dict(r) for r in self._con.execute(sql, params).fetchall()]
+
+    def ausfuehren(self, sql: str, params: tuple = ()) -> int:
+        """Führt einen Schreibbefehl aus und gibt lastrowid zurück."""
+        with self._sperre:
+            cur = self._con.execute(sql, params)
+            return cur.lastrowid or 0
+
+    def transaktion(self):
+        return _Transaktion(self)
+
+    # -- Einstellungen ---------------------------------------------------------
+    def einstellung(self, schluessel: str, standard=None):
+        row = self.eins("SELECT wert FROM einstellungen WHERE schluessel = ?", (schluessel,))
+        return json.loads(row["wert"]) if row else standard
+
+    def setze_einstellung(self, schluessel: str, wert) -> None:
+        self.ausfuehren(
+            "INSERT INTO einstellungen (schluessel, wert) VALUES (?, ?) "
+            "ON CONFLICT(schluessel) DO UPDATE SET wert = excluded.wert",
+            (schluessel, json.dumps(wert)),
+        )
+
+    def schliessen(self) -> None:
+        with self._sperre:
+            self._con.close()
+
+
+class _Transaktion:
+    def __init__(self, db: Datenbank):
+        self.db = db
+
+    def __enter__(self) -> sqlite3.Connection:
+        self.db._sperre.acquire()
+        self.db._con.execute("BEGIN")
+        return self.db._con
+
+    def __exit__(self, typ, wert, tb) -> None:
+        try:
+            self.db._con.execute("ROLLBACK" if typ else "COMMIT")
+        finally:
+            self.db._sperre.release()
+
+
+def _sql_befehle(sql: str) -> list[str]:
+    return [b.strip() for b in sql.split(";") if b.strip()]

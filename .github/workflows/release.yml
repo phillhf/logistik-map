@@ -1,0 +1,97 @@
+name: Release
+
+# Ein Tag "vX.Y.Z" baut das Setup und veröffentlicht es als GitHub-Release:
+#   LogistikMap-Setup-X.Y.Z.exe + LogistikMap-Setup-X.Y.Z.exe.sha256
+on:
+  push:
+    tags: ["v*.*.*"]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.13"
+          cache: pip
+          cache-dependency-path: requirements-dev.txt
+
+      - run: pip install -r requirements-dev.txt
+
+      - name: Inno Setup installieren
+        shell: pwsh
+        run: |
+          $tag = gh release view --repo jrsoftware/issrc --json tagName -q .tagName
+          $asset = gh release view $tag --repo jrsoftware/issrc --json assets -q '.assets[].name' | Where-Object { $_ -match '^innosetup-.*\.exe$' } | Select-Object -First 1
+          gh release download $tag --repo jrsoftware/issrc -p $asset -D $env:RUNNER_TEMP
+          $sig = Get-AuthenticodeSignature (Join-Path $env:RUNNER_TEMP $asset)
+          if ($sig.Status -ne 'Valid') { throw "Signatur von $asset ungueltig: $($sig.Status)" }
+          $dir = Join-Path $env:GITHUB_WORKSPACE "installer\build\tools\innosetup"
+          $p = Start-Process (Join-Path $env:RUNNER_TEMP $asset) -ArgumentList '/VERYSILENT','/SUPPRESSMSGBOXES','/CURRENTUSER','/PORTABLE=1','/NOICONS',"/DIR=`"$dir`"" -Wait -PassThru
+          if ($p.ExitCode -ne 0) { throw "Inno Setup Installation fehlgeschlagen ($($p.ExitCode))" }
+        env:
+          GH_TOKEN: ${{ github.token }}
+
+      - name: Setup bauen
+        shell: pwsh
+        run: |
+          $expected = if ("${{ github.ref_type }}" -eq "tag") { "${{ github.ref_name }}" } else { "" }
+          ./installer/build.ps1 -ExpectedVersion $expected
+        env:
+          GH_TOKEN: ${{ github.token }}
+
+      - name: Setup testweise installieren und starten
+        shell: pwsh
+        run: |
+          $setup = Get-ChildItem installer/build/output/LogistikMap-Setup-*.exe | Select-Object -First 1
+          $p = Start-Process $setup.FullName -ArgumentList '/VERYSILENT','/SUPPRESSMSGBOXES','/PORT=8471','/LOG=install.log' -Wait -PassThru
+          if ($p.ExitCode -ne 0) { Get-Content install.log -Tail 50; throw "Setup fehlgeschlagen ($($p.ExitCode))" }
+          $ok = $false
+          for ($i = 0; $i -lt 30; $i++) {
+            try { $r = Invoke-RestMethod http://127.0.0.1:8471/api/status; $ok = $true; break } catch { Start-Sleep 2 }
+          }
+          if (-not $ok) { Get-ChildItem "C:\ProgramData\Logistik Map\logs" | ForEach-Object { Get-Content $_.FullName -Tail 30 }; throw "Dienst antwortet nicht" }
+          Write-Host "Dienst laeuft: Version $($r.version), Ersteinrichtung offen: $($r.ersteinrichtung)"
+          $u = Get-ItemProperty 'HKLM:\SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall\{B6E4D2A1-5C3F-4E8B-9A71-2D0F6C8E4B19}_is1'
+          $p = Start-Process ($u.UninstallString -replace '"', '') -ArgumentList '/VERYSILENT','/SUPPRESSMSGBOXES' -Wait -PassThru
+          if ($p.ExitCode -ne 0) { throw "Deinstallation fehlgeschlagen ($($p.ExitCode))" }
+          if (Get-Service LogistikMap -ErrorAction SilentlyContinue) { throw "Dienst nach Deinstallation noch vorhanden" }
+
+      - name: Setup als Artefakt
+        uses: actions/upload-artifact@v4
+        with:
+          name: LogistikMap-Setup
+          path: installer/build/output/*
+
+      - name: Release-Notizen aus CHANGELOG
+        if: github.ref_type == 'tag'
+        shell: pwsh
+        run: |
+          $version = "${{ github.ref_name }}" -replace '^v', ''
+          $lines = Get-Content CHANGELOG.md -Encoding UTF8
+          $start = ($lines | Select-String -Pattern "^## \[$([regex]::Escape($version))\]" | Select-Object -First 1).LineNumber
+          if (-not $start) { throw "Kein CHANGELOG-Eintrag fuer $version" }
+          $notes = @()
+          for ($i = $start; $i -lt $lines.Count; $i++) {
+            if ($lines[$i] -match '^## \[') { break }
+            $notes += $lines[$i]
+          }
+          ($notes -join "`n").Trim() | Set-Content release-notes.md -Encoding UTF8
+
+      - name: GitHub-Release veröffentlichen
+        if: github.ref_type == 'tag'
+        shell: pwsh
+        run: |
+          $version = "${{ github.ref_name }}" -replace '^v', ''
+          gh release create "${{ github.ref_name }}" `
+            "installer/build/output/LogistikMap-Setup-$version.exe" `
+            "installer/build/output/LogistikMap-Setup-$version.exe.sha256" `
+            --title "Logistik Map $version" --notes-file release-notes.md
+        env:
+          GH_TOKEN: ${{ github.token }}
