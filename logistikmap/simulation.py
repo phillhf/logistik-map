@@ -90,8 +90,19 @@ class Ressource:
     verlauf: list = field(default_factory=list)  # (zeit, belegt, wartend)
     wartezeiten: list = field(default_factory=list)
 
+    max_kapazitaet: int | None = None
+
     def _passt(self, menge: int) -> bool:
-        return self.kapazitaet is None or self.belegt == 0 or self.belegt + menge <= self.kapazitaet
+        if self.kapazitaet is None:
+            return True
+        if self.kapazitaet <= 0:
+            return False
+        return self.belegt == 0 or self.belegt + menge <= self.kapazitaet
+
+    def kapazitaet_setzen(self, wert: int) -> None:
+        """Schichtwechsel: neue Anzahl verfügbarer Fahrzeuge/Personen."""
+        self.kapazitaet = wert
+        self.freigeben(0)
 
     def _merken(self) -> None:
         self.verlauf.append((self.uhr.jetzt, self.belegt, len(self.schlange)))
@@ -202,8 +213,34 @@ class Fahrt:
         return sum(w["plaetze"] for w in self.wagen)
 
 
+def schicht_verlauf(schichten: list[dict], wochentag: int) -> list[tuple[float, int]]:
+    """Verfügbare Anzahl über den simulierten Tag (und den Folgetag) als [(ab_zeit, anzahl), …].
+
+    Eine Schicht: {"von": "06:00", "bis": "14:00", "anzahl": 3, "wochentage": [1..7]}.
+    Endet sie vor ihrem Beginn (z. B. 22:00–06:00), läuft sie über Mitternacht.
+    """
+    intervalle = []
+    for versatz in (-1, 0, 1):
+        tag = (wochentag - 1 + versatz) % 7 + 1
+        for sch in schichten:
+            if sch.get("wochentage") and tag not in sch["wochentage"]:
+                continue
+            von, bis = zeit_in_sekunden(sch["von"]), zeit_in_sekunden(sch["bis"])
+            if bis <= von:
+                bis += 86400
+            intervalle.append((von + versatz * 86400, bis + versatz * 86400, int(sch.get("anzahl", 0))))
+    grenzen = sorted({0.0} | {t for a, b, _ in intervalle for t in (a, b) if 0 <= t <= MAX_ZEIT})
+    verlauf = []
+    for t in grenzen:
+        n = sum(k for a, b, k in intervalle if a <= t < b)
+        if not verlauf or verlauf[-1][1] != n:
+            verlauf.append((t, n))
+    return verlauf
+
+
 class Simulation:
-    def __init__(self, netz: Netz, transportarten: dict[int, dict], wagentypen: dict[int, dict]):
+    def __init__(self, netz: Netz, transportarten: dict[int, dict], wagentypen: dict[int, dict], wochentag: int = 1):
+        self.wochentag = wochentag
         self.netz = netz
         self.transportarten = transportarten
         self.wagentypen = wagentypen
@@ -218,10 +255,19 @@ class Simulation:
 
     # -- Ressourcen -------------------------------------------------------------
     def _flotte(self, ta: dict) -> Ressource | None:
-        if not ta["anzahl"]:
+        schichten = ta.get("schichten") or []
+        if not ta["anzahl"] and not schichten:
             return None
         if ta["id"] not in self.flotten:
-            self.flotten[ta["id"]] = Ressource(self.uhr, "fahrzeuge", ta["id"], ta["name"], ta["anzahl"])
+            if schichten:
+                verlauf = schicht_verlauf(schichten, self.wochentag)
+                res = Ressource(self.uhr, "fahrzeuge", ta["id"], ta["name"], verlauf[0][1] if verlauf else 0)
+                res.max_kapazitaet = max((n for _, n in verlauf), default=0) or 1
+                for zeit, n in verlauf[1:]:
+                    self.uhr.plane(zeit, res.kapazitaet_setzen, n)
+            else:
+                res = Ressource(self.uhr, "fahrzeuge", ta["id"], ta["name"], ta["anzahl"])
+            self.flotten[ta["id"]] = res
         return self.flotten[ta["id"]]
 
     def _aufzug(self, aid: int) -> Aufzug:
@@ -480,13 +526,13 @@ class Simulation:
 
     def _ressource_auswerten(self, r: Ressource) -> dict:
         intervalle = [(t0, t1, belegt) for (t0, belegt, _), (t1, _, _) in zip(r.verlauf, r.verlauf[1:])]
-        raster = self._raster(intervalle, r.kapazitaet or 1)
+        raster = self._raster(intervalle, r.max_kapazitaet or r.kapazitaet or 1)
         return {
             "typ": r.typ,
             "id": r.rid,
             "name": r.name,
             "stockwerk_id": r.stockwerk_id,
-            "kapazitaet": r.kapazitaet,
+            "kapazitaet": r.max_kapazitaet or r.kapazitaet,
             "anzahl": len(r.wartezeiten),
             "max_wartezeit": round(max(r.wartezeiten, default=0.0), 1),
             "summe_wartezeit": round(sum(r.wartezeiten), 1),

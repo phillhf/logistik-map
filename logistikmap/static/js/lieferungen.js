@@ -1,6 +1,6 @@
 // Lieferungen: Liste, Regeln, Ladung, Rückweg
 
-import { api, bestaetigen, darf, fehlerMelden, h, heute, leeren, melden, punktAuswahl, punktName, stammdaten, t } from "./basis.js";
+import { api, bestaetigen, darf, dateiWaehlen, fehlerMelden, h, herunterladen, heute, hochladen, leeren, melden, punktAuswahl, punktName, stammdaten, t } from "./basis.js";
 import { simulationVergessen } from "./ablauf.js";
 
 const TAGE = [1, 2, 3, 4, 5, 6, 7];
@@ -22,7 +22,7 @@ export function regelText(r) {
 }
 
 export function zeigeLieferungen(wurzel) {
-  const bearbeiten = darf("bearbeiten");
+  const bearbeiten = darf("lieferungen");
   const suche = h("input", { type: "search", placeholder: t("lieferung.suchen") });
   const box = h("div");
   const vorschau = h("div.tagesvorschau");
@@ -36,7 +36,13 @@ export function zeigeLieferungen(wurzel) {
       h(
         "div.box-kopf",
         h("h2", t("lieferung.titel")),
-        h("div.knopfreihe", suche, bearbeiten ? h("button.knopf", { type: "button", onclick: () => dialog() }, "+ " + t("lieferung.neu")) : null)
+        h(
+          "div.knopfreihe",
+          suche,
+          h("button.knopf-flach", { type: "button", onclick: () => herunterladen("export/lieferungen.xlsx").catch(fehlerMelden) }, "⤓ " + t("lieferung.export")),
+          bearbeiten ? h("button.knopf-flach", { type: "button", onclick: importieren }, "⤒ " + t("lieferung.import")) : null,
+          bearbeiten ? h("button.knopf", { type: "button", onclick: () => dialog() }, "+ " + t("lieferung.neu")) : null
+        )
       ),
       vorschau,
       box
@@ -142,6 +148,74 @@ export function zeigeLieferungen(wurzel) {
     if (r.modus === "spaeter") return `↩ ${t("rueckweg.spaeter_um", { uhrzeit: r.uhrzeit })}`;
     if (r.modus === "keiner") return `↩ ${t("rueckweg.keiner")}`;
     return "";
+  }
+
+  // ---------------------------------------------------------------- Import aus Excel/CSV
+  async function importieren() {
+    const datei = await dateiWaehlen(".xlsx,.csv,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,text/csv");
+    if (!datei) return;
+    let pruefung;
+    try {
+      pruefung = await hochladen("import/lieferungen?pruefen=true", "datei", datei, () => {});
+    } catch (e) {
+      return fehlerMelden(e);
+    }
+    const fehlerhaft = pruefung.zeilen.filter((z) => z.fehler.length);
+    const dlg = h("dialog.dialog.gross");
+    const fehlerText = (code) => {
+      const x = t(`import.fehler.${code}`);
+      return x.startsWith("⟨") ? t(`fehler.${code}`) : x;
+    };
+    dlg.append(
+      h(
+        "form",
+        { method: "dialog" },
+        h("h2", t("import.titel", { datei: datei.name })),
+        h("p", t("import.zusammenfassung", { gesamt: pruefung.zeilen.length, neu: pruefung.zeilen.filter((z) => !z.id && !z.fehler.length).length, geaendert: pruefung.zeilen.filter((z) => z.id && !z.fehler.length).length, fehler: fehlerhaft.length })),
+        fehlerhaft.length ? h("p.warnung", t("import.erst_korrigieren")) : null,
+        h(
+          "div.tabellenrahmen.import",
+          h(
+            "table.tabelle.kompakt",
+            h("thead", h("tr", h("th", t("import.zeile")), h("th", t("lieferung.spalte.uhrzeit")), h("th", t("lieferung.spalte.name")), h("th", t("import.status")))),
+            h(
+              "tbody",
+              pruefung.zeilen.map((z) =>
+                h(
+                  "tr",
+                  { class: z.fehler.length ? "verspaetet" : "" },
+                  h("td", z.zeile),
+                  h("td", z.uhrzeit),
+                  h("td", z.name),
+                  h("td", z.fehler.length ? z.fehler.map((c) => h("small.warnung", fehlerText(c))) : z.id ? t("import.wird_geaendert") : t("import.wird_neu"))
+                )
+              )
+            )
+          )
+        ),
+        h(
+          "div.dialog-knoepfe",
+          h("button.knopf-flach", { value: "nein" }, t("allgemein.abbrechen")),
+          fehlerhaft.length ? null : h("button.knopf", { value: "ja" }, t("import.uebernehmen"))
+        )
+      )
+    );
+    dlg.addEventListener("close", async () => {
+      dlg.remove();
+      if (dlg.returnValue !== "ja") return;
+      try {
+        const r = await hochladen("import/lieferungen?pruefen=false", "datei", datei, () => {});
+        const fehler = r.zeilen.filter((z) => z.fehler.length);
+        if (fehler.length) melden(t("import.teilweise", { anzahl: fehler.length }), "fehler");
+        else melden(t("import.fertig", { anzahl: r.zeilen.length }));
+        simulationVergessen();
+        laden();
+      } catch (e) {
+        fehlerMelden(e);
+      }
+    });
+    document.body.append(dlg);
+    dlg.showModal();
   }
 
   async function loeschen(l) {

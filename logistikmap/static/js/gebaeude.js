@@ -174,8 +174,9 @@ export function zeigeGebaeude(wurzel) {
               class: s.plan?.dokument_id === did && s.plan?.seite === seite.nr ? "gewaehlt" : "",
               onclick: async () => {
                 try {
-                  await api(`stockwerke/${s.id}/plan`, { methode: "PUT", daten: { dokument_id: did, seite: seite.nr } });
+                  const r = await api(`stockwerke/${s.id}/plan`, { methode: "PUT", daten: { dokument_id: did, seite: seite.nr } });
                   dialog.close();
+                  if (r.inhalt_vorhanden) planGewechseltHinweis(s);
                   laden();
                 } catch (e) {
                   fehlerMelden(e);
@@ -201,6 +202,25 @@ export function zeigeGebaeude(wurzel) {
     dialog.showModal();
     if (dokumente.length) seitenZeigen(Number(dokWahl.value));
     else leeren(auswahl, h("p.leer", t("dokumente.keine")));
+  }
+
+  function planGewechseltHinweis(s) {
+    const dlg = h("dialog.dialog");
+    dlg.append(
+      h(
+        "form",
+        { method: "dialog" },
+        h("h2", t("gebaeude.plan_gewechselt_titel")),
+        h("p", t("gebaeude.plan_gewechselt", { name: s.name })),
+        h("div.dialog-knoepfe", h("button.knopf-flach", { value: "nein" }, t("allgemein.schliessen")), h("button.knopf", { value: "ja" }, t("gebaeude.jetzt_ausrichten")))
+      )
+    );
+    dlg.addEventListener("close", () => {
+      dlg.remove();
+      if (dlg.returnValue === "ja") location.hash = `#/karte/${s.id}/bearbeiten`;
+    });
+    document.body.append(dlg);
+    dlg.showModal();
   }
 
   function zeigeDokumente() {

@@ -12,7 +12,7 @@ def test_ersteinrichtung_nur_einmal(client):
     s = client.get("/api/status").json()
     assert s["ersteinrichtung"] is False
     assert s["benutzer"]["rolle"] == "admin"
-    assert set(s["benutzer"]["rechte"]) == {"ansehen", "bearbeiten", "verwalten"}
+    assert set(s["benutzer"]["rechte"]) == {"ansehen", "lieferungen", "bearbeiten", "verwalten"}
     r = client.post("/api/ersteinrichtung", json={**ADMIN, "benutzername": "zweiter"})
     assert r.status_code == 409
 

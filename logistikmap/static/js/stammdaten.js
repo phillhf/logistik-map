@@ -65,7 +65,7 @@ export function zeigeStammdaten(wurzel) {
             h("td", `${zahl(x.geschwindigkeit, 2)} m/s (${zahl(x.geschwindigkeit * 3.6, 1)} km/h)`),
             h("td", `${zahl(x.ladezeit, 0)} s / ${zahl(x.entladezeit, 0)} s`),
             h("td", x.wagen_pro_fahrt),
-            h("td", x.anzahl || t("stamm.unbegrenzt")),
+            h("td", x.schichten?.length ? schichtenText(x.schichten) : x.anzahl || t("stamm.unbegrenzt")),
             h("td", x.aufzug_exklusiv ? t("stamm.exklusiv") : t("stamm.geteilt"), x.treppe ? ` · ${t("stamm.treppe_ja")}` : ""),
             aktionen(() => transportartDialog(x), () => loeschen(`transportarten/${x.id}`, x.name))
           )
@@ -107,8 +107,48 @@ export function zeigeStammdaten(wurzel) {
     simulationVergessen();
   }
 
+  function schichtenText(liste) {
+    return h(
+      "span",
+      liste.map((s) =>
+        h("small", `${s.von}–${s.bis}: ${s.anzahl}${s.wochentage?.length && s.wochentage.length < 7 ? ` (${s.wochentage.map((d) => t("wochentag")[d % 7]).join(", ")})` : ""}`)
+      )
+    );
+  }
+
+  /** Editor für Schichten: Zeilen mit von, bis, Anzahl und Wochentagen */
+  function schichtenEditor(liste) {
+    const box = h("div.schichten");
+    const zeile = (s = { von: "06:00", bis: "14:00", anzahl: 1, wochentage: [] }) => {
+      const tage = [1, 2, 3, 4, 5, 6, 7].map((d) =>
+        h("label.tagwahl.klein", h("input", { type: "checkbox", value: d, checked: !s.wochentage?.length || s.wochentage.includes(d) }), h("span", t("wochentag")[d % 7]))
+      );
+      const z = h(
+        "div.schicht",
+        h("input", { type: "time", value: s.von, required: true, "aria-label": t("stamm.schicht_von") }),
+        h("span", "–"),
+        h("input", { type: "time", value: s.bis, required: true, "aria-label": t("stamm.schicht_bis") }),
+        h("input.anzahl", { type: "number", min: 0, value: s.anzahl, "aria-label": t("stamm.anzahl") }),
+        h("div.tage", tage),
+        h("button.knopf-flach.gefahr", { type: "button", onclick: () => z.remove(), "aria-label": t("allgemein.loeschen") }, "×")
+      );
+      box.append(z);
+    };
+    (liste || []).forEach(zeile);
+    const el = h("div", box, h("button.knopf-flach", { type: "button", onclick: () => zeile() }, "+ " + t("stamm.schicht_hinzu")));
+    const lesen = () =>
+      [...box.querySelectorAll(".schicht")].map((z) => {
+        const [von, bis, anzahl] = z.querySelectorAll("input:not([type=checkbox])");
+        const tage = [...z.querySelectorAll("input[type=checkbox]:checked")].map((i) => Number(i.value));
+        return { von: von.value, bis: bis.value, anzahl: Number(anzahl.value) || 0, wochentage: tage.length === 7 ? [] : tage };
+      });
+    return { el, lesen };
+  }
+
   async function transportartDialog(x = {}) {
+    const schichten = schichtenEditor(x.schichten);
     const ok = await formularDialog({
+      gross: true,
       titel: x.id ? `${t("stamm.transportart")}: ${x.name}` : t("stamm.transportart_neu"),
       felder: [
         { name: "name", label: t("stamm.name"), pflicht: true, wert: x.name },
@@ -120,6 +160,8 @@ export function zeigeStammdaten(wurzel) {
         { name: "anzahl", label: t("stamm.anzahl"), typ: "number", pflicht: true, wert: x.anzahl ?? 0, attr: { min: 0 }, hilfe: t("stamm.anzahl_hilfe") },
         { name: "aufzug_exklusiv", label: t("stamm.aufzug_exklusiv"), typ: "haken", wert: x.aufzug_exklusiv },
         { name: "treppe", label: t("stamm.kann_treppe"), typ: "haken", wert: x.treppe },
+        { typ: "ueberschrift", label: t("stamm.schichten") },
+        { name: "schichten", typ: "element", element: schichten.el, lesen: schichten.lesen, hilfe: t("stamm.schichten_hilfe") },
       ],
       speichern: (w) => speichern("transportarten", x.id, w),
     });

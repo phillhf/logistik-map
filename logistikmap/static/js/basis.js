@@ -162,13 +162,20 @@ export function fehlerMelden(e) {
  * typ: text | number | password | time | date | color | auswahl | haken | mehrfach (Häkchenliste, Wert = Array) | textfeld | ueberschrift
  * speichern(werte) darf einen Fehler werfen – dann bleibt der Dialog offen und zeigt ihn an.
  */
-export function formularDialog({ titel, felder, speichernText, speichern }) {
+export function formularDialog({ titel, felder, speichernText, speichern, gross = false }) {
   return new Promise((fertig) => {
     const fehlerZeile = h("p.dialog-fehler", { hidden: true });
     const eingaben = {};
     const zeilen = felder.map((f) => {
       let feld;
       if (f.typ === "ueberschrift") return h("h3.dialog-abschnitt", f.label);
+      if (f.typ === "element") {
+        // eigenes Bedienelement: f.element (DOM) und f.lesen() → Wert
+        const el = f.element;
+        el.wertLesen = f.lesen;
+        eingaben[f.name] = el;
+        return h("div.feld", f.label ? h("span", f.label) : null, el, f.hilfe && h("small", f.hilfe));
+      }
       if (f.typ === "auswahl") {
         feld = h("select", { name: f.name }, f.optionen.map(([wert, text]) => h("option", { value: wert, selected: String(wert) === String(f.wert) }, text)));
       } else if (f.typ === "mehrfach") {
@@ -187,7 +194,7 @@ export function formularDialog({ titel, felder, speichernText, speichern }) {
       eingaben[f.name] = feld;
       return h(`label.feld${f.typ === "haken" ? ".haken" : ""}`, f.typ === "haken" ? [feld, h("span", f.label)] : [h("span", f.label), feld], f.hilfe && h("small", f.hilfe));
     });
-    const dialog = h("dialog.dialog");
+    const dialog = h(gross ? "dialog.dialog.gross" : "dialog.dialog");
     const form = h(
       "form",
       { method: "dialog" },
@@ -226,7 +233,7 @@ export function formularDialog({ titel, felder, speichernText, speichern }) {
   });
 }
 
-export function bestaetigen(text) {
+export function bestaetigen(text, knopf = null) {
   return new Promise((fertig) => {
     const dialog = h("dialog.dialog");
     dialog.append(
@@ -237,7 +244,7 @@ export function bestaetigen(text) {
         h(
           "div.dialog-knoepfe",
           h("button.knopf-flach", { value: "nein" }, t("allgemein.abbrechen")),
-          h("button.knopf.gefahr", { value: "ja" }, t("allgemein.loeschen"))
+          h("button.knopf.gefahr", { value: "ja" }, knopf || t("allgemein.loeschen"))
         )
       )
     );
@@ -319,4 +326,47 @@ export function punktAuswahl(punkte, wert, { leer = null, filter = () => true } 
       h("optgroup", { label: g }, liste.map((p) => h("option", { value: p.id, selected: p.id === wert }, `${p.name || t(`knoten.art.${p.art}`)}${p.flaeche && p.flaeche !== p.name ? ` (${p.flaeche})` : ""}`)))
     )
   );
+}
+
+/** Datei herunterladen, die der Server erzeugt (Fehler werden als Meldung angezeigt). */
+export async function herunterladen(pfad, dateiname) {
+  const r = await api(pfad, { roh: true });
+  const blob = await r.blob();
+  const name = dateiname || /filename="([^"]+)"/.exec(r.headers.get("Content-Disposition") || "")?.[1] || "download";
+  const a = h("a", { href: URL.createObjectURL(blob), download: name });
+  document.body.append(a);
+  a.click();
+  setTimeout(() => {
+    URL.revokeObjectURL(a.href);
+    a.remove();
+  }, 1000);
+}
+
+/** Datei auswählen lassen (Promise mit File oder null) */
+export function dateiWaehlen(accept) {
+  return new Promise((fertig) => {
+    const eingabe = h("input", { type: "file", accept, hidden: true });
+    eingabe.addEventListener("change", () => {
+      fertig(eingabe.files[0] || null);
+      eingabe.remove();
+    });
+    document.body.append(eingabe);
+    eingabe.click();
+  });
+}
+
+/** Szenarien-Auswahl (Ist-Zustand + Szenarien) */
+export async function szenarioAuswahl(wert, onchange, leerText) {
+  let liste = [];
+  try {
+    liste = await api("szenarien");
+  } catch {}
+  const sel = h(
+    "select",
+    { onchange: (e) => onchange(e.target.value ? Number(e.target.value) : null), title: t("szenario.auswahl") },
+    h("option", { value: "" }, leerText || t("szenario.ist")),
+    liste.map((s) => h("option", { value: s.id, selected: s.id === wert }, `${t("szenario.kurz")}: ${s.name}`))
+  );
+  sel.hidden = !liste.length;
+  return sel;
 }

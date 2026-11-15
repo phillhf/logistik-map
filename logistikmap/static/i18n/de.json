@@ -21,11 +21,14 @@
     "einstellungen": "Einstellungen",
     "lieferungen": "Lieferungen",
     "auswertung": "Auswertung",
-    "stammdaten": "Stammdaten"
+    "stammdaten": "Stammdaten",
+    "szenarien": "Szenarien",
+    "protokoll": "Protokoll"
   },
   "menue": {
     "passwort_aendern": "Passwort ändern",
-    "abmelden": "Abmelden"
+    "abmelden": "Abmelden",
+    "sprache": "Sprache"
   },
   "anmeldung": {
     "titel": "Anmelden",
@@ -100,7 +103,10 @@
       "laeuft": "wird aufbereitet {prozent} %",
       "fertig": "bereit",
       "fehler": "Fehler"
-    }
+    },
+    "plan_gewechselt_titel": "Neuer Plan zugewiesen",
+    "plan_gewechselt": "Auf „{name}“ sind schon Wege, Punkte oder Räume eingezeichnet. Liegt der neue Plan anders (verschoben, anderer Maßstab), richte sie mit dem Werkzeug „Ausrichten“ im Bearbeiten-Modus aus.",
+    "jetzt_ausrichten": "Jetzt ausrichten"
   },
   "dokumente": {
     "titel": "Hochgeladene PDF-Pläne",
@@ -123,11 +129,15 @@
     "deaktiviert": "deaktiviert",
     "passwort": "Passwort",
     "passwort_neu_optional": "Neues Passwort (leer lassen = unverändert)",
-    "du": "du"
+    "du": "du",
+    "aus_verzeichnis": "Active Directory",
+    "aus_verzeichnis_hilfe": "Meldet sich mit dem Windows-Passwort an. Die Rolle kommt aus den AD-Gruppen.",
+    "rolle_aus_verzeichnis": "Wird bei der nächsten Anmeldung wieder aus den AD-Gruppen gesetzt."
   },
   "rollen": {
     "admin": "Administrator",
-    "betrachter": "Betrachter"
+    "betrachter": "Betrachter",
+    "planer": "Planer"
   },
   "einstellungen": {
     "titel": "Einstellungen",
@@ -139,7 +149,9 @@
     "sondertage_hilfe": "Zum Beispiel örtliche Feiertage, Rosenmontag oder Tage mit Notbetrieb. Sie gelten in den Lieferregeln wie Feiertage.",
     "datum": "Datum",
     "bezeichnung": "Bezeichnung",
-    "sondertag": "Sondertag"
+    "sondertag": "Sondertag",
+    "sprache_hilfe": "Standard für alle. Jeder kann über das Menü oben rechts eine eigene Sprache wählen.",
+    "protokoll_link": "Änderungsprotokoll ansehen →"
   },
   "feiertag": {
     "neujahr": "Neujahr",
@@ -217,7 +229,32 @@
     "knoten_unbekannt": "Ein Punkt der Lieferung existiert nicht mehr.",
     "kein_weg": "Kein Weg von „{start}“ nach „{ziel}“. Fehlt ein Wegstück, ist ein Weg gesperrt oder der Aufzug für diese Transportart nicht erlaubt?",
     "massstab_fehlt": "Auf {stockwerke} fehlt der Maßstab.",
-    "transportart_fehlt": "Die Transportart gibt es nicht mehr."
+    "transportart_fehlt": "Die Transportart gibt es nicht mehr.",
+    "kein_zugang_verzeichnis": "Anmeldung erfolgreich, aber für dein Konto ist in Logistik Map keine Rolle hinterlegt. Bitte wende dich an die Administration.",
+    "verzeichnis_nicht_erreichbar": "Der Anmeldeserver (Active Directory) ist nicht erreichbar.",
+    "passwort_im_verzeichnis": "Dein Passwort wird im Active Directory verwaltet (Windows-Passwort).",
+    "recht_unbekannt": "Unbekanntes Recht.",
+    "systemrolle": "Mitgelieferte Rollen lassen sich nicht ändern oder löschen.",
+    "rolle_in_verwendung": "Diese Rolle ist noch Benutzern zugeordnet.",
+    "ldap_server_fehlt": "Bitte einen Server angeben.",
+    "https_beide_dateien": "Bitte Zertifikat und Schlüssel angeben (oder beide leer lassen).",
+    "datei_fehlt": "Datei nicht gefunden: {datei}",
+    "zertifikat_ungueltig": "Zertifikat oder Schlüssel ungültig ({grund}).",
+    "sicherung_ungueltig": "Das ist keine gültige Sicherung von Logistik Map.",
+    "kein_update": "Es gibt kein neueres Update.",
+    "update_nicht_moeglich": "Das Update kann hier nicht automatisch installiert werden.",
+    "update_pruefsumme": "Die Prüfsumme des heruntergeladenen Updates stimmt nicht. Abgebrochen.",
+    "update_fehlgeschlagen": "Das Update ist fehlgeschlagen ({grund}).",
+    "nichts_rueckgaengig": "Auf diesem Stockwerk gibt es nichts rückgängig zu machen.",
+    "rueckgaengig_nicht_moeglich": "Das lässt sich nicht rückgängig machen, weil inzwischen eine Lieferung den Punkt verwendet.",
+    "zu_wenige_passpunkte": "Bitte mindestens zwei Punktpaare angeben.",
+    "passpunkte_gleich": "Die Punkte dürfen nicht übereinanderliegen.",
+    "passpunkte_auf_einer_linie": "Die Punkte liegen auf einer Linie – bitte Punkte weiter auseinander wählen.",
+    "szenario_ungueltig": "Das Szenario ist ungültig.",
+    "kein_plan": "Für dieses Stockwerk gibt es keinen Plan.",
+    "datei_unlesbar": "Die Datei lässt sich nicht lesen. Bitte als .xlsx oder .csv speichern.",
+    "datei_leer": "Die Datei ist leer.",
+    "spalten_fehlen": "Es fehlen Spalten. Nötig sind mindestens Bezeichnung, Start, Ziel und Uhrzeit – am einfachsten mit „Excel“ exportieren und als Vorlage nutzen."
   },
   "knoten": {
     "art": {
@@ -267,14 +304,17 @@
       "punkt": "Punkt setzen",
       "raum_rechteck": "Raum ▭",
       "raum": "Raum (Vieleck)",
-      "bereich": "Bereich"
+      "bereich": "Bereich",
+      "ausrichten": "Ausrichten"
     },
     "hilfe": {
       "auswahl": "Klicke ein Element an, um es zu bearbeiten. Punkte lassen sich verschieben. Entf löscht.",
       "weg": "Klicke Punkt für Punkt entlang der Flure. Vorhandene Punkte und Wege werden gefangen. Doppelklick oder Esc beendet die Linie.",
       "punkt": "Klicke auf die Stelle für den Punkt (Rampe, Lager, Station, Aufzug …).",
       "rechteck": "Klicke zwei gegenüberliegende Ecken des Raums an.",
-      "vieleck": "Klicke die Ecken an. Klick auf den ersten Punkt oder Doppelklick schließt die Fläche. Rücktaste nimmt den letzten Punkt zurück."
+      "vieleck": "Klicke die Ecken an. Klick auf den ersten Punkt oder Doppelklick schließt die Fläche. Rücktaste nimmt den letzten Punkt zurück.",
+      "ausrichten_alt": "Neuer Planstand? Klicke einen eingezeichneten Punkt oder eine Ecke an ({anzahl} Paare, mindestens 2, besser 3 weit auseinander).",
+      "ausrichten_neu": "Jetzt die Stelle anklicken, an der dieser Punkt auf dem neuen Plan liegt."
     },
     "massstab_zuerst": "Erst den Maßstab festlegen, sonst lassen sich Wege nicht berechnen.",
     "punkt_neu": "Neuer Punkt",
@@ -303,6 +343,26 @@
       "rot": "Rot",
       "lila": "Lila",
       "grau": "Grau"
+    },
+    "rueckgaengig": "Rückgängig",
+    "rueckgaengig_hilfe": "Letzte Änderung auf diesem Stockwerk zurücknehmen (Strg+Z)",
+    "rueckgaengig_ok": "Rückgängig gemacht: {was}",
+    "ecke_hilfe": "Ziehen verschiebt die Ecke, Doppelklick löscht sie",
+    "ecke_einfuegen": "Ziehen fügt eine Ecke ein",
+    "ausrichten_anwenden": "Anwenden ({anzahl} Paare)",
+    "ausrichten_ok": "Ausgerichtet (Maßstabsfaktor {faktor}).",
+    "verlauf": {
+      "flaeche_neu": "neue Fläche",
+      "flaeche_geaendert": "Fläche geändert",
+      "flaeche_geloescht": "Fläche gelöscht",
+      "punkt_neu": "neuer Punkt",
+      "punkt_verschoben": "Punkt verschoben",
+      "punkt_geaendert": "Punkt geändert",
+      "punkt_geloescht": "Punkt gelöscht",
+      "weg": "Weg gezeichnet",
+      "weg_geaendert": "Wegstück geändert",
+      "weg_geloescht": "Wegstück gelöscht",
+      "ausrichten": "Ausrichten"
     }
   },
   "aufzug": {
@@ -392,7 +452,10 @@
     "sonstiges": "Sonstiges",
     "aktiv": "Aktiv (in Ablauf und Auswertung berücksichtigen)",
     "notiz": "Notiz",
-    "start_ziel_fehlt": "Bitte Start und Ziel wählen."
+    "start_ziel_fehlt": "Bitte Start und Ziel wählen.",
+    "export": "Excel",
+    "import": "Importieren",
+    "aktiv_kurz": "Aktiv"
   },
   "stamm": {
     "transportarten": "Transportarten",
@@ -442,7 +505,12 @@
     "aufzug_zeit": "{etage} s/Etage, Tür {tuer} s, Warten {anfahrt} s, Räumen {raeum} s",
     "treppe_zeit": "{s} s je Stockwerk",
     "platzbedarf": "Platzbedarf",
-    "platzbedarf_hilfe": "In Aufzugsplätzen, z. B. 1 für einen Wäschewagen, 2 für eine Palette."
+    "platzbedarf_hilfe": "In Aufzugsplätzen, z. B. 1 für einen Wäschewagen, 2 für eine Palette.",
+    "schichten": "Schichten",
+    "schichten_hilfe": "Optional. Sind Schichten eingetragen, gilt deren Anzahl statt der festen Anzahl oben. Außerhalb aller Schichten steht niemand zur Verfügung.",
+    "schicht_hinzu": "Schicht hinzufügen",
+    "schicht_von": "von",
+    "schicht_bis": "bis"
   },
   "ablauf": {
     "tempo": "Abspieltempo",
@@ -489,7 +557,8 @@
       "aufzug": "am Aufzug",
       "engstelle": "an Engstelle"
     },
-    "weitere_hier": "Hier stehen noch {anzahl} weitere:"
+    "weitere_hier": "Hier stehen noch {anzahl} weitere:",
+    "pdf": "Karte als PDF"
   },
   "auswertung": {
     "titel": "Auswertung",
@@ -503,7 +572,8 @@
       "fahrten": "Fahrten",
       "verspaetet": "verspätet",
       "max_warte": "längste Wartezeit",
-      "engpaesse": "Engpässe"
+      "engpaesse": "Engpässe",
+      "summe_warte": "Wartezeit gesamt"
     },
     "gefiltert": "Die Kennzahlen beziehen sich auf die gefilterten Fahrten. Engpässe und Auslastung gelten für den ganzen Tag.",
     "fehler_titel": "Diese Lieferungen können nicht berechnet werden",
@@ -522,7 +592,23 @@
       "ankunft": "Ankunft",
       "warten": "Gewartet",
       "zurueck": "Zurück"
-    }
+    },
+    "ansicht": {
+      "tag": "Tag",
+      "woche": "Woche"
+    },
+    "export_excel": "Excel",
+    "export_karte": "Karte als PDF",
+    "drucken": "Drucken",
+    "ist": "Ist",
+    "szenario_aktiv": "Du siehst ein Szenario. Die kleinen Zahlen zeigen zum Vergleich den Ist-Zustand.",
+    "vergleich_gleich": "Kein Unterschied zum Ist-Zustand.",
+    "vergleich_besser": "Im Szenario wird insgesamt {zeit} weniger gewartet als im Ist-Zustand.",
+    "vergleich_schlechter": "Im Szenario wird insgesamt {zeit} länger gewartet als im Ist-Zustand.",
+    "vergleich_verspaetet": "Verspätete Fahrten: {vorher} → {nachher}.",
+    "woche_hilfe": "Jede Zelle ist eine Stunde: Zahl = Fahrten, Farbe = längste Wartezeit. Ein Klick öffnet den Tag.",
+    "woche_zelle": "{fahrten} Fahrten, längste Wartezeit {warte}, verspätet: {verspaetet}",
+    "woche_legende": "Längste Wartezeit:"
   },
   "ressource": {
     "aufzug": "Aufzug",
@@ -541,6 +627,190 @@
       "kante": "Ideen: Ausweichweg einzeichnen oder Fahrten zeitlich versetzen.",
       "knoten": "Ideen: mehr Lade-/Entladeplätze oder Anlieferungen zeitlich versetzen.",
       "fahrzeuge": "Ideen: mehr Fahrzeuge bzw. Personal zu dieser Zeit oder Fahrten verteilen."
+    },
+    "ist_vergleich": "Im Ist-Zustand: bis zu {max}"
+  },
+  "recht": {
+    "ansehen": "Ansehen",
+    "lieferungen": "Lieferungen & Szenarien",
+    "bearbeiten": "Gebäude, Karte & Stammdaten",
+    "verwalten": "Verwaltung"
+  },
+  "recht_hilfe": {
+    "ansehen": "Karte, Lieferungen, Ablauf und Auswertung ansehen, Exporte herunterladen.",
+    "lieferungen": "Lieferungen anlegen, ändern, importieren; Szenarien pflegen und übernehmen.",
+    "bearbeiten": "Pläne hochladen, Gebäude und Stockwerke, Wege und Punkte zeichnen, Stammdaten ändern.",
+    "verwalten": "Benutzer und Rollen, Einstellungen, Sicherung, Updates, Anmeldung über Active Directory, Protokoll."
+  },
+  "rolle": {
+    "titel": "Rollen",
+    "neu": "Rolle anlegen",
+    "bearbeiten": "Rolle bearbeiten",
+    "hilfe": "Eine Rolle bündelt Rechte. Die mitgelieferten Rollen (Administrator, Planer, Betrachter) lassen sich nicht ändern, eigene Rollen schon.",
+    "name": "Name",
+    "rechte": "Rechte",
+    "benutzer": "Benutzer",
+    "system": "mitgeliefert"
+  },
+  "sicherung": {
+    "titel": "Sicherung",
+    "hilfe": "Eine Sicherung enthält Datenbank und PDF-Pläne. Logistik Map legt täglich automatisch eine an (im Datenordner unter „sicherungen“).",
+    "herunterladen": "Sicherung herunterladen",
+    "jetzt": "Jetzt sichern",
+    "einspielen": "Sicherung einspielen",
+    "behalten": "Automatische Sicherungen behalten:",
+    "vorhanden": "Vorhandene Sicherungen",
+    "keine": "Noch keine Sicherungen.",
+    "angelegt": "Sicherung angelegt.",
+    "wirklich": "„{name}“ einspielen? Alle Daten werden durch den Stand der Sicherung ersetzt. Der jetzige Stand wird vorher gesichert.",
+    "eingespielt": "Sicherung vom {zeit} eingespielt. Die Pläne werden neu aufbereitet."
+  },
+  "update": {
+    "titel": "Updates",
+    "pruefen": "Jetzt prüfen",
+    "version": "Installiert: Version {version}",
+    "verfuegbar": "Version {version} ist verfügbar.",
+    "aktuell": "Logistik Map ist aktuell.",
+    "installieren": "Update installieren",
+    "manuell": "Das Update bitte von Hand installieren:",
+    "keine_verbindung": "GitHub ist nicht erreichbar (keine Internetverbindung vom Server?). Updates können auch von Hand installiert werden.",
+    "wirklich": "Version {version} jetzt installieren? Logistik Map ist dabei etwa eine Minute nicht erreichbar.",
+    "laeuft": "Das Update wird installiert. Die Seite lädt danach neu …",
+    "zeitueberschreitung": "Das Update dauert ungewöhnlich lange. Bitte die Seite später neu laden oder das Protokoll update.log im Datenordner prüfen."
+  },
+  "ldap": {
+    "titel": "Anmeldung über Active Directory",
+    "hilfe": "Mitarbeitende melden sich mit ihrem Windows-Konto an. Die Rolle ergibt sich aus der Gruppenmitgliedschaft. Lokale Benutzer funktionieren weiterhin.",
+    "aktiv": "Anmeldung über Active Directory einschalten",
+    "server": "Server",
+    "server_hilfe": "z. B. ldaps://dc01.klinik.local – mehrere durch Komma getrennt",
+    "domaene": "Domäne",
+    "domaene_hilfe": "Wird an den Benutzernamen angehängt: benutzer@domäne",
+    "basis_dn": "Suchbasis (Base DN)",
+    "gruppen": "Gruppen → Rollen",
+    "gruppe_beispiel": "z. B. Logistik-Planung oder CN=…,OU=…",
+    "gruppe_hinzu": "Gruppe hinzufügen",
+    "gruppen_hilfe": "Die erste passende Zeile gilt.",
+    "standard_rolle": "Rolle ohne passende Gruppe",
+    "kein_zugang": "– kein Zugang –",
+    "testen": "Anmeldung testen",
+    "test_knopf": "Testen",
+    "test_ok": "Erfolgreich: {name} – Rolle: {rolle} ({gruppen} Gruppen gefunden)"
+  },
+  "https": {
+    "titel": "HTTPS",
+    "hilfe": "Für eine verschlüsselte Verbindung braucht Logistik Map ein Zertifikat mit privatem Schlüssel im PEM-Format, am besten von eurer IT ausgestellt.",
+    "an": "HTTPS ist aktiv.",
+    "aus": "Die Verbindung ist nicht verschlüsselt (HTTP).",
+    "zertifikat": "Zertifikat (PEM-Datei auf dem Server)",
+    "schluessel": "Privater Schlüssel (PEM-Datei auf dem Server)",
+    "datei_hilfe": "Beide Felder leer lassen, um HTTPS auszuschalten. Wirkt nach einem Neustart.",
+    "gespeichert": "Gespeichert. Die Änderung wirkt nach einem Neustart.",
+    "neustart": "Neu starten",
+    "neustart_frage": "Logistik Map jetzt neu starten? Alle sind für einige Sekunden getrennt.",
+    "neustart_laeuft": "Neustart läuft … Du wirst gleich weitergeleitet:"
+  },
+  "protokoll": {
+    "titel": "Änderungsprotokoll",
+    "hilfe": "Alle Änderungen mit Zeitpunkt und Benutzer.",
+    "zurueck": "Zurück zu den Einstellungen",
+    "mehr": "Ältere Einträge laden",
+    "alle_benutzer": "Alle Benutzer",
+    "alle_objekte": "Alles",
+    "zeit": "Zeitpunkt",
+    "benutzer": "Benutzer",
+    "was": "Was",
+    "objekt_titel": "Objekt",
+    "aktion": {
+      "angelegt": "angelegt",
+      "geaendert": "geändert",
+      "geloescht": "gelöscht",
+      "plan": "Plan zugewiesen",
+      "massstab": "Maßstab festgelegt",
+      "teilen": "Weg geteilt",
+      "rueckgaengig": "rückgängig gemacht",
+      "ausrichten": "an neuen Plan ausgerichtet",
+      "uebernehmen": "übernommen",
+      "neu": "neu aufbereitet",
+      "wiederherstellen": "eingespielt",
+      "ldap": "geändert",
+      "https": "geändert",
+      "passwort": "Passwort geändert"
+    },
+    "objekt": {
+      "lieferungen": "Lieferung",
+      "knoten": "Punkt",
+      "kanten": "Wegstück",
+      "flaechen": "Fläche",
+      "stockwerke": "Stockwerk",
+      "gebaeudeteile": "Gebäudeteil",
+      "dokumente": "PDF-Plan",
+      "benutzer": "Benutzer",
+      "rollen": "Rolle",
+      "transportarten": "Transportart",
+      "wagentypen": "Wagentyp",
+      "aufzuege": "Aufzug/Treppe",
+      "szenarien": "Szenario",
+      "sondertage": "Sondertag",
+      "einstellungen": "Einstellungen",
+      "sicherung": "Sicherung",
+      "sicherungen": "Sicherung",
+      "update": "Update",
+      "import": "Import",
+      "plaene": "Plan",
+      "neustart": "Neustart"
     }
+  },
+  "import": {
+    "titel": "Import: {datei}",
+    "zusammenfassung": "{gesamt} Zeilen: {neu} neu, {geaendert} werden geändert, {fehler} mit Fehlern.",
+    "erst_korrigieren": "Bitte die markierten Zeilen in der Datei korrigieren und erneut importieren. Es wird erst übernommen, wenn alle Zeilen in Ordnung sind.",
+    "zeile": "Zeile",
+    "status": "Ergebnis",
+    "wird_neu": "neu",
+    "wird_geaendert": "wird geändert",
+    "uebernehmen": "Übernehmen",
+    "fertig": "{anzahl} Lieferungen übernommen.",
+    "teilweise": "{anzahl} Zeilen konnten nicht übernommen werden.",
+    "fehler": {
+      "bezeichnung_fehlt": "Bezeichnung fehlt",
+      "transportart_unbekannt": "Transportart unbekannt",
+      "start_unbekannt": "Start unbekannt oder mehrdeutig",
+      "ziel_unbekannt": "Ziel unbekannt oder mehrdeutig",
+      "uhrzeit_ungueltig": "Uhrzeit ungültig",
+      "ladung_ungueltig": "Ladung nicht lesbar (z. B. „3 Wäschewagen“)",
+      "tage_ungueltig": "Tage nicht lesbar (z. B. „Mo-Fr“)",
+      "feiertage_ungueltig": "Feiertage: nicht, auch oder nur",
+      "rueckweg_ungueltig": "Rückweg: leer, beladen, später oder keiner",
+      "rueckweg_ziel_unbekannt": "„Rückweg nach“ unbekannt",
+      "id_ungueltig": "ID ungültig"
+    }
+  },
+  "szenario": {
+    "titel": "Szenarien",
+    "kurz": "Szenario",
+    "ist": "Ist-Zustand",
+    "auswahl": "Szenario",
+    "neu": "Szenario anlegen",
+    "hilfe": "Ein Szenario ist eine Kopie des Ist-Zustands mit Änderungen: andere Lieferzeiten, ein Aufzug in Wartung, mehr Personal … Die echten Daten bleiben unverändert, bis du ein Szenario übernimmst.",
+    "keine": "Noch keine Szenarien.",
+    "aenderungen": "{anzahl} Abweichungen vom Ist-Zustand",
+    "vergleichen": "Vergleichen",
+    "ansehen": "Ansehen",
+    "uebernehmen": "Übernehmen",
+    "uebernehmen_frage": "Die geänderten Lieferungen aus „{name}“ in den Ist-Zustand übernehmen? Änderungen an Aufzügen und Transportarten werden nicht übernommen.",
+    "uebernommen": "{anzahl} Lieferungen übernommen.",
+    "name": "Name",
+    "name_beispiel": "z. B. Wäsche um 7:30, Aufzug West in Wartung",
+    "beschreibung": "Beschreibung",
+    "zur_liste": "Alle Szenarien",
+    "editor_hilfe": "Ändere nur, was im Szenario anders sein soll. Geänderte Felder sind markiert.",
+    "lieferungen": "Lieferungen",
+    "aufzuege": "Aufzüge und Treppen",
+    "transportarten": "Transportarten",
+    "transportarten_hilfe": "Eine geänderte Anzahl gilt im Szenario den ganzen Tag (statt der Schichten).",
+    "hat_schichten": "mit Schichten",
+    "ausser_betrieb": "außer Betrieb",
+    "fahrzeit": "s/Etage"
   }
 }

@@ -12,7 +12,7 @@ import threading
 from pathlib import Path
 
 # Rechte, die eine Rolle haben kann. Neue Rechte hier ergänzen.
-RECHTE = ("ansehen", "bearbeiten", "verwalten")
+RECHTE = ("ansehen", "lieferungen", "bearbeiten", "verwalten")
 
 MIGRATIONEN: list[str] = [
     # 1 – Grundgerüst: Einstellungen, Benutzer, Rollen, Gebäude, Stockwerke, Pläne
@@ -174,10 +174,44 @@ MIGRATIONEN: list[str] = [
     INSERT INTO wagentypen (name, plaetze) VALUES ('Speisenwagen', 1);
     INSERT INTO wagentypen (name, plaetze) VALUES ('Palette', 2)
     """,
+    # 3 – Rechte „lieferungen“, Rolle Planer, Protokoll, Rückgängig, Szenarien, Schichten, AD-Benutzer
+    """
+    UPDATE rollen SET rechte = '["ansehen", "lieferungen", "bearbeiten", "verwalten"]' WHERE schluessel = 'admin';
+    INSERT OR IGNORE INTO rollen (schluessel, name, rechte, system) VALUES ('planer', 'Planer', '["ansehen", "lieferungen"]', 1);
+    ALTER TABLE benutzer ADD COLUMN quelle TEXT NOT NULL DEFAULT 'lokal';
+    ALTER TABLE transportarten ADD COLUMN schichten TEXT NOT NULL DEFAULT '[]';
+    CREATE TABLE protokoll (
+        id          INTEGER PRIMARY KEY,
+        zeit        TEXT NOT NULL DEFAULT (datetime('now')),
+        benutzer    TEXT NOT NULL,
+        aktion      TEXT NOT NULL,
+        objekt      TEXT NOT NULL,
+        objekt_id   INTEGER,
+        bezeichnung TEXT NOT NULL DEFAULT ''
+    );
+    CREATE INDEX protokoll_zeit ON protokoll(zeit);
+    CREATE TABLE netz_verlauf (
+        id           INTEGER PRIMARY KEY,
+        stockwerk_id INTEGER NOT NULL REFERENCES stockwerke(id) ON DELETE CASCADE,
+        zeit         TEXT NOT NULL DEFAULT (datetime('now')),
+        benutzer     TEXT NOT NULL DEFAULT '',
+        beschreibung TEXT NOT NULL DEFAULT '',
+        daten        TEXT NOT NULL
+    );
+    CREATE INDEX netz_verlauf_stockwerk ON netz_verlauf(stockwerk_id, id);
+    CREATE TABLE szenarien (
+        id           INTEGER PRIMARY KEY,
+        name         TEXT NOT NULL,
+        beschreibung TEXT NOT NULL DEFAULT '',
+        aenderungen  TEXT NOT NULL DEFAULT '{}',
+        erstellt     TEXT NOT NULL DEFAULT (datetime('now'))
+    )
+    """,
 ]
 
 STANDARD_ROLLEN = [
-    ("admin", "Administrator", ["ansehen", "bearbeiten", "verwalten"]),
+    ("admin", "Administrator", ["ansehen", "lieferungen", "bearbeiten", "verwalten"]),
+    ("planer", "Planer", ["ansehen", "lieferungen"]),
     ("betrachter", "Betrachter", ["ansehen"]),
 ]
 
@@ -197,11 +231,34 @@ class Datenbank:
     def __init__(self, pfad: Path):
         self.pfad = Path(pfad)
         self._sperre = threading.RLock()
+        self._verbinden()
+
+    def _verbinden(self) -> None:
         self._con = sqlite3.connect(self.pfad, check_same_thread=False, isolation_level=None)
         self._con.row_factory = sqlite3.Row
         self._con.execute("PRAGMA foreign_keys = ON")
         self._con.execute("PRAGMA journal_mode = WAL")
         self._migrieren()
+
+    def sichern_nach(self, ziel: Path) -> None:
+        """Konsistente Kopie der laufenden Datenbank (SQLite-Backup-API)."""
+        with self._sperre:
+            ziel_con = sqlite3.connect(ziel)
+            try:
+                self._con.backup(ziel_con)
+            finally:
+                ziel_con.close()
+
+    def ersetzen_durch(self, quelle: Path) -> None:
+        """Ersetzt die Datenbankdatei (Wiederherstellung) und öffnet sie neu, inklusive Migration."""
+        import shutil
+
+        with self._sperre:
+            self._con.close()
+            for endung in ("-wal", "-shm"):
+                Path(str(self.pfad) + endung).unlink(missing_ok=True)
+            shutil.copyfile(quelle, self.pfad)
+            self._verbinden()
 
     def _migrieren(self) -> None:
         with self._sperre:

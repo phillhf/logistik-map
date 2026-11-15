@@ -14,9 +14,12 @@ from __future__ import annotations
 
 import logging
 import math
+import os
 import queue
 import shutil
 import threading
+import time
+from concurrent.futures import ProcessPoolExecutor, as_completed
 from pathlib import Path
 
 import pymupdf
@@ -95,47 +98,118 @@ def leere_kachel() -> bytes:
     return _LEERE_KACHEL
 
 
-def kacheln_erzeugen(pdf: Path, seite: int, ziel: Path, max_zoom: int, fortschritt=None, abbruch=None) -> None:
-    """Erzeugt alle Kacheln einer Seite. fortschritt(anteil 0..1) wird regelmäßig aufgerufen."""
+PARALLEL_AB = 600  # ab so vielen Kacheln auf mehrere Prozesse verteilen
+
+_offen: dict = {}  # je Prozess: (pdf, seite) → (doc, page, displaylist)
+
+
+def _seite_oeffnen(pdf: str, seite: int):
+    schluessel = (pdf, seite)
+    if schluessel not in _offen:
+        for doc, *_ in _offen.values():
+            doc.close()
+        _offen.clear()
+        doc = pymupdf.open(pdf)
+        page = doc[seite - 1]
+        _offen[schluessel] = (doc, page, page.get_displaylist(annots=False))
+    return _offen[schluessel]
+
+
+def _zeile_rendern(pdf: str, seite: int, ziel: str, z: int, ty: int) -> int:
+    """Rendert eine Kachelzeile. Läuft im Hauptprozess oder in einem Arbeitsprozess."""
+    _, page, liste = _seite_oeffnen(pdf, seite)
+    s = 2.0 ** (z - ZOOM_VERSATZ)
+    nx = math.ceil(page.rect.width * s / KACHEL)
+    m = pymupdf.Matrix(s, s)
+    ordner = Path(ziel) / str(z)
+    for tx in range(nx):
+        clip = pymupdf.Rect(tx * KACHEL / s, ty * KACHEL / s, (tx + 1) * KACHEL / s, (ty + 1) * KACHEL / s)
+        clip &= page.rect
+        pix = liste.get_pixmap(matrix=m, clip=clip, alpha=False)
+        # reinweiß? (pix.is_unicolor ist in PyMuPDF 2 reines Python und sehr langsam)
+        if pix.samples.strip(b"\xff"):
+            if pix.width != KACHEL or pix.height != KACHEL:
+                voll = pymupdf.Pixmap(pymupdf.csRGB, pymupdf.IRect(tx * KACHEL, ty * KACHEL, (tx + 1) * KACHEL, (ty + 1) * KACHEL), False)
+                voll.clear_with(255)
+                voll.copy(pix, pix.irect)
+                pix = voll
+            (ordner / f"{tx}_{ty}.png").write_bytes(pix.tobytes("png"))
+    return nx
+
+
+def arbeitsprozesse() -> int:
+    return max(1, min(4, (os.cpu_count() or 2) - 1))
+
+
+def kacheln_erzeugen(pdf: Path, seite: int, ziel: Path, max_zoom: int, fortschritt=None, abbruch=None, prozesse: int | None = None) -> None:
+    """Erzeugt alle Kacheln einer Seite. fortschritt(anteil 0..1) wird regelmäßig aufgerufen.
+
+    Große Pläne werden zeilenweise auf mehrere Prozesse verteilt (prozesse=None: automatisch).
+    """
+    doc = pymupdf.open(pdf)
+    breite, hoehe = doc[seite - 1].rect.width, doc[seite - 1].rect.height
+    doc.close()
+    gesamt = kachelanzahl(breite, hoehe, max_zoom)
+    auftraege = []
+    for z in range(max_zoom + 1):
+        s = 2.0 ** (z - ZOOM_VERSATZ)
+        (ziel / str(z)).mkdir(parents=True, exist_ok=True)
+        auftraege += [(z, ty) for ty in range(math.ceil(hoehe * s / KACHEL))]
+    if prozesse is None:
+        prozesse = arbeitsprozesse() if gesamt >= PARALLEL_AB else 1
+    fertig = 0
+    letzte_meldung = 0.0
+    if prozesse <= 1:
+        for z, ty in auftraege:
+            if abbruch is not None and abbruch():
+                return
+            fertig += _zeile_rendern(str(pdf), seite, str(ziel), z, ty)
+            if fortschritt is not None and time.monotonic() - letzte_meldung > 0.5:
+                letzte_meldung = time.monotonic()
+                fortschritt(fertig / gesamt)
+        _offen.clear()
+    else:
+        with ProcessPoolExecutor(max_workers=prozesse) as pool:
+            laufend = [pool.submit(_zeile_rendern, str(pdf), seite, str(ziel), z, ty) for z, ty in auftraege]
+            for f in as_completed(laufend):
+                if abbruch is not None and abbruch():
+                    pool.shutdown(wait=True, cancel_futures=True)
+                    return
+                fertig += f.result()
+                if fortschritt is not None and time.monotonic() - letzte_meldung > 0.5:
+                    letzte_meldung = time.monotonic()
+                    fortschritt(fertig / gesamt)
+    if fortschritt is not None:
+        fortschritt(1.0)
+
+
+def plan_test(pdf: Path) -> dict:
+    """Schnelltest für einen Plan: Seitengrößen, Zoomstufen, geschätzte Aufbereitungszeit."""
+    ergebnis = {"seiten": []}
     doc = pymupdf.open(pdf)
     try:
-        page = doc[seite - 1]
-        breite, hoehe = page.rect.width, page.rect.height
-        liste = page.get_displaylist(annots=False)
-        gesamt = kachelanzahl(breite, hoehe, max_zoom)
-        fertig = 0
-        for z in range(max_zoom + 1):
-            s = 2.0 ** (z - ZOOM_VERSATZ)
-            ordner = ziel / str(z)
-            ordner.mkdir(parents=True, exist_ok=True)
-            nx, ny = math.ceil(breite * s / KACHEL), math.ceil(hoehe * s / KACHEL)
-            m = pymupdf.Matrix(s, s)
-            for ty in range(ny):
-                for tx in range(nx):
-                    if abbruch is not None and abbruch():
-                        return
-                    clip = pymupdf.Rect(tx * KACHEL / s, ty * KACHEL / s, (tx + 1) * KACHEL / s, (ty + 1) * KACHEL / s)
-                    clip &= page.rect
-                    pix = liste.get_pixmap(matrix=m, clip=clip, alpha=False)
-                    # reinweiß? (pix.is_unicolor ist in PyMuPDF 2 reines Python und sehr langsam)
-                    if pix.samples.strip(b"\xff"):
-                        if pix.width != KACHEL or pix.height != KACHEL:
-                            voll = pymupdf.Pixmap(
-                                pymupdf.csRGB,
-                                pymupdf.IRect(tx * KACHEL, ty * KACHEL, (tx + 1) * KACHEL, (ty + 1) * KACHEL),
-                                False,
-                            )
-                            voll.clear_with(255)
-                            voll.copy(pix, pix.irect)
-                            pix = voll
-                        (ordner / f"{tx}_{ty}.png").write_bytes(pix.tobytes("png"))
-                    fertig += 1
-                    if fortschritt is not None and fertig % 25 == 0:
-                        fortschritt(fertig / gesamt)
-        if fortschritt is not None:
-            fortschritt(1.0)
+        for i, page in enumerate(doc):
+            t0 = time.monotonic()
+            liste = page.get_displaylist(annots=False)
+            t_liste = time.monotonic() - t0
+            mz = max_zoom_fuer(page.rect.width, page.rect.height)
+            s = 2.0 ** (mz - ZOOM_VERSATZ)
+            # Stichprobe: Kacheln aus der Mitte der höchsten Zoomstufe
+            mx, my = page.rect.width / 2, page.rect.height / 2
+            t0 = time.monotonic()
+            for d in range(9):
+                cx, cy = mx + (d % 3 - 1) * KACHEL / s, my + (d // 3 - 1) * KACHEL / s
+                liste.get_pixmap(matrix=pymupdf.Matrix(s, s), clip=pymupdf.Rect(cx, cy, cx + KACHEL / s, cy + KACHEL / s) & page.rect, alpha=False).tobytes("png")
+            je_kachel = (time.monotonic() - t0) / 9
+            n = kachelanzahl(page.rect.width, page.rect.height, mz)
+            ergebnis["seiten"].append({
+                "nr": i + 1, "breite_mm": round(page.rect.width / 72 * 25.4), "hoehe_mm": round(page.rect.height / 72 * 25.4),
+                "max_zoom": mz, "kacheln": n, "einlesen_s": round(t_liste, 2), "ms_je_kachel": round(je_kachel * 1000, 1),
+                "geschaetzt_s": round(t_liste + n * je_kachel / max(1, arbeitsprozesse() if n >= PARALLEL_AB else 1), 1),
+            })
     finally:
         doc.close()
+    return ergebnis
 
 
 class KachelDienst:
@@ -152,6 +226,8 @@ class KachelDienst:
     def starten(self) -> None:
         if self._thread is not None:
             return
+        self._stopp.clear()
+        self._warteschlange = queue.Queue()
         self._thread = threading.Thread(target=self._schleife, name="kacheln", daemon=True)
         self._thread.start()
         # nach einem Neustart unfertige Pläne wieder aufnehmen

@@ -21,7 +21,10 @@ from fastapi.responses import FileResponse, JSONResponse
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel, Field
 
-from . import APP_NAME, __version__, auth, planung
+from . import APP_NAME, __version__, auth, planung, verzeichnis, wartung
+from .config import Konfiguration, lade_konfiguration, speichere_konfiguration
+from . import protokoll as protokoll_modul
+from .protokoll import protokoll_einrichten
 from .config import Pfade, static_ordner
 from .db import RECHTE, Datenbank
 from .feiertage import BUNDESLAENDER, feiertage
@@ -30,7 +33,7 @@ from .plaene import KachelDienst, PdfFehler, leere_kachel, max_zoom_fuer, pdf_se
 log = logging.getLogger(__name__)
 
 MAX_PDF_BYTES = 1024 * 1024 * 1024  # 1 GB
-SPRACHEN = {"de": "Deutsch"}  # weitere Sprachen: static/i18n/<code>.json anlegen und hier eintragen
+SPRACHEN = {"de": "Deutsch", "en": "English"}  # weitere Sprachen: static/i18n/<code>.json anlegen und hier eintragen
 
 
 def fehler(status: int, code: str, **extra) -> HTTPException:
@@ -68,9 +71,44 @@ class BenutzerAenderung(BaseModel):
     passwort: str | None = None
 
 
+class IchAenderung(BaseModel):
+    sprache: str | None = None
+    anzeigename: str | None = Field(default=None, max_length=100)
+
+
+class RolleModell(BaseModel):
+    name: str = Field(min_length=1, max_length=60)
+    rechte: list[str]
+
+
+class LdapGruppe(BaseModel):
+    gruppe: str = Field(max_length=500)
+    rolle: str
+
+
+class LdapEinstellung(BaseModel):
+    aktiv: bool = False
+    server: str = Field(default="", max_length=500)
+    domaene: str = Field(default="", max_length=200)
+    basis_dn: str = Field(default="", max_length=500)
+    gruppen: list[LdapGruppe] = []
+    standard_rolle: str = ""
+
+
+class LdapTest(BaseModel):
+    benutzername: str
+    passwort: str
+
+
+class HttpsEinstellung(BaseModel):
+    zertifikat: str = Field(default="", max_length=500)
+    schluessel: str = Field(default="", max_length=500)
+
+
 class EinstellungenAenderung(BaseModel):
     bundesland: str | None = None
     sprache: str | None = None
+    sicherung_anzahl: int | None = Field(default=None, ge=1, le=365)
 
 
 class Sondertag(BaseModel):
@@ -125,6 +163,7 @@ def erstelle_app(pfade: Pfade, kacheln_starten: bool = True) -> FastAPI:
     pfade.anlegen()
     db = Datenbank(pfade.datenbank)
     dienst = KachelDienst(db, pfade)
+    auto_sicherung = wartung.AutoSicherung(db, pfade)
     bremse = auth.Anmeldebremse()
 
     @asynccontextmanager
@@ -132,7 +171,9 @@ def erstelle_app(pfade: Pfade, kacheln_starten: bool = True) -> FastAPI:
         auth.alte_sitzungen_loeschen(db)
         if kacheln_starten:
             dienst.starten()
+            auto_sicherung.starten()
         yield
+        auto_sicherung.stoppen()
         dienst.stoppen()
         db.schliessen()
 
@@ -140,6 +181,7 @@ def erstelle_app(pfade: Pfade, kacheln_starten: bool = True) -> FastAPI:
     app.state.db = db
     app.state.kacheln = dienst
     app.state.pfade = pfade
+    app.state.ldap_verbindung = None  # Tests setzen hier eine Ersatzverbindung
 
     # ---------------------------------------------------------------- Abhängigkeiten
     def aktueller_benutzer(request: Request) -> dict | None:
@@ -158,6 +200,8 @@ def erstelle_app(pfade: Pfade, kacheln_starten: bool = True) -> FastAPI:
         return pruefen
 
     ansehen, bearbeiten, verwalten = recht("ansehen"), recht("bearbeiten"), recht("verwalten")
+    lieferungen_recht = recht("lieferungen")
+    protokoll_einrichten(app, db)
 
     def benutzer_anzahl() -> int:
         return db.eins("SELECT COUNT(*) AS n FROM benutzer")["n"]
@@ -219,12 +263,49 @@ def erstelle_app(pfade: Pfade, kacheln_starten: bool = True) -> FastAPI:
         schluessel = ("u:" + daten.benutzername.lower(), "a:" + adresse)
         if bremse.gesperrt(*schluessel):
             raise fehler(429, "zu_viele_versuche")
-        row = db.eins("SELECT id, passwort_hash, aktiv FROM benutzer WHERE benutzername = ?", (daten.benutzername.strip(),))
-        if row is None or not row["aktiv"] or not auth.passwort_pruefen(daten.passwort, row["passwort_hash"]):
+        name = daten.benutzername.strip()
+        row = db.eins("SELECT id, passwort_hash, aktiv, quelle FROM benutzer WHERE benutzername = ?", (name,))
+        bid = None
+        if row is not None and row["quelle"] == "lokal":
+            if row["aktiv"] and auth.passwort_pruefen(daten.passwort, row["passwort_hash"]):
+                bid = row["id"]
+        else:
+            e = verzeichnis.einstellungen(db)
+            if e["aktiv"] and (row is None or row["aktiv"]):
+                try:
+                    info = verzeichnis.anmelden(e, name, daten.passwort, app.state.ldap_verbindung)
+                except verzeichnis.VerzeichnisFehler as ex:
+                    if ex.code != "anmeldung_falsch":
+                        raise fehler(503, ex.code)
+                    info = None
+                if info is not None:
+                    rolle = verzeichnis.rolle_fuer(e, info["gruppen"])
+                    rid = db.eins("SELECT id FROM rollen WHERE schluessel = ?", (rolle,)) if rolle else None
+                    if rid is None:
+                        raise fehler(403, "kein_zugang_verzeichnis")
+                    if row is None:
+                        bid = db.ausfuehren(
+                            "INSERT INTO benutzer (benutzername, anzeigename, passwort_hash, rolle_id, quelle) VALUES (?, ?, '!', ?, 'ldap')",
+                            (name.lower(), info["anzeigename"], rid["id"]),
+                        )
+                    else:
+                        bid = row["id"]
+                        db.ausfuehren("UPDATE benutzer SET anzeigename = ?, rolle_id = ? WHERE id = ?", (info["anzeigename"], rid["id"], bid))
+        if bid is None:
             bremse.fehlschlag(*schluessel)
             raise fehler(401, "anmeldung_falsch")
         bremse.erfolg(*schluessel)
-        cookie_setzen(response, request, auth.sitzung_anlegen(db, row["id"]))
+        cookie_setzen(response, request, auth.sitzung_anlegen(db, bid))
+        return {"ok": True}
+
+    @app.put("/api/ich")
+    def ich_aendern(daten: IchAenderung, ich: dict = Depends(ansehen)):
+        if daten.sprache is not None:
+            if daten.sprache not in SPRACHEN and daten.sprache != "":
+                raise fehler(400, "sprache_unbekannt")
+            db.ausfuehren("UPDATE benutzer SET sprache = ? WHERE id = ?", (daten.sprache or None, ich["id"]))
+        if daten.anzeigename:
+            db.ausfuehren("UPDATE benutzer SET anzeigename = ? WHERE id = ?", (daten.anzeigename.strip(), ich["id"]))
         return {"ok": True}
 
     @app.post("/api/abmelden")
@@ -237,7 +318,9 @@ def erstelle_app(pfade: Pfade, kacheln_starten: bool = True) -> FastAPI:
 
     @app.post("/api/ich/passwort")
     def eigenes_passwort(daten: PasswortAendern, request: Request, ich: dict = Depends(ansehen)):
-        row = db.eins("SELECT passwort_hash FROM benutzer WHERE id = ?", (ich["id"],))
+        row = db.eins("SELECT passwort_hash, quelle FROM benutzer WHERE id = ?", (ich["id"],))
+        if row["quelle"] != "lokal":
+            raise fehler(400, "passwort_im_verzeichnis")
         if not auth.passwort_pruefen(daten.altes_passwort, row["passwort_hash"]):
             raise fehler(400, "altes_passwort_falsch")
         _passwort_pruefen(daten.neues_passwort)
@@ -254,15 +337,63 @@ def erstelle_app(pfade: Pfade, kacheln_starten: bool = True) -> FastAPI:
     # ---------------------------------------------------------------- Benutzer & Rollen
     @app.get("/api/rollen")
     def rollen(_: dict = Depends(verwalten)):
-        rows = db.alle("SELECT schluessel, name, rechte, system FROM rollen ORDER BY id")
+        rows = db.alle(
+            "SELECT r.id, r.schluessel, r.name, r.rechte, r.system, (SELECT COUNT(*) FROM benutzer b WHERE b.rolle_id = r.id) AS benutzer FROM rollen r ORDER BY r.id"
+        )
         for r in rows:
             r["rechte"] = json.loads(r["rechte"])
-        return rows
+        return {"rollen": rows, "rechte": list(RECHTE)}
+
+    def rechte_pruefen(rechte: list[str]) -> list[str]:
+        if any(r not in RECHTE for r in rechte):
+            raise fehler(400, "recht_unbekannt")
+        rechte = [r for r in RECHTE if r in rechte]
+        if rechte and "ansehen" not in rechte:
+            rechte.insert(0, "ansehen")
+        return rechte
+
+    @app.post("/api/rollen")
+    def rolle_anlegen(daten: RolleModell, _: dict = Depends(verwalten)):
+        schluessel = "r" + secrets.token_hex(4)
+        return {"id": db.ausfuehren("INSERT INTO rollen (schluessel, name, rechte) VALUES (?, ?, ?)",
+                                    (schluessel, daten.name.strip(), json.dumps(rechte_pruefen(daten.rechte)))), "schluessel": schluessel}
+
+    @app.put("/api/rollen/{rid}")
+    def rolle_aendern(rid: int, daten: RolleModell, _: dict = Depends(verwalten)):
+        r = db.eins("SELECT * FROM rollen WHERE id = ?", (rid,))
+        if r is None:
+            raise fehler(404, "nicht_gefunden")
+        if r["system"]:
+            raise fehler(400, "systemrolle")
+        rechte = rechte_pruefen(daten.rechte)
+        if "verwalten" not in rechte and anzahl_aktive_admins_ohne_rolle(rid) == 0:
+            raise fehler(400, "letzter_admin")
+        db.ausfuehren("UPDATE rollen SET name = ?, rechte = ? WHERE id = ?", (daten.name.strip(), json.dumps(rechte), rid))
+        return {"ok": True}
+
+    @app.delete("/api/rollen/{rid}")
+    def rolle_loeschen(rid: int, _: dict = Depends(verwalten)):
+        r = db.eins("SELECT * FROM rollen WHERE id = ?", (rid,))
+        if r is None:
+            raise fehler(404, "nicht_gefunden")
+        if r["system"]:
+            raise fehler(400, "systemrolle")
+        if db.eins("SELECT 1 FROM benutzer WHERE rolle_id = ?", (rid,)):
+            raise fehler(409, "rolle_in_verwendung")
+        db.ausfuehren("DELETE FROM rollen WHERE id = ?", (rid,))
+        return {"ok": True}
+
+    def anzahl_aktive_admins_ohne_rolle(rid: int) -> int:
+        return db.eins(
+            """SELECT COUNT(*) AS n FROM benutzer b JOIN rollen r ON r.id = b.rolle_id
+                WHERE b.aktiv = 1 AND r.rechte LIKE '%"verwalten"%' AND r.id <> ?""",
+            (rid,),
+        )["n"]
 
     @app.get("/api/benutzer")
     def benutzer_liste(_: dict = Depends(verwalten)):
         return db.alle(
-            """SELECT b.id, b.benutzername, b.anzeigename, b.aktiv, b.erstellt, r.schluessel AS rolle
+            """SELECT b.id, b.benutzername, b.anzeigename, b.aktiv, b.erstellt, b.quelle, r.schluessel AS rolle
                  FROM benutzer b JOIN rollen r ON r.id = b.rolle_id ORDER BY b.benutzername"""
         )
 
@@ -323,6 +454,7 @@ def erstelle_app(pfade: Pfade, kacheln_starten: bool = True) -> FastAPI:
             "sprache": db.einstellung("sprache", "de"),
             "bundeslaender": BUNDESLAENDER,
             "sprachen": SPRACHEN,
+            "sicherung_anzahl": db.einstellung("sicherung_anzahl", 14),
         }
 
     @app.put("/api/einstellungen")
@@ -335,7 +467,124 @@ def erstelle_app(pfade: Pfade, kacheln_starten: bool = True) -> FastAPI:
             if daten.sprache not in SPRACHEN:
                 raise fehler(400, "sprache_unbekannt")
             db.setze_einstellung("sprache", daten.sprache)
+        if daten.sicherung_anzahl is not None:
+            db.setze_einstellung("sicherung_anzahl", daten.sicherung_anzahl)
         return {"ok": True}
+
+    # ---------------------------------------------------------------- Verzeichnis (AD/LDAP)
+    @app.get("/api/einstellungen/ldap")
+    def ldap_lesen(_: dict = Depends(verwalten)):
+        return verzeichnis.einstellungen(db)
+
+    @app.put("/api/einstellungen/ldap")
+    def ldap_speichern(daten: LdapEinstellung, _: dict = Depends(verwalten)):
+        rollen_ok = {r["schluessel"] for r in db.alle("SELECT schluessel FROM rollen")}
+        if any(g.rolle not in rollen_ok for g in daten.gruppen) or (daten.standard_rolle and daten.standard_rolle not in rollen_ok):
+            raise fehler(400, "rolle_unbekannt")
+        if daten.aktiv and not daten.server.strip():
+            raise fehler(400, "ldap_server_fehlt")
+        db.setze_einstellung("ldap", daten.model_dump())
+        return {"ok": True}
+
+    @app.post("/api/einstellungen/ldap/test")
+    def ldap_test(daten: LdapTest, _: dict = Depends(verwalten)):
+        e = verzeichnis.einstellungen(db)
+        try:
+            info = verzeichnis.anmelden(e, daten.benutzername.strip(), daten.passwort, app.state.ldap_verbindung)
+        except verzeichnis.VerzeichnisFehler as ex:
+            raise fehler(400, ex.code)
+        return {**info, "rolle": verzeichnis.rolle_fuer(e, info["gruppen"])}
+
+    # ---------------------------------------------------------------- HTTPS & Neustart
+    @app.get("/api/einstellungen/https")
+    def https_lesen(request: Request, _: dict = Depends(verwalten)):
+        k = lade_konfiguration(pfade)
+        return {"zertifikat": k.zertifikat, "schluessel": k.schluessel, "aktiv": request.url.scheme == "https", "port": k.port}
+
+    @app.put("/api/einstellungen/https")
+    def https_speichern(daten: HttpsEinstellung, _: dict = Depends(verwalten)):
+        k = lade_konfiguration(pfade)
+        z, s_ = daten.zertifikat.strip(), daten.schluessel.strip()
+        if bool(z) != bool(s_):
+            raise fehler(400, "https_beide_dateien")
+        for datei in (z, s_):
+            if datei and not Path(datei).is_file():
+                raise fehler(400, "datei_fehlt", datei=datei)
+        if z:
+            import ssl
+
+            try:
+                ssl.create_default_context(ssl.Purpose.CLIENT_AUTH).load_cert_chain(z, s_)
+            except (ssl.SSLError, OSError) as ex:
+                raise fehler(400, "zertifikat_ungueltig", grund=str(ex)[:200])
+        k.zertifikat, k.schluessel = z, s_
+        speichere_konfiguration(pfade, k)
+        return {"ok": True}
+
+    @app.post("/api/neustart")
+    def neustart(_: dict = Depends(verwalten)):
+        wartung.neustart_planen()
+        return {"ok": True}
+
+    # ---------------------------------------------------------------- Sicherung
+    @app.get("/api/sicherung")
+    def sicherung_laden(_: dict = Depends(verwalten)):
+        name = f"logistikmap-sicherung-{date.today():%Y-%m-%d}.zip"
+        ziel = pfade.sicherungen / f"manuell-{secrets.token_hex(4)}.zip"
+        wartung.sicherung_erstellen(db, pfade, ziel)
+        from starlette.background import BackgroundTask
+
+        return FileResponse(ziel, media_type="application/zip", filename=name, background=BackgroundTask(ziel.unlink, missing_ok=True))
+
+    @app.get("/api/sicherungen")
+    def sicherungen(_: dict = Depends(verwalten)):
+        return wartung.sicherungen_liste(pfade)
+
+    @app.post("/api/sicherungen")
+    def sicherung_jetzt(_: dict = Depends(verwalten)):
+        ziel = pfade.sicherungen / f"{wartung.AUTO_PRAEFIX}{date.today():%Y%m%d}-{secrets.token_hex(2)}.zip"
+        wartung.sicherung_erstellen(db, pfade, ziel)
+        return {"name": ziel.name}
+
+    @app.get("/api/sicherungen/{name}")
+    def sicherung_datei(name: str, _: dict = Depends(verwalten)):
+        if not re.match(r"^[A-Za-z0-9._-]+\.zip$", name) or not (pfade.sicherungen / name).is_file():
+            raise fehler(404, "nicht_gefunden")
+        return FileResponse(pfade.sicherungen / name, media_type="application/zip", filename=name)
+
+    @app.post("/api/sicherung/wiederherstellen")
+    async def sicherung_wiederherstellen(datei: UploadFile = File(...), _: dict = Depends(verwalten)):
+        tmp = pfade.sicherungen / f"upload-{secrets.token_hex(6)}.tmp"
+        try:
+            with tmp.open("wb") as f:
+                while chunk := await datei.read(1024 * 1024):
+                    f.write(chunk)
+            try:
+                manifest = wartung.wiederherstellen(db, pfade, dienst, tmp)
+            except wartung.WartungsFehler as ex:
+                raise fehler(400, ex.code)
+        finally:
+            tmp.unlink(missing_ok=True)
+        return {"ok": True, "version": manifest.get("version"), "zeit": manifest.get("zeit")}
+
+    # ---------------------------------------------------------------- Update
+    @app.get("/api/update")
+    def update(neu: bool = False, _: dict = Depends(verwalten)):
+        return wartung.update_pruefen(neu)
+
+    @app.post("/api/update")
+    def update_starten(_: dict = Depends(verwalten)):
+        info = wartung.update_pruefen(True)
+        if not info.get("verfuegbar"):
+            raise fehler(400, "kein_update")
+        try:
+            version = wartung.update_installieren(pfade, info)
+        except wartung.WartungsFehler as ex:
+            raise fehler(400, ex.code)
+        except Exception as ex:
+            log.exception("Update fehlgeschlagen")
+            raise fehler(500, "update_fehlgeschlagen", grund=str(ex)[:200])
+        return {"ok": True, "version": version}
 
     @app.get("/api/feiertage")
     def feiertage_liste(jahr: int | None = None, _: dict = Depends(ansehen)):
@@ -484,13 +733,17 @@ def erstelle_app(pfade: Pfade, kacheln_starten: bool = True) -> FastAPI:
                 "INSERT INTO plaene (dokument_id, seite, breite, hoehe, max_zoom) VALUES (?, ?, ?, ?, ?)",
                 (daten.dokument_id, daten.seite, seite["breite"], seite["hoehe"], max_zoom_fuer(seite["breite"], seite["hoehe"])),
             )
-        # Maßstab gehört zur Planseite: bei neuem Plan zurücksetzen
-        db.ausfuehren("UPDATE stockwerke SET plan_id = ?, meter_pro_punkt = NULL WHERE id = ?", (pid, sid))
+        # Ist schon etwas eingezeichnet, bleibt der Maßstab – das Werkzeug „Ausrichten“ passt beides an den neuen Plan an.
+        inhalt = bool(db.eins("SELECT 1 FROM knoten WHERE stockwerk_id = ? UNION SELECT 1 FROM flaechen WHERE stockwerk_id = ?", (sid, sid)))
+        if inhalt:
+            db.ausfuehren("UPDATE stockwerke SET plan_id = ? WHERE id = ?", (pid, sid))
+        else:
+            db.ausfuehren("UPDATE stockwerke SET plan_id = ?, meter_pro_punkt = NULL WHERE id = ?", (pid, sid))
         if not vorhanden:
             dienst.einreihen(pid)
         if alt and alt != pid:
             plan_entfernen(alt)
-        return {"plan_id": pid}
+        return {"plan_id": pid, "inhalt_vorhanden": inhalt and alt != pid}
 
     @app.delete("/api/stockwerke/{sid}/plan")
     def plan_entfernen_von_stockwerk(sid: int, _: dict = Depends(bearbeiten)):
@@ -579,7 +832,8 @@ def erstelle_app(pfade: Pfade, kacheln_starten: bool = True) -> FastAPI:
         return Response(leere_kachel(), media_type="image/png", headers=kopf)
 
     # ---------------------------------------------------------------- Netz, Stammdaten, Lieferungen, Simulation
-    planung.registrieren(app, db, fehler, ansehen, bearbeiten)
+    planung.registrieren(app, db, fehler, ansehen, bearbeiten, lieferungen_recht, verwalten, pfade)
+    protokoll_modul.registrieren(app, db, verwalten)
 
     @app.exception_handler(sqlite3.IntegrityError)
     async def in_verwendung(request: Request, exc):

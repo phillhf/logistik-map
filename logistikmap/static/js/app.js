@@ -7,17 +7,21 @@ import { zeigeGebaeude } from "./gebaeude.js";
 import { zeigeAuswertung } from "./auswertung.js";
 import { zeigeKarte } from "./karte.js";
 import { zeigeLieferungen } from "./lieferungen.js";
+import { zeigeProtokoll } from "./protokoll.js";
 import { zeigeStammdaten } from "./stammdaten.js";
+import { zeigeSzenarien } from "./szenarien.js";
 
 const inhalt = document.getElementById("inhalt");
 const SEITEN = [
   { pfad: "karte", recht: "ansehen", zeigen: zeigeKarte },
   { pfad: "lieferungen", recht: "ansehen", zeigen: zeigeLieferungen },
   { pfad: "auswertung", recht: "ansehen", zeigen: zeigeAuswertung },
+  { pfad: "szenarien", recht: "ansehen", zeigen: zeigeSzenarien },
   { pfad: "stammdaten", recht: "ansehen", zeigen: zeigeStammdaten },
   { pfad: "gebaeude", recht: "bearbeiten", zeigen: zeigeGebaeude },
   { pfad: "benutzer", recht: "verwalten", zeigen: zeigeBenutzer },
   { pfad: "einstellungen", recht: "ansehen", zeigen: zeigeEinstellungen },
+  { pfad: "protokoll", recht: "verwalten", zeigen: zeigeProtokoll, versteckt: true },
 ];
 
 let aufraeumen = null; // Rückgabe der aktuellen Seite, wird beim Wechsel aufgerufen
@@ -65,12 +69,17 @@ function kopfAufbauen() {
   kopf.hidden = false;
   leeren(
     document.getElementById("navigation"),
-    SEITEN.filter((s) => darf(s.recht)).map((s) => h("a", { href: `#/${s.pfad}`, "data-pfad": s.pfad }, t(`nav.${s.pfad}`)))
+    SEITEN.filter((s) => darf(s.recht) && !s.versteckt).map((s) => h("a", { href: `#/${s.pfad}`, "data-pfad": s.pfad }, t(`nav.${s.pfad}`)))
   );
   const knopf = document.getElementById("benutzer-knopf");
   const liste = document.getElementById("benutzer-liste");
   knopf.textContent = zustand.benutzer.anzeigename;
-  knopf.title = `${zustand.benutzer.benutzername} · ${t(`rollen.${zustand.benutzer.rolle}`)} · v${zustand.version}`;
+  const rolle = t(`rollen.${zustand.benutzer.rolle}`);
+  knopf.title = `${zustand.benutzer.benutzername} · ${rolle.startsWith("⟨") ? zustand.benutzer.rollenname : rolle} · v${zustand.version}`;
+  // Sprachauswahl im Menü
+  if (!liste.querySelector("[data-aktion='sprache']")) {
+    liste.prepend(h("button", { type: "button", "data-aktion": "sprache" }, `🌐 ${t("menue.sprache")}`));
+  }
   knopf.onclick = (e) => {
     e.stopPropagation();
     liste.hidden = !liste.hidden;
@@ -84,8 +93,20 @@ function kopfAufbauen() {
       location.reload();
     } else if (aktion === "passwort") {
       passwortAendern();
+    } else if (aktion === "sprache") {
+      spracheWaehlen();
     }
   };
+}
+
+async function spracheWaehlen() {
+  const status = await api("status");
+  const ok = await formularDialog({
+    titel: t("menue.sprache"),
+    felder: [{ name: "sprache", label: t("menue.sprache"), typ: "auswahl", wert: status.sprache, optionen: Object.entries(status.sprachen) }],
+    speichern: (w) => api("ich", { methode: "PUT", daten: { sprache: w.sprache } }),
+  });
+  if (ok) location.reload();
 }
 
 async function passwortAendern() {

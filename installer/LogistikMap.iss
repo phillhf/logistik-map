@@ -98,6 +98,7 @@ Filename: "http://localhost:{code:GetPort}"; Description: "Logistik Map jetzt im
 Filename: "{app}\service\LogistikMap-Dienst.exe"; Parameters: "stop";      Flags: runhidden waituntilterminated; RunOnceId: "StopService"
 Filename: "{app}\service\LogistikMap-Dienst.exe"; Parameters: "uninstall"; Flags: runhidden waituntilterminated; RunOnceId: "RemoveService"
 Filename: "{sys}\netsh.exe"; Parameters: "advfirewall firewall delete rule name=""{#AppName}"""; Flags: runhidden waituntilterminated; RunOnceId: "RemoveFirewall"
+Filename: "{sys}\schtasks.exe"; Parameters: "/Delete /TN ""LogistikMap Update"" /F"; Flags: runhidden waituntilterminated; RunOnceId: "RemoveTask"
 
 [UninstallDelete]
 Type: files; Name: "{app}\Logistik Map.url"
@@ -264,6 +265,9 @@ begin
   end;
   if not Exec(Svc, 'start', '', SW_HIDE, ewWaitUntilTerminated, RC) or (RC <> 0) then
     Fail('Der Windows-Dienst konnte nicht gestartet werden (Code ' + IntToStr(RC) + '). Ist der Port ' + GetPort('') + ' bereits belegt?');
+
+  { 4. Einmalige Aufgabe der Update-Funktion entfernen (falls das Update aus Logistik Map gestartet wurde) }
+  Exec(ExpandConstant('{sys}\schtasks.exe'), '/Delete /TN "LogistikMap Update" /F', '', SW_HIDE, ewWaitUntilTerminated, RC);
 end;
 
 function GetCustomSetupExitCode: Integer;

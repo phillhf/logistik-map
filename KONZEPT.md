@@ -57,13 +57,20 @@ das? Wer steht um 8:20 Uhr noch und wartet?
 - **Engpass-Anzeige**: Auslastung von Aufzügen und Engstellen, Wartezeiten, verspätete Ankünfte.
 - Filter nach Startpunkt, Lieferant und Transportart.
 
+### 7. Betrieb und Planung ✅
+- Szenarien („Was wäre wenn“) mit Vergleich, Schichten, Wochenansicht.
+- Excel-Import und -Export, Karte als PDF, Druckansicht.
+- Sicherung, Update-Funktion, HTTPS, Active Directory, eigene Rollen, Änderungsprotokoll.
+- Editor mit Rückgängig, Raumecken bearbeiten und Ausrichten bei neuem Planstand.
+
 ## So wird gerechnet
 
 Die Simulation spielt einen Tag ereignisgenau durch (Sekunden seit Mitternacht):
 
 - Eine Lieferung mit N Wagen ergibt ceil(N / „Wagen je Fahrt“) Fahrten, alle zur selben Uhrzeit.
 - Jede Fahrt braucht ein Fahrzeug bzw. eine Person der Transportart. Bei begrenzter Anzahl
-  wartet sie, bis eines frei ist. Belegt ist es bis zur Rückkehr.
+  wartet sie, bis eines frei ist. Belegt ist es bis zur Rückkehr. Mit Schichten ändert sich die
+  Anzahl über den Tag. Wer gerade unterwegs ist, fährt zu Ende, auch wenn die Schicht endet.
 - Ablauf: Laden am Start → schnellster Weg → Entladen am Ziel → Rückweg (leer, beladen oder keiner).
   „Später zurück“ ist eine eigene Fahrt zur angegebenen Uhrzeit.
 - Gehzeit = Länge (aus Plan und Maßstab) / Geschwindigkeit.
@@ -85,7 +92,6 @@ Begegnungsverkehr im Flur gibt es nur, wenn eine Kapazität gesetzt ist.
 - Python-Server (FastAPI) mit SQLite, Oberfläche im Browser (Leaflet für die Pläne).
 - Läuft lokal auf einem Windows-Server als Dienst. Der Installer fragt den Port ab.
 - Kein Internet nötig, alle Daten bleiben auf dem Server.
-- Benutzer und Rollen: Administrator (alles), Betrachter (nur ansehen). Weitere Rollen sind vorgesehen.
-- Oberfläche zunächst auf Deutsch. Alle Texte stehen in `logistikmap/static/i18n/de.json`,
-  weitere Sprachen kommen als eigene Datei dazu.
+- Benutzer und Rollen: Administrator (alles), Planer (Lieferungen und Szenarien), Betrachter (nur ansehen) sowie eigene Rollen. Anmeldung lokal oder über Active Directory.
+- Oberfläche auf Deutsch und Englisch. Alle Texte stehen in `logistikmap/static/i18n/`.
 - Lizenz: AGPL-3.0.

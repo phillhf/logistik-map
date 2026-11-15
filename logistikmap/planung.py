@@ -3,11 +3,15 @@
 from __future__ import annotations
 
 import json
+import math
 import re
 from datetime import date
 
-from fastapi import Depends, FastAPI
+from fastapi import Depends, FastAPI, File, Request, UploadFile
+from fastapi.responses import Response
 from pydantic import BaseModel, Field
+
+from . import export
 
 from .db import Datenbank
 from .feiertage import feiertage
@@ -31,6 +35,14 @@ class Transportart(BaseModel):
     anzahl: int = Field(ge=0, le=10000)
     aufzug_exklusiv: bool = False
     treppe: bool = False
+    schichten: list["Schicht"] = []
+
+
+class Schicht(BaseModel):
+    von: str
+    bis: str
+    anzahl: int = Field(ge=0, le=10000)
+    wochentage: list[int] = []
 
 
 class Wagentyp(BaseModel):
@@ -103,6 +115,23 @@ class KanteAenderung(BaseModel):
     name: str | None = Field(default=None, max_length=100)
 
 
+class Szenario(BaseModel):
+    name: str = Field(min_length=1, max_length=150)
+    beschreibung: str = Field(default="", max_length=2000)
+    aenderungen: dict = {}
+
+
+class Passpaar(BaseModel):
+    alt_x: float
+    alt_y: float
+    neu_x: float
+    neu_y: float
+
+
+class Ausrichten(BaseModel):
+    paare: list[Passpaar]
+
+
 class Teilen(BaseModel):
     x: float
     y: float
@@ -117,6 +146,9 @@ class Rueckweg(BaseModel):
     modus: str = "leer"
     uhrzeit: str | None = None
     ziel_id: int | None = None
+
+
+Transportart.model_rebuild()
 
 
 class Lieferung(BaseModel):
@@ -153,7 +185,90 @@ def flaeche_inhalt(punkte: list) -> float:
     return abs(sum(x0 * y1 - x1 * y0 for (x0, y0), (x1, y1) in zip(punkte, punkte[1:] + punkte[:1]))) / 2
 
 
-def registrieren(app: FastAPI, db: Datenbank, fehler, ansehen, bearbeiten) -> None:
+def transformation(paare: list[tuple[float, float, float, float]]):
+    """Abbildung alt → neu aus Passpunkten.
+
+    2 Paare: Ähnlichkeit (Verschieben, Drehen, gleichmäßig Skalieren).
+    ab 3 Paaren: affin nach kleinsten Quadraten.
+    Gibt (a, b, c, d, e, f) zurück mit x' = a·x + b·y + c, y' = d·x + e·y + f.
+    """
+    if len(paare) < 2:
+        raise ValueError("zu_wenige_passpunkte")
+    if len(paare) == 2:
+        (x1, y1, u1, v1), (x2, y2, u2, v2) = paare
+        dx, dy, du, dv = x2 - x1, y2 - y1, u2 - u1, v2 - v1
+        n = dx * dx + dy * dy
+        if n == 0:
+            raise ValueError("passpunkte_gleich")
+        a = (dx * du + dy * dv) / n
+        b = (dx * dv - dy * du) / n
+        # x' = a·x − b·y + c ; y' = b·x + a·y + f
+        c = u1 - a * x1 + b * y1
+        f = v1 - b * x1 - a * y1
+        return (a, -b, c, b, a, f)
+    # Normalgleichungen für [x y 1]·[a b c]ᵀ = u bzw. v
+    sxx = sum(x * x for x, y, *_ in paare)
+    sxy = sum(x * y for x, y, *_ in paare)
+    syy = sum(y * y for x, y, *_ in paare)
+    sx = sum(x for x, *_ in paare)
+    sy = sum(y for _, y, *_ in paare)
+    n = len(paare)
+    m = [[sxx, sxy, sx], [sxy, syy, sy], [sx, sy, n]]
+
+    def loesen(rechts):
+        a = [row[:] + [r_] for row, r_ in zip(m, rechts)]
+        for i in range(3):
+            piv = max(range(i, 3), key=lambda k: abs(a[k][i]))
+            if abs(a[piv][i]) < 1e-12:
+                raise ValueError("passpunkte_auf_einer_linie")
+            a[i], a[piv] = a[piv], a[i]
+            for k in range(3):
+                if k != i:
+                    fak = a[k][i] / a[i][i]
+                    a[k] = [ak - fak * ai for ak, ai in zip(a[k], a[i])]
+        return [a[i][3] / a[i][i] for i in range(3)]
+
+    abc = loesen([sum(x * u for x, y, u, v in paare), sum(y * u for x, y, u, v in paare), sum(u for x, y, u, v in paare)])
+    def_ = loesen([sum(x * v for x, y, u, v in paare), sum(y * v for x, y, u, v in paare), sum(v for x, y, u, v in paare)])
+    return (*abc, *def_)
+
+
+def szenario_anwenden(aenderungen: dict, lieferungen: list[dict], stamm: dict, netz: Netz) -> list[dict]:
+    """Wendet die Abweichungen eines Szenarios auf die geladenen Daten an (nur im Speicher)."""
+    aend = aenderungen or {}
+    for l in lieferungen:
+        for k, v in (aend.get("lieferungen", {}).get(str(l["id"])) or {}).items():
+            if k in ("uhrzeit", "spaetestens", "aktiv", "transportart_id", "ladung", "start_id", "ziel_id", "rueckweg", "via"):
+                l[k] = v
+    for t in stamm["transportarten"]:
+        for k, v in (aend.get("transportarten", {}).get(str(t["id"])) or {}).items():
+            if k in ("anzahl", "geschwindigkeit", "ladezeit", "entladezeit", "wagen_pro_fahrt", "schichten", "aufzug_exklusiv"):
+                t[k] = v
+    for aid, werte in (aend.get("aufzuege") or {}).items():
+        a = netz.aufzuege.get(int(aid))
+        if a is None:
+            continue
+        if werte.get("ausser_betrieb"):
+            netz.aufzuege.pop(int(aid))
+            netz.aufzug_halte.pop(int(aid), None)
+            continue
+        for k, v in werte.items():
+            if k in ("plaetze", "fahrzeit_etage", "tuerzeit", "raeumzeit", "anfahrt"):
+                a[k] = v
+    alle_ta = [t["id"] for t in stamm["transportarten"]]
+    for kid, werte in (aend.get("kanten") or {}).items():
+        k = netz.kanten.get(int(kid))
+        if k is not None and werte.get("gesperrt"):
+            k["gesperrt"] = alle_ta
+    for nid, werte in (aend.get("knoten") or {}).items():
+        n = netz.knoten.get(int(nid))
+        if n is not None and "kapazitaet" in werte:
+            n["kapazitaet"] = werte["kapazitaet"] or None
+    return lieferungen
+
+
+def registrieren(app: FastAPI, db: Datenbank, fehler, ansehen, bearbeiten, lieferungen_recht=None, verwalten=None, pfade=None) -> None:
+    lieferungen_recht = lieferungen_recht or bearbeiten
     def holen(tabelle: str, rid: int) -> dict:
         row = db.eins(f"SELECT * FROM {tabelle} WHERE id = ?", (rid,))
         if row is None:
@@ -172,26 +287,35 @@ def registrieren(app: FastAPI, db: Datenbank, fehler, ansehen, bearbeiten) -> No
         ta = db.alle("SELECT * FROM transportarten ORDER BY id")
         for t in ta:
             t["aufzug_exklusiv"], t["treppe"] = bool(t["aufzug_exklusiv"]), bool(t["treppe"])
+            t["schichten"] = json.loads(t.get("schichten") or "[]")
         return {"transportarten": ta, "wagentypen": db.alle("SELECT * FROM wagentypen ORDER BY name"), "aufzuege": auf}
 
     @app.get("/api/stammdaten")
     def stammdaten_lesen(_: dict = Depends(ansehen)):
         return stammdaten()
 
+    def schichten_pruefen(schichten: list) -> str:
+        for sch in schichten:
+            if not UHRZEIT.match(sch.von) or not UHRZEIT.match(sch.bis):
+                raise fehler(400, "uhrzeit_ungueltig")
+            if any(not 1 <= t <= 7 for t in sch.wochentage):
+                raise fehler(400, "regel_ungueltig", feld="wochentage")
+        return json.dumps([sch.model_dump() for sch in schichten])
+
     @app.post("/api/transportarten")
     def transportart_anlegen(d: Transportart, _: dict = Depends(bearbeiten)):
         farbe_pruefen(d.farbe)
         return {"id": db.ausfuehren(
-            "INSERT INTO transportarten (name, farbe, geschwindigkeit, ladezeit, entladezeit, wagen_pro_fahrt, anzahl, aufzug_exklusiv, treppe) VALUES (?,?,?,?,?,?,?,?,?)",
-            (d.name.strip(), d.farbe, d.geschwindigkeit, d.ladezeit, d.entladezeit, d.wagen_pro_fahrt, d.anzahl, int(d.aufzug_exklusiv), int(d.treppe)))}
+            "INSERT INTO transportarten (name, farbe, geschwindigkeit, ladezeit, entladezeit, wagen_pro_fahrt, anzahl, aufzug_exklusiv, treppe, schichten) VALUES (?,?,?,?,?,?,?,?,?,?)",
+            (d.name.strip(), d.farbe, d.geschwindigkeit, d.ladezeit, d.entladezeit, d.wagen_pro_fahrt, d.anzahl, int(d.aufzug_exklusiv), int(d.treppe), schichten_pruefen(d.schichten)))}
 
     @app.put("/api/transportarten/{tid}")
     def transportart_aendern(tid: int, d: Transportart, _: dict = Depends(bearbeiten)):
         holen("transportarten", tid)
         farbe_pruefen(d.farbe)
         db.ausfuehren(
-            "UPDATE transportarten SET name=?, farbe=?, geschwindigkeit=?, ladezeit=?, entladezeit=?, wagen_pro_fahrt=?, anzahl=?, aufzug_exklusiv=?, treppe=? WHERE id=?",
-            (d.name.strip(), d.farbe, d.geschwindigkeit, d.ladezeit, d.entladezeit, d.wagen_pro_fahrt, d.anzahl, int(d.aufzug_exklusiv), int(d.treppe), tid))
+            "UPDATE transportarten SET name=?, farbe=?, geschwindigkeit=?, ladezeit=?, entladezeit=?, wagen_pro_fahrt=?, anzahl=?, aufzug_exklusiv=?, treppe=?, schichten=? WHERE id=?",
+            (d.name.strip(), d.farbe, d.geschwindigkeit, d.ladezeit, d.entladezeit, d.wagen_pro_fahrt, d.anzahl, int(d.aufzug_exklusiv), int(d.treppe), schichten_pruefen(d.schichten), tid))
         return {"ok": True}
 
     @app.delete("/api/transportarten/{tid}")
@@ -244,6 +368,83 @@ def registrieren(app: FastAPI, db: Datenbank, fehler, ansehen, bearbeiten) -> No
         db.ausfuehren("DELETE FROM aufzuege WHERE id = ?", (aid,))
         return {"ok": True}
 
+    # ---------------------------------------------------------------- Rückgängig
+    VERLAUF_MAX = 50
+
+    def merken(stockwerk_id: int, request: Request | None, text: str) -> None:
+        knoten = db.alle("SELECT * FROM knoten WHERE stockwerk_id = ?", (stockwerk_id,))
+        ids = [k["id"] for k in knoten]
+        kanten = []
+        if ids:
+            platz = ",".join("?" * len(ids))
+            kanten = db.alle(f"SELECT * FROM kanten WHERE von IN ({platz}) OR nach IN ({platz})", (*ids, *ids))
+        flaechen = db.alle("SELECT * FROM flaechen WHERE stockwerk_id = ?", (stockwerk_id,))
+        sw = db.eins("SELECT meter_pro_punkt FROM stockwerke WHERE id = ?", (stockwerk_id,))
+        benutzer = ""
+        if request is not None:
+            from . import auth
+
+            b = auth.benutzer_zur_sitzung(db, request.cookies.get(auth.SITZUNG_COOKIE))
+            benutzer = b["benutzername"] if b else ""
+        daten = json.dumps({"knoten": knoten, "kanten": kanten, "flaechen": flaechen, "meter_pro_punkt": sw["meter_pro_punkt"] if sw else None})
+        db.ausfuehren("INSERT INTO netz_verlauf (stockwerk_id, benutzer, beschreibung, daten) VALUES (?, ?, ?, ?)", (stockwerk_id, benutzer, text, daten))
+        db.ausfuehren(
+            "DELETE FROM netz_verlauf WHERE stockwerk_id = ? AND id NOT IN (SELECT id FROM netz_verlauf WHERE stockwerk_id = ? ORDER BY id DESC LIMIT ?)",
+            (stockwerk_id, stockwerk_id, VERLAUF_MAX),
+        )
+
+    def knoten_stockwerk(kid: int) -> int:
+        return holen("knoten", kid)["stockwerk_id"]
+
+    @app.get("/api/stockwerke/{sid}/verlauf")
+    def verlauf(sid: int, _: dict = Depends(ansehen)):
+        return db.alle("SELECT id, zeit, benutzer, beschreibung FROM netz_verlauf WHERE stockwerk_id = ? ORDER BY id DESC LIMIT 20", (sid,))
+
+    @app.post("/api/stockwerke/{sid}/rueckgaengig")
+    def rueckgaengig(sid: int, _: dict = Depends(bearbeiten)):
+        eintrag = db.eins("SELECT * FROM netz_verlauf WHERE stockwerk_id = ? ORDER BY id DESC LIMIT 1", (sid,))
+        if eintrag is None:
+            raise fehler(400, "nichts_rueckgaengig")
+        d = json.loads(eintrag["daten"])
+        import sqlite3
+
+        try:
+            with db.transaktion() as con:
+                con.execute("PRAGMA defer_foreign_keys = ON")
+                con.execute("DELETE FROM knoten WHERE stockwerk_id = ?", (sid,))
+                con.execute("DELETE FROM flaechen WHERE stockwerk_id = ?", (sid,))
+                for f in sorted(d["flaechen"], key=lambda f: f["art"] != "bereich"):
+                    con.execute(f"INSERT INTO flaechen ({', '.join(f)}) VALUES ({', '.join('?' * len(f))})", tuple(f.values()))
+                for k in d["knoten"]:
+                    con.execute(f"INSERT INTO knoten ({', '.join(k)}) VALUES ({', '.join('?' * len(k))})", tuple(k.values()))
+                for k in d["kanten"]:
+                    if con.execute("SELECT COUNT(*) FROM knoten WHERE id IN (?, ?)", (k["von"], k["nach"])).fetchone()[0] == 2:
+                        con.execute(f"INSERT OR REPLACE INTO kanten ({', '.join(k)}) VALUES ({', '.join('?' * len(k))})", tuple(k.values()))
+                con.execute("UPDATE stockwerke SET meter_pro_punkt = ? WHERE id = ?", (d.get("meter_pro_punkt"), sid))
+                con.execute("DELETE FROM netz_verlauf WHERE id = ?", (eintrag["id"],))
+        except sqlite3.IntegrityError:
+            raise fehler(409, "rueckgaengig_nicht_moeglich")
+        return {"ok": True, "beschreibung": eintrag["beschreibung"]}
+
+    @app.post("/api/stockwerke/{sid}/ausrichten")
+    def ausrichten(sid: int, d: Ausrichten, request: Request, _: dict = Depends(bearbeiten)):
+        holen("stockwerke", sid)
+        try:
+            a, b, c, dd, e, f = transformation([(q.alt_x, q.alt_y, q.neu_x, q.neu_y) for q in d.paare])
+        except ValueError as ex:
+            raise fehler(400, str(ex))
+        merken(sid, request, "ausrichten")
+        massstab = math.sqrt(abs(a * e - b * dd)) or 1.0
+        with db.transaktion() as con:
+            for k in con.execute("SELECT id, x, y FROM knoten WHERE stockwerk_id = ?", (sid,)).fetchall():
+                con.execute("UPDATE knoten SET x = ?, y = ? WHERE id = ?", (a * k["x"] + b * k["y"] + c, dd * k["x"] + e * k["y"] + f, k["id"]))
+            for fl in con.execute("SELECT id, punkte FROM flaechen WHERE stockwerk_id = ?", (sid,)).fetchall():
+                pp = [[a * x + b * y + c, dd * x + e * y + f] for x, y in json.loads(fl["punkte"])]
+                con.execute("UPDATE flaechen SET punkte = ? WHERE id = ?", (json.dumps(pp), fl["id"]))
+            con.execute("UPDATE stockwerke SET meter_pro_punkt = meter_pro_punkt / ? WHERE id = ?", (massstab, sid))
+        knoten_zuordnen(sid)
+        return {"ok": True, "massstab": massstab}
+
     # ---------------------------------------------------------------- Flächen
     def flaeche_pruefen(art: str | None, punkte, farbe: str | None) -> None:
         if art is not None and art not in ("bereich", "raum"):
@@ -269,9 +470,10 @@ def registrieren(app: FastAPI, db: Datenbank, fehler, ansehen, bearbeiten) -> No
         return beste[1] if beste else None
 
     @app.post("/api/flaechen")
-    def flaeche_anlegen(d: Flaeche, _: dict = Depends(bearbeiten)):
+    def flaeche_anlegen(d: Flaeche, request: Request, _: dict = Depends(bearbeiten)):
         holen("stockwerke", d.stockwerk_id)
         flaeche_pruefen(d.art, d.punkte, d.farbe)
+        merken(d.stockwerk_id, request, "flaeche_neu")
         punkte = [list(p) for p in d.punkte]
         parent = d.parent_id if d.parent_id is not None else (passender_bereich(d.stockwerk_id, punkte) if d.art == "raum" else None)
         fid = db.ausfuehren(
@@ -281,9 +483,10 @@ def registrieren(app: FastAPI, db: Datenbank, fehler, ansehen, bearbeiten) -> No
         return {"id": fid, "parent_id": parent}
 
     @app.put("/api/flaechen/{fid}")
-    def flaeche_aendern(fid: int, d: FlaecheAenderung, _: dict = Depends(bearbeiten)):
+    def flaeche_aendern(fid: int, d: FlaecheAenderung, request: Request, _: dict = Depends(bearbeiten)):
         f = holen("flaechen", fid)
         flaeche_pruefen(d.art, d.punkte, d.farbe)
+        merken(f["stockwerk_id"], request, "flaeche_geaendert")
         felder = d.model_dump(exclude_unset=True)
         if "punkte" in felder:
             felder["punkte"] = json.dumps([list(p) for p in d.punkte])
@@ -297,8 +500,9 @@ def registrieren(app: FastAPI, db: Datenbank, fehler, ansehen, bearbeiten) -> No
         return {"ok": True}
 
     @app.delete("/api/flaechen/{fid}")
-    def flaeche_loeschen(fid: int, _: dict = Depends(bearbeiten)):
+    def flaeche_loeschen(fid: int, request: Request, _: dict = Depends(bearbeiten)):
         f = holen("flaechen", fid)
+        merken(f["stockwerk_id"], request, "flaeche_geloescht")
         db.ausfuehren("DELETE FROM flaechen WHERE id = ?", (fid,))
         knoten_zuordnen(f["stockwerk_id"])
         return {"ok": True}
@@ -352,7 +556,7 @@ def registrieren(app: FastAPI, db: Datenbank, fehler, ansehen, bearbeiten) -> No
         return {"flaechen": flaechen, "knoten": knoten, "kanten": kanten, "fremde_knoten": andere}
 
     @app.get("/api/punkte")
-    def punkte(_: dict = Depends(ansehen)):
+    def punkte(_: dict | None = Depends(ansehen)):
         """Alle benannten Knoten (Start, Ziel, Aufzug …) für Auswahllisten."""
         return db.alle(
             """SELECT k.id, k.name, k.art, k.stockwerk_id, k.aufzug_id, s.name AS stockwerk, s.ebene,
@@ -365,9 +569,10 @@ def registrieren(app: FastAPI, db: Datenbank, fehler, ansehen, bearbeiten) -> No
         )
 
     @app.post("/api/knoten")
-    def knoten_anlegen(d: Knoten, _: dict = Depends(bearbeiten)):
+    def knoten_anlegen(d: Knoten, request: Request, _: dict = Depends(bearbeiten)):
         holen("stockwerke", d.stockwerk_id)
         knoten_pruefen(d.art, d.aufzug_id)
+        merken(d.stockwerk_id, request, "punkt_neu" if d.art != "weg" else "weg")
         kid = db.ausfuehren(
             "INSERT INTO knoten (stockwerk_id, x, y, art, name, aufzug_id, kapazitaet) VALUES (?,?,?,?,?,?,?)",
             (d.stockwerk_id, d.x, d.y, d.art, d.name.strip(), d.aufzug_id, d.kapazitaet))
@@ -375,9 +580,10 @@ def registrieren(app: FastAPI, db: Datenbank, fehler, ansehen, bearbeiten) -> No
         return {"id": kid}
 
     @app.put("/api/knoten/{kid}")
-    def knoten_aendern(kid: int, d: KnotenAenderung, _: dict = Depends(bearbeiten)):
+    def knoten_aendern(kid: int, d: KnotenAenderung, request: Request, _: dict = Depends(bearbeiten)):
         k = holen("knoten", kid)
         felder = d.model_dump(exclude_unset=True)
+        merken(k["stockwerk_id"], request, "punkt_verschoben" if set(felder) <= {"x", "y"} else "punkt_geaendert")
         knoten_pruefen(felder.get("art"), felder.get("aufzug_id"))
         if felder.get("kapazitaet") == 0:
             felder["kapazitaet"] = None
@@ -391,12 +597,13 @@ def registrieren(app: FastAPI, db: Datenbank, fehler, ansehen, bearbeiten) -> No
         return {"ok": True}
 
     @app.delete("/api/knoten/{kid}")
-    def knoten_loeschen(kid: int, _: dict = Depends(bearbeiten)):
-        holen("knoten", kid)
+    def knoten_loeschen(kid: int, request: Request, _: dict = Depends(bearbeiten)):
+        k_alt = holen("knoten", kid)
         if db.eins("SELECT 1 FROM lieferungen WHERE start_id = ? OR ziel_id = ?", (kid, kid)) or any(
             kid in json.loads(l["via"]) or json.loads(l["rueckweg"]).get("ziel_id") == kid for l in db.alle("SELECT via, rueckweg FROM lieferungen")
         ):
             raise fehler(409, "knoten_in_verwendung")
+        merken(k_alt["stockwerk_id"], request, "punkt_geloescht")
         db.ausfuehren("DELETE FROM knoten WHERE id = ?", (kid,))
         return {"ok": True}
 
@@ -411,21 +618,23 @@ def registrieren(app: FastAPI, db: Datenbank, fehler, ansehen, bearbeiten) -> No
                 raise fehler(400, "transportart_unbekannt")
 
     @app.post("/api/kanten")
-    def kante_anlegen(d: Kante, _: dict = Depends(bearbeiten)):
+    def kante_anlegen(d: Kante, request: Request, _: dict = Depends(bearbeiten)):
         von, nach = holen("knoten", d.von), holen("knoten", d.nach)
         kante_pruefen(von, nach, d.laenge_m, d.gesperrt)
         vorhanden = db.eins("SELECT id FROM kanten WHERE (von = ? AND nach = ?) OR (von = ? AND nach = ?)", (d.von, d.nach, d.nach, d.von))
         if vorhanden:
             return {"id": vorhanden["id"]}
+        merken(von["stockwerk_id"], request, "weg")
         return {"id": db.ausfuehren(
             "INSERT INTO kanten (von, nach, laenge_m, kapazitaet, gesperrt, name) VALUES (?,?,?,?,?,?)",
             (d.von, d.nach, d.laenge_m, d.kapazitaet, json.dumps(sorted(set(d.gesperrt))), d.name.strip()))}
 
     @app.put("/api/kanten/{kid}")
-    def kante_aendern(kid: int, d: KanteAenderung, _: dict = Depends(bearbeiten)):
+    def kante_aendern(kid: int, d: KanteAenderung, request: Request, _: dict = Depends(bearbeiten)):
         k = holen("kanten", kid)
         felder = d.model_dump(exclude_unset=True)
         von, nach = holen("knoten", k["von"]), holen("knoten", k["nach"])
+        merken(von["stockwerk_id"], request, "weg_geaendert")
         laenge = felder.get("laenge_m", k["laenge_m"]) or None
         kante_pruefen(von, nach, laenge, felder.get("gesperrt"))
         if "laenge_m" in felder:
@@ -442,17 +651,20 @@ def registrieren(app: FastAPI, db: Datenbank, fehler, ansehen, bearbeiten) -> No
         return {"ok": True}
 
     @app.delete("/api/kanten/{kid}")
-    def kante_loeschen(kid: int, _: dict = Depends(bearbeiten)):
+    def kante_loeschen(kid: int, request: Request, _: dict = Depends(bearbeiten)):
+        k = holen("kanten", kid)
+        merken(knoten_stockwerk(k["von"]), request, "weg_geloescht")
         db.ausfuehren("DELETE FROM kanten WHERE id = ?", (kid,))
         return {"ok": True}
 
     @app.post("/api/kanten/{kid}/teilen")
-    def kante_teilen(kid: int, d: Teilen, _: dict = Depends(bearbeiten)):
+    def kante_teilen(kid: int, d: Teilen, request: Request, _: dict = Depends(bearbeiten)):
         """Setzt einen neuen Wegknoten auf die Kante (nächster Punkt zu x/y) und teilt sie."""
         k = holen("kanten", kid)
         a, b = holen("knoten", k["von"]), holen("knoten", k["nach"])
         if a["stockwerk_id"] != b["stockwerk_id"]:
             raise fehler(400, "kante_ungueltig")
+        merken(a["stockwerk_id"], request, "weg")
         dx, dy = b["x"] - a["x"], b["y"] - a["y"]
         l2 = dx * dx + dy * dy or 1.0
         t = min(1.0, max(0.0, ((d.x - a["x"]) * dx + (d.y - a["y"]) * dy) / l2))
@@ -512,13 +724,13 @@ def registrieren(app: FastAPI, db: Datenbank, fehler, ansehen, bearbeiten) -> No
         return [lieferung_lesen(r) for r in db.alle("SELECT * FROM lieferungen ORDER BY uhrzeit, name")]
 
     @app.post("/api/lieferungen")
-    def lieferung_anlegen(d: Lieferung, _: dict = Depends(bearbeiten)):
+    def lieferung_anlegen(d: Lieferung, _: dict = Depends(lieferungen_recht)):
         werte = lieferung_pruefen(d)
         sp = ", ".join(werte)
         return {"id": db.ausfuehren(f"INSERT INTO lieferungen ({sp}) VALUES ({', '.join('?' * len(werte))})", tuple(werte.values()))}
 
     @app.put("/api/lieferungen/{lid}")
-    def lieferung_aendern(lid: int, d: Lieferung, _: dict = Depends(bearbeiten)):
+    def lieferung_aendern(lid: int, d: Lieferung, _: dict = Depends(lieferungen_recht)):
         holen("lieferungen", lid)
         werte = lieferung_pruefen(d)
         sets = ", ".join(f"{k} = ?" for k in werte)
@@ -526,7 +738,7 @@ def registrieren(app: FastAPI, db: Datenbank, fehler, ansehen, bearbeiten) -> No
         return {"ok": True}
 
     @app.delete("/api/lieferungen/{lid}")
-    def lieferung_loeschen(lid: int, _: dict = Depends(bearbeiten)):
+    def lieferung_loeschen(lid: int, _: dict = Depends(lieferungen_recht)):
         db.ausfuehren("DELETE FROM lieferungen WHERE id = ?", (lid,))
         return {"ok": True}
 
@@ -567,22 +779,175 @@ def registrieren(app: FastAPI, db: Datenbank, fehler, ansehen, bearbeiten) -> No
 
         return pruefen
 
-    @app.get("/api/simulation")
-    def simulation(datum: str | None = None, _: dict = Depends(ansehen)):
-        try:
-            tag = date.fromisoformat(datum) if datum else date.today()
-        except ValueError:
-            raise fehler(400, "datum_ungueltig")
-        feiertag, feiertag_name = ist_feiertag_fn()(tag)
-        alle = [lieferung_lesen(r) for r in db.alle("SELECT * FROM lieferungen WHERE aktiv = 1 ORDER BY uhrzeit, id")]
-        heute = [l for l in alle if gilt_am(l["regel"], tag, feiertag)]
+    def szenario_laden(szenario: int | None) -> dict:
+        if not szenario:
+            return {}
+        row = db.eins("SELECT aenderungen FROM szenarien WHERE id = ?", (szenario,))
+        if row is None:
+            raise fehler(404, "nicht_gefunden")
+        return json.loads(row["aenderungen"])
+
+    def tag_simulieren(tag: date, aenderungen: dict, pruefen=None) -> dict:
+        pruefen = pruefen or ist_feiertag_fn()
+        feiertag, feiertag_name = pruefen(tag)
+        alle = [lieferung_lesen(r) for r in db.alle("SELECT * FROM lieferungen ORDER BY uhrzeit, id")]
         sd = stammdaten()
-        sim = Simulation(Netz(db), {t["id"]: t for t in sd["transportarten"]}, {w["id"]: w for w in sd["wagentypen"]})
+        netz = Netz(db)
+        szenario_anwenden(aenderungen, alle, sd, netz)
+        heute = sorted((l for l in alle if l["aktiv"] and gilt_am(l["regel"], tag, feiertag)), key=lambda l: (l["uhrzeit"], l["id"]))
+        sim = Simulation(netz, {t["id"]: t for t in sd["transportarten"]}, {w["id"]: w for w in sd["wagentypen"]}, tag.isoweekday())
         for l in heute:
             sim.lieferung_einplanen(l)
         ergebnis = sim.laufen()
         ergebnis.update({"datum": tag.isoformat(), "feiertag": feiertag_name, "wochentag": tag.isoweekday(), "lieferungen": [l["id"] for l in heute]})
         return ergebnis
+
+    def tag_lesen(datum: str | None) -> date:
+        try:
+            return date.fromisoformat(datum) if datum else date.today()
+        except ValueError:
+            raise fehler(400, "datum_ungueltig")
+
+    @app.get("/api/simulation")
+    def simulation(datum: str | None = None, szenario: int | None = None, _: dict = Depends(ansehen)):
+        ergebnis = tag_simulieren(tag_lesen(datum), szenario_laden(szenario))
+        ergebnis["szenario"] = szenario
+        return ergebnis
+
+    @app.get("/api/simulation/woche")
+    def woche(von: str | None = None, szenario: int | None = None, _: dict = Depends(ansehen)):
+        start = tag_lesen(von)
+        aend = szenario_laden(szenario)
+        pruefen = ist_feiertag_fn()
+        tage = []
+        for i in range(7):
+            tag = date.fromordinal(start.toordinal() + i)
+            e = tag_simulieren(tag, aend, pruefen)
+            stunden = {}
+            for f in e["fahrten"]:
+                h = int(f["geplant"] // 3600)
+                st = stunden.setdefault(h, {"fahrten": 0, "max_warte": 0.0, "warte": 0.0, "verspaetet": 0})
+                w = sum(f["warte"].values())
+                st["fahrten"] += 1
+                st["warte"] += w
+                st["max_warte"] = max(st["max_warte"], w)
+                st["verspaetet"] += int(f["verspaetet"])
+            tage.append({"datum": e["datum"], "wochentag": e["wochentag"], "feiertag": e["feiertag"], "zusammenfassung": e["zusammenfassung"],
+                         "stunden": {str(h): v for h, v in sorted(stunden.items())}, "fehler": len(e["fehler"])})
+        return {"von": start.isoformat(), "szenario": szenario, "tage": tage}
+
+    # ---------------------------------------------------------------- Szenarien
+    def szenario_lesen(row: dict) -> dict:
+        row["aenderungen"] = json.loads(row["aenderungen"])
+        return row
+
+    @app.get("/api/szenarien")
+    def szenarien(_: dict = Depends(ansehen)):
+        return [szenario_lesen(r) for r in db.alle("SELECT * FROM szenarien ORDER BY name")]
+
+    def aenderungen_pruefen(a: dict) -> str:
+        erlaubt = {"lieferungen", "transportarten", "aufzuege", "kanten", "knoten"}
+        if not isinstance(a, dict) or not set(a) <= erlaubt or any(not isinstance(v, dict) for v in a.values()):
+            raise fehler(400, "szenario_ungueltig")
+        for l in (a.get("lieferungen") or {}).values():
+            for z in (l.get("uhrzeit"), l.get("spaetestens")):
+                if z and not UHRZEIT.match(z):
+                    raise fehler(400, "uhrzeit_ungueltig")
+        return json.dumps(a)
+
+    @app.post("/api/szenarien")
+    def szenario_anlegen(d: Szenario, _: dict = Depends(lieferungen_recht)):
+        return {"id": db.ausfuehren("INSERT INTO szenarien (name, beschreibung, aenderungen) VALUES (?, ?, ?)",
+                                    (d.name.strip(), d.beschreibung, aenderungen_pruefen(d.aenderungen)))}
+
+    @app.put("/api/szenarien/{sid}")
+    def szenario_aendern(sid: int, d: Szenario, _: dict = Depends(lieferungen_recht)):
+        holen("szenarien", sid)
+        db.ausfuehren("UPDATE szenarien SET name = ?, beschreibung = ?, aenderungen = ? WHERE id = ?",
+                      (d.name.strip(), d.beschreibung, aenderungen_pruefen(d.aenderungen), sid))
+        return {"ok": True}
+
+    @app.delete("/api/szenarien/{sid}")
+    def szenario_loeschen(sid: int, _: dict = Depends(lieferungen_recht)):
+        db.ausfuehren("DELETE FROM szenarien WHERE id = ?", (sid,))
+        return {"ok": True}
+
+    @app.post("/api/szenarien/{sid}/uebernehmen")
+    def szenario_uebernehmen(sid: int, _: dict = Depends(lieferungen_recht)):
+        """Übernimmt die geänderten Lieferungen eines Szenarios in den Ist-Zustand."""
+        a = szenario_lesen(holen("szenarien", sid))["aenderungen"]
+        n = 0
+        with db.transaktion() as con:
+            for lid, werte in (a.get("lieferungen") or {}).items():
+                for k, v in werte.items():
+                    if k in ("uhrzeit", "spaetestens", "aktiv", "transportart_id"):
+                        con.execute(f"UPDATE lieferungen SET {k} = ? WHERE id = ?", (int(v) if k == "aktiv" else v, int(lid)))
+                    elif k in ("ladung", "rueckweg", "via"):
+                        con.execute(f"UPDATE lieferungen SET {k} = ? WHERE id = ?", (json.dumps(v), int(lid)))
+                n += 1
+        return {"ok": True, "lieferungen": n}
+
+    # ---------------------------------------------------------------- Import & Export
+    def export_kontext():
+        return {"punkte": punkte(None), "stamm": stammdaten(), "lieferungen": [lieferung_lesen(r) for r in db.alle("SELECT * FROM lieferungen ORDER BY uhrzeit, name")]}
+
+    def datei_antwort(daten: bytes, name: str, art: str) -> Response:
+        return Response(daten, media_type=art, headers={"Content-Disposition": f'attachment; filename="{name}"'})
+
+    XLSX = "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+
+    @app.get("/api/export/lieferungen.xlsx")
+    def lieferungen_export(_: dict = Depends(ansehen)):
+        return datei_antwort(export.lieferungen_xlsx(**export_kontext()), f"lieferungen-{date.today()}.xlsx", XLSX)
+
+    @app.post("/api/import/lieferungen")
+    async def lieferungen_import(datei: UploadFile = File(...), pruefen: bool = True, _: dict = Depends(lieferungen_recht)):
+        inhalt = await datei.read()
+        if len(inhalt) > 20 * 1024 * 1024:
+            raise fehler(413, "datei_zu_gross")
+        try:
+            zeilen = export.lieferungen_lesen(inhalt, datei.filename or "")
+        except export.ImportFehler as ex:
+            raise fehler(400, ex.code)
+        kontext = export_kontext()
+        ergebnis = export.lieferungen_zuordnen(zeilen, kontext)
+        if not pruefen and not any(z["fehler"] for z in ergebnis):
+            for z in ergebnis:
+                try:
+                    werte = lieferung_pruefen(Lieferung(**z["daten"]))
+                except Exception as ex:  # fachliche Prüfung wie beim Speichern im Dialog
+                    detail = getattr(ex, "detail", {"code": "allgemein"})
+                    z["fehler"].append(detail.get("code", "allgemein") if isinstance(detail, dict) else "allgemein")
+                    continue
+                if z.get("id") and db.eins("SELECT 1 FROM lieferungen WHERE id = ?", (z["id"],)):
+                    sets = ", ".join(f"{k} = ?" for k in werte)
+                    db.ausfuehren(f"UPDATE lieferungen SET {sets} WHERE id = ?", (*werte.values(), z["id"]))
+                    z["aktion"] = "geaendert"
+                else:
+                    z["id"] = db.ausfuehren(f"INSERT INTO lieferungen ({', '.join(werte)}) VALUES ({', '.join('?' * len(werte))})", tuple(werte.values()))
+                    z["aktion"] = "neu"
+        return {"zeilen": [{k: v for k, v in z.items() if k != "daten"} for z in ergebnis], "uebernommen": not pruefen}
+
+    @app.get("/api/export/auswertung.xlsx")
+    def auswertung_export(datum: str | None = None, szenario: int | None = None, _: dict = Depends(ansehen)):
+        tag = tag_lesen(datum)
+        e = tag_simulieren(tag, szenario_laden(szenario))
+        name = db.eins("SELECT name FROM szenarien WHERE id = ?", (szenario,))["name"] if szenario else None
+        return datei_antwort(export.auswertung_xlsx(e, export_kontext(), name), f"auswertung-{tag}.xlsx", XLSX)
+
+    @app.get("/api/export/karte/{sid}.pdf")
+    def karte_export(sid: int, datum: str | None = None, von: str = "00:00", bis: str = "23:59", szenario: int | None = None,
+                     start: int | None = None, _: dict = Depends(ansehen)):
+        s_ = holen("stockwerke", sid)
+        if not s_["plan_id"]:
+            raise fehler(400, "kein_plan")
+        if not UHRZEIT.match(von) or not UHRZEIT.match(bis):
+            raise fehler(400, "uhrzeit_ungueltig")
+        tag = tag_lesen(datum)
+        e = tag_simulieren(tag, szenario_laden(szenario))
+        szenario_name = db.eins("SELECT name FROM szenarien WHERE id = ?", (szenario,))["name"] if szenario else None
+        pdf = export.karte_pdf(db, pfade, sid, e, von, bis, start, szenario_name, export_kontext())
+        return datei_antwort(pdf, f"karte-{s_['name']}-{tag}.pdf".replace(" ", "_"), "application/pdf")
 
     @app.get("/api/kalender")
     def kalender(von: str, tage: int = 14, _: dict = Depends(ansehen)):

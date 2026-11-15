@@ -1,13 +1,14 @@
 // Zeitablauf auf der Karte: Simulation eines Tages abspielen.
 // Zeigt Fahrzeuge (Punkte), Warenflüsse (Linien, dicker = mehr Fahrten) und Aufzüge mit Warteschlange.
 
-import { api, dauer, fehlerMelden, h, heute, leeren, punktName, sekunden, t, uhr } from "./basis.js";
+import { api, dauer, fehlerMelden, h, heute, leeren, punktName, sekunden, szenarioAuswahl, t, uhr } from "./basis.js";
 import { ll } from "./karte.js";
 
-const cache = new Map(); // datum → Simulationsergebnis
-export async function simulationLaden(datum, neu = false) {
-  if (neu || !cache.has(datum)) cache.set(datum, await api(`simulation?datum=${datum}`));
-  return cache.get(datum);
+const cache = new Map(); // "datum|szenario" → Simulationsergebnis
+export async function simulationLaden(datum, neu = false, szenario = null) {
+  const schluessel = `${datum}|${szenario || ""}`;
+  if (neu || !cache.has(schluessel)) cache.set(schluessel, await api(`simulation?datum=${datum}${szenario ? `&szenario=${szenario}` : ""}`));
+  return cache.get(schluessel);
 }
 export function simulationVergessen() {
   cache.clear();
@@ -61,7 +62,8 @@ function stockwerkZur(fahrt, zeit) {
 export async function starteAblauf(ctx) {
   const { karte, unten, stockwerk } = ctx;
   const sid = stockwerk.id;
-  const [datumParam, zeitParam] = ctx.rest;
+  const [datumParam, zeitParam, szenarioParam] = ctx.rest;
+  let szenario = Number(szenarioParam) || null;
   let datum = /^\d{4}-\d{2}-\d{2}$/.test(datumParam || "") ? datumParam : heute();
   let zeit = /^\d{2}:\d{2}$/.test(zeitParam || "") ? sekunden(zeitParam) : 8 * 3600;
   let sim = null;
@@ -83,11 +85,16 @@ export async function starteAblauf(ctx) {
   const filterLeiste = h("div.filterleiste");
   const info = h("div.ablaufinfo");
 
+  const szenarioWahl = await szenarioAuswahl(szenario, async (wert) => {
+    szenario = wert;
+    await laden();
+  });
   leeren(
     unten,
     h(
       "div.ablaufsteuerung",
       datumFeld,
+      szenarioWahl,
       knopfStart,
       zeitText,
       regler,
@@ -117,8 +124,9 @@ export async function starteAblauf(ctx) {
   knopfStart.addEventListener("click", () => (laeuft ? anhalten() : abspielen()));
 
   function hashAktualisieren() {
-    history.replaceState(null, "", ctx.stockwerkLink(sid, "ablauf", datum, uhr(zeit)));
-    ctx.seitenleiste.querySelectorAll("a[data-stockwerk]").forEach((a) => (a.href = ctx.stockwerkLink(a.dataset.stockwerk, "ablauf", datum, uhr(zeit))));
+    const teil = ["ablauf", datum, uhr(zeit), ...(szenario ? [szenario] : [])];
+    history.replaceState(null, "", ctx.stockwerkLink(sid, ...teil));
+    ctx.seitenleiste.querySelectorAll("a[data-stockwerk]").forEach((a) => (a.href = ctx.stockwerkLink(a.dataset.stockwerk, ...teil)));
   }
 
   function knopfText() {
@@ -154,7 +162,7 @@ export async function starteAblauf(ctx) {
     anhalten();
     leeren(info, h("span.gedimmt", t("allgemein.laedt")));
     try {
-      sim = await simulationLaden(datum);
+      sim = await simulationLaden(datum, false, szenario);
     } catch (e) {
       fehlerMelden(e);
       return;
@@ -324,8 +332,9 @@ export async function starteAblauf(ctx) {
       sim.feiertag ? h("span.marke-klein", feiertagText(sim.feiertag)) : null,
       h("span", t("ablauf.info", { lieferungen: sim.lieferungen.length, fahrten: sim.fahrten.length, unterwegs })),
       wartend ? h("span.warnung", t("ablauf.wartend_hier", { anzahl: wartend })) : null,
-      engpaesse ? h("a", { href: `#/auswertung/${datum}` }, t("ablauf.engpaesse", { anzahl: engpaesse })) : h("span.gut", t("ablauf.keine_engpaesse")),
-      sim.fehler.length ? h("a.warnung", { href: `#/auswertung/${datum}` }, t("ablauf.fehler", { anzahl: sim.fehler.length })) : null
+      engpaesse ? h("a", { href: `#/auswertung/${datum}${szenario ? `/${szenario}` : ""}` }, t("ablauf.engpaesse", { anzahl: engpaesse })) : h("span.gut", t("ablauf.keine_engpaesse")),
+      sim.fehler.length ? h("a.warnung", { href: `#/auswertung/${datum}${szenario ? `/${szenario}` : ""}` }, t("ablauf.fehler", { anzahl: sim.fehler.length })) : null,
+      h("a", { href: `/api/export/karte/${sid}.pdf?datum=${datum}&von=${uhr(Math.max(0, zeit))}&bis=${uhr(Math.min(86340, zeit + (fenster === "tag" ? 86400 : (Number(fenster) || 30) * 60)))}${filter.start ? `&start=${filter.start}` : ""}${szenario ? `&szenario=${szenario}` : ""}`, target: "_blank" }, "⤓ " + t("ablauf.pdf"))
     );
   }
 

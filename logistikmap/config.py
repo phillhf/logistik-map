@@ -31,6 +31,12 @@ def standard_datenordner() -> Path:
 class Konfiguration:
     port: int = STANDARD_PORT
     host: str = "0.0.0.0"
+    zertifikat: str = ""  # HTTPS: Pfad zur Zertifikatsdatei (PEM), leer = HTTP
+    schluessel: str = ""  # HTTPS: Pfad zum privaten Schlüssel (PEM)
+
+    @property
+    def https(self) -> bool:
+        return bool(self.zertifikat and self.schluessel)
 
 
 class Pfade:
@@ -41,9 +47,11 @@ class Pfade:
         self.kacheln = self.daten / "kacheln"
         self.logs = self.daten / "logs"
         self.config = self.daten / "config.json"
+        self.sicherungen = self.daten / "sicherungen"
+        self.updates = self.daten / "updates"
 
     def anlegen(self) -> None:
-        for p in (self.daten, self.dokumente, self.kacheln, self.logs):
+        for p in (self.daten, self.dokumente, self.kacheln, self.logs, self.sicherungen):
             p.mkdir(parents=True, exist_ok=True)
 
 
@@ -58,6 +66,9 @@ def lade_konfiguration(pfade: Pfade) -> Konfiguration:
             k.port = daten["port"]
         if isinstance(daten.get("host"), str) and daten["host"]:
             k.host = daten["host"]
+        for feld in ("zertifikat", "schluessel"):
+            if isinstance(daten.get(feld), str):
+                setattr(k, feld, daten[feld])
     return k
 
 

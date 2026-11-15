@@ -30,7 +30,9 @@ export function starteEditor(ctx) {
     ["raum_rechteck", "editor.werkzeug.raum_rechteck", () => flaechenWerkzeug("raum", true)],
     ["raum", "editor.werkzeug.raum", () => flaechenWerkzeug("raum", false)],
     ["bereich", "editor.werkzeug.bereich", () => flaechenWerkzeug("bereich", false)],
+    ["ausrichten", "editor.werkzeug.ausrichten", ausrichtenWerkzeug],
   ];
+  const eckenEbene = L.layerGroup().addTo(karte);
 
   function leisteZeichnen() {
     leeren(
@@ -38,12 +40,15 @@ export function starteEditor(ctx) {
       WERKZEUGE.map(([name, text]) =>
         h("button", { type: "button", class: name === werkzeugName ? "aktiv" : "", onclick: () => wechseln(name) }, t(text))
       ),
+      h("span.trenner"),
+      h("button", { type: "button", title: t("editor.rueckgaengig_hilfe"), onclick: rueckgaengig }, "↶ " + t("editor.rueckgaengig")),
       ctx.stockwerk.meter_pro_punkt ? null : h("span.warnung", t("editor.massstab_zuerst"))
     );
     werkzeugleiste.hidden = false;
   }
 
   function wechseln(name) {
+    eckenEbene?.clearLayers();
     werkzeug?.beenden();
     werkzeug = null;
     werkzeugName = name;
@@ -123,12 +128,150 @@ export function starteEditor(ctx) {
     ctx.auswahl = a;
     ctx.zeichnen();
     panelZeigen();
+    eckenZeigen();
   }
 
   function abwaehlen() {
     ctx.auswahl = null;
     panel.hidden = true;
+    eckenEbene.clearLayers();
     ctx.zeichnen();
+  }
+
+  // ---------------------------------------------------------------- Rückgängig
+  async function rueckgaengig() {
+    try {
+      const r = await api(`stockwerke/${sid}/rueckgaengig`, { methode: "POST" });
+      const was = t(`editor.verlauf.${r.beschreibung}`);
+      melden(t("editor.rueckgaengig_ok", { was: was.startsWith("⟨") ? r.beschreibung : was }));
+      ctx.auswahl = null;
+      panel.hidden = true;
+      eckenEbene.clearLayers();
+      await ctx.netzLaden();
+      ctx.punkte = await api("punkte");
+    } catch (e) {
+      fehlerMelden(e);
+    }
+  }
+
+  // ---------------------------------------------------------------- Ecken einer Fläche bearbeiten
+  function eckenZeigen() {
+    eckenEbene.clearLayers();
+    const a = ctx.auswahl;
+    if (!a || a.typ !== "flaeche" || werkzeugName !== "auswahl") return;
+    const f = ctx.netz.flaechen.find((x) => x.id === a.id);
+    if (!f) return;
+    const punkte = f.punkte.map(([x, y]) => ({ x, y }));
+    const speichern = async (neu) => {
+      try {
+        await api(`flaechen/${f.id}`, { methode: "PUT", daten: { punkte: neu.map((q) => [q.x, q.y]) } });
+        await ctx.netzLaden();
+        auswaehlen(a);
+      } catch (e) {
+        fehlerMelden(e);
+        auswaehlen(a);
+      }
+    };
+    punkte.forEach((q, i) => {
+      const m = L.marker(ll(q.x, q.y), { draggable: true, icon: L.divIcon({ className: "ecke", iconSize: [12, 12] }), title: t("editor.ecke_hilfe"), zIndexOffset: 1000 });
+      m.on("dragend", (e) => {
+        const neu = punkte.slice();
+        neu[i] = xy(e.target.getLatLng());
+        speichern(neu);
+      });
+      m.on("contextmenu dblclick", (e) => {
+        L.DomEvent.stop(e);
+        if (punkte.length <= 3) return melden(t("fehler.zu_wenige_punkte"), "fehler");
+        speichern(punkte.filter((_, j) => j !== i));
+      });
+      m.addTo(eckenEbene);
+      // Mittelpunkt zur nächsten Ecke: ziehen fügt eine neue Ecke ein
+      const n = punkte[(i + 1) % punkte.length];
+      const mitte = L.marker(ll((q.x + n.x) / 2, (q.y + n.y) / 2), { draggable: true, icon: L.divIcon({ className: "ecke mitte", iconSize: [10, 10] }), title: t("editor.ecke_einfuegen"), zIndexOffset: 900 });
+      mitte.on("dragend", (e) => {
+        const neu = punkte.slice();
+        neu.splice(i + 1, 0, xy(e.target.getLatLng()));
+        speichern(neu);
+      });
+      mitte.addTo(eckenEbene);
+    });
+  }
+
+  // ---------------------------------------------------------------- Werkzeug: Ausrichten (neuer Planstand)
+  function ausrichtenWerkzeug() {
+    const paare = [];
+    let alt = null;
+    const ebene = L.layerGroup().addTo(karte);
+    karte.getContainer().classList.add("fadenkreuz");
+    const hinweisNeu = () =>
+      ctx.hinweis(
+        alt ? t("editor.hilfe.ausrichten_neu") : t("editor.hilfe.ausrichten_alt", { anzahl: paare.length }),
+        [
+          ...(paare.length >= 2 ? [[t("editor.ausrichten_anwenden", { anzahl: paare.length }), anwenden]] : []),
+          [t("karte.werkzeug_beenden"), () => wechseln("auswahl")],
+        ]
+      );
+    const zeichnen = () => {
+      ebene.clearLayers();
+      for (const [a, b] of paare) {
+        L.polyline([ll(a.x, a.y), ll(b.x, b.y)], { color: "#c2255c", weight: 2, dashArray: "4 4", interactive: false }).addTo(ebene);
+        L.circleMarker(ll(a.x, a.y), { radius: 5, color: "#c2255c", fillOpacity: 0, interactive: false }).addTo(ebene);
+        L.circleMarker(ll(b.x, b.y), { radius: 5, color: "#c2255c", fillColor: "#c2255c", fillOpacity: 1, interactive: false }).addTo(ebene);
+      }
+      if (alt) L.circleMarker(ll(alt.x, alt.y), { radius: 6, color: "#c2255c", fillOpacity: 0, weight: 3, interactive: false }).addTo(ebene);
+    };
+    const klick = (p) => {
+      if (!alt) {
+        // alte Lage: auf vorhandene Punkte oder Flächenecken fangen
+        const k = naechsterKnoten(p);
+        let fang = k ? { x: k.x, y: k.y } : null;
+        if (!fang) {
+          for (const f of ctx.netz.flaechen) for (const [x, y] of f.punkte) if (ctx.pixel(p, { x, y }) < FANG_KNOTEN) fang = { x, y };
+        }
+        alt = fang || p;
+      } else {
+        paare.push([alt, p]);
+        alt = null;
+      }
+      zeichnen();
+      hinweisNeu();
+    };
+    const mapKlick = (e) => klick(xy(e.latlng));
+    const tasteA = (e) => {
+      if (e.key === "Escape") alt ? ((alt = null), zeichnen(), hinweisNeu()) : wechseln("auswahl");
+    };
+    async function anwenden() {
+      try {
+        const r = await api(`stockwerke/${sid}/ausrichten`, {
+          methode: "POST",
+          daten: { paare: paare.map(([a, b]) => ({ alt_x: a.x, alt_y: a.y, neu_x: b.x, neu_y: b.y })) },
+        });
+        melden(t("editor.ausrichten_ok", { faktor: zahl(r.massstab, 3) }));
+        wechseln("auswahl");
+        ctx.stockwerk = await api(`stockwerke/${sid}`);
+        await ctx.netzLaden();
+      } catch (e) {
+        fehlerMelden(e);
+      }
+    }
+    karte.on("click", mapKlick);
+    document.addEventListener("keydown", tasteA);
+    hinweisNeu();
+    return {
+      objektKlick(typ, objekt, ereignis) {
+        if (typ === "knoten") {
+          L.DomEvent.stopPropagation(ereignis);
+          klick({ x: objekt.x, y: objekt.y });
+        }
+      },
+      beenden() {
+        karte.off("click", mapKlick);
+        document.removeEventListener("keydown", tasteA);
+        ebene.remove();
+        karte.getContainer().classList.remove("fadenkreuz");
+        ctx.hinweisWeg();
+      },
+    };
   }
 
   const kartenKlick = () => {
@@ -140,6 +283,10 @@ export function starteEditor(ctx) {
     if (e.target.closest?.("input, textarea, select, dialog")) return;
     if (e.key === "Delete" && ctx.auswahl && werkzeugName === "auswahl") loeschen(ctx.auswahl);
     if (e.key === "Escape" && werkzeugName === "auswahl" && ctx.auswahl) abwaehlen();
+    if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === "z") {
+      e.preventDefault();
+      rueckgaengig();
+    }
   };
   document.addEventListener("keydown", taste);
 
@@ -590,6 +737,7 @@ export function starteEditor(ctx) {
     document.removeEventListener("keydown", taste);
     werkzeugleiste.hidden = true;
     panel.hidden = true;
+    eckenEbene.remove();
     ctx.beiKlick = null;
     ctx.beiVerschieben = null;
     ctx.auswahl = null;

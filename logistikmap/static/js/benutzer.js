@@ -4,12 +4,23 @@ import { api, bestaetigen, fehlerMelden, formularDialog, h, leeren, t, zustand }
 
 export function zeigeBenutzer(wurzel) {
   const box = h("div");
+  const rollenBox = h("div");
   let rollen = [];
+  let rechte = [];
   wurzel.append(
     h(
-      "section.karte-box.schmal",
-      h("div.box-kopf", h("h2", t("benutzer.titel")), h("button.knopf", { type: "button", onclick: () => dialog() }, "+ " + t("benutzer.neu"))),
-      box
+      "div.stapel",
+      h(
+        "section.karte-box",
+        h("div.box-kopf", h("h2", t("benutzer.titel")), h("button.knopf", { type: "button", onclick: () => dialog() }, "+ " + t("benutzer.neu"))),
+        box
+      ),
+      h(
+        "section.karte-box",
+        h("div.box-kopf", h("h2", t("rolle.titel")), h("button.knopf", { type: "button", onclick: () => rollenDialog() }, "+ " + t("rolle.neu"))),
+        h("p.hinweis", t("rolle.hilfe")),
+        rollenBox
+      )
     )
   );
 
@@ -21,9 +32,20 @@ export function zeigeBenutzer(wurzel) {
   async function laden() {
     try {
       const [liste, r] = await Promise.all([api("benutzer"), api("rollen")]);
-      rollen = r;
-      leeren(
-        box,
+      rollen = r.rollen;
+      rechte = r.rechte;
+      zeigeBenutzerListe(liste);
+      zeigeRollen();
+    } catch (e) {
+      fehlerMelden(e);
+    }
+  }
+
+  function zeigeBenutzerListe(liste) {
+    leeren(
+      box,
+      h(
+        "div.tabellenrahmen",
         h(
           "table.tabelle",
           h("thead", h("tr", h("th", t("benutzer.benutzername")), h("th", t("benutzer.anzeigename")), h("th", t("benutzer.rolle")), h("th"))),
@@ -33,21 +55,78 @@ export function zeigeBenutzer(wurzel) {
               h(
                 "tr",
                 { class: b.aktiv ? "" : "inaktiv" },
-                h("td", b.benutzername, b.id === zustand.benutzer.id ? h("span.marke-klein", t("benutzer.du")) : null),
+                h(
+                  "td",
+                  b.benutzername,
+                  b.id === zustand.benutzer.id ? h("span.marke-klein", t("benutzer.du")) : null,
+                  b.quelle === "ldap" ? h("span.marke-klein.grau", { title: t("benutzer.aus_verzeichnis_hilfe") }, t("benutzer.aus_verzeichnis")) : null
+                ),
                 h("td", b.anzeigename),
                 h("td", rollenName(b.rolle), b.aktiv ? null : h("span.marke-klein.grau", t("benutzer.deaktiviert"))),
                 h(
                   "td.aktionen",
                   h("button.knopf-flach", { type: "button", onclick: () => dialog(b) }, t("allgemein.bearbeiten")),
-                  b.id === zustand.benutzer.id
-                    ? null
-                    : h("button.knopf-flach.gefahr", { type: "button", onclick: () => loeschen(b) }, t("allgemein.loeschen"))
+                  b.id === zustand.benutzer.id ? null : h("button.knopf-flach.gefahr", { type: "button", onclick: () => loeschen(b) }, t("allgemein.loeschen"))
                 )
               )
             )
           )
         )
-      );
+      )
+    );
+  }
+
+  function zeigeRollen() {
+    leeren(
+      rollenBox,
+      h(
+        "div.tabellenrahmen",
+        h(
+          "table.tabelle",
+          h("thead", h("tr", h("th", t("rolle.name")), h("th", t("rolle.rechte")), h("th", t("rolle.benutzer")), h("th"))),
+          h(
+            "tbody",
+            rollen.map((r) =>
+              h(
+                "tr",
+                h("td", rollenName(r.schluessel), r.system ? h("span.marke-klein.grau", t("rolle.system")) : null),
+                h("td", r.rechte.map((x) => h("span.chip.recht", t(`recht.${x}`)))),
+                h("td", r.benutzer),
+                h(
+                  "td.aktionen",
+                  r.system
+                    ? null
+                    : [
+                        h("button.knopf-flach", { type: "button", onclick: () => rollenDialog(r) }, t("allgemein.bearbeiten")),
+                        h("button.knopf-flach.gefahr", { type: "button", onclick: () => rolleLoeschen(r) }, t("allgemein.loeschen")),
+                      ]
+                )
+              )
+            )
+          )
+        )
+      ),
+      h("dl.werte.rechte-erklaerung", rechte.map((x) => [h("dt", t(`recht.${x}`)), h("dd", t(`recht_hilfe.${x}`))]))
+    );
+  }
+
+  async function rollenDialog(r) {
+    const ok = await formularDialog({
+      titel: r ? `${t("rolle.bearbeiten")}: ${r.name}` : t("rolle.neu"),
+      felder: [
+        { name: "name", label: t("rolle.name"), pflicht: true, wert: r?.name },
+        { name: "rechte", label: t("rolle.rechte"), typ: "mehrfach", wert: r?.rechte || ["ansehen"], optionen: rechte.map((x) => [x, t(`recht.${x}`)]) },
+      ],
+      speichern: (w) => api(r ? `rollen/${r.id}` : "rollen", { methode: r ? "PUT" : "POST", daten: w }),
+    });
+    if (ok) laden();
+  }
+
+  async function rolleLoeschen(r) {
+    if (!(await bestaetigen(t("allgemein.sicher_loeschen", { name: r.name })))) return;
+    try {
+      await api(`rollen/${r.id}`, { methode: "DELETE" });
+      laden();
     } catch (e) {
       fehlerMelden(e);
     }
@@ -65,9 +144,9 @@ export function zeigeBenutzer(wurzel) {
         ]
       : [
           { name: "anzeigename", label: t("benutzer.anzeigename"), wert: b.anzeigename },
-          { name: "rolle", label: t("benutzer.rolle"), typ: "auswahl", optionen: rollenOptionen, wert: b.rolle },
+          { name: "rolle", label: t("benutzer.rolle"), typ: "auswahl", optionen: rollenOptionen, wert: b.rolle, hilfe: b.quelle === "ldap" ? t("benutzer.rolle_aus_verzeichnis") : null },
           { name: "aktiv", label: t("benutzer.aktiv"), typ: "haken", wert: !!b.aktiv },
-          { name: "passwort", label: t("benutzer.passwort_neu_optional"), typ: "password", attr: { autocomplete: "new-password" } },
+          ...(b.quelle === "ldap" ? [] : [{ name: "passwort", label: t("benutzer.passwort_neu_optional"), typ: "password", attr: { autocomplete: "new-password" } }]),
         ];
     const ok = await formularDialog({
       titel: neu ? t("benutzer.neu") : `${t("benutzer.bearbeiten")}: ${b.benutzername}`,

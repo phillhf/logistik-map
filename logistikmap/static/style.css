@@ -337,3 +337,57 @@ main.seite-karte .kartenrahmen { overflow: hidden; }
   .eigenschaften { left: 12px; right: 12px; width: auto; top: auto; bottom: 12px; max-height: 50%; }
   .zeitleiste { grid-template-columns: 100px 1fr; }
 }
+
+/* ============================================================ Erweiterungen 0.3 */
+.werkzeugleiste .trenner, .knopfreihe .trenner { width: 1px; height: 22px; background: var(--linie); margin: 0 6px; }
+.leaflet-marker-icon.ecke { background: #fff; border: 2px solid #f08c00; border-radius: 2px; cursor: move; }
+.leaflet-marker-icon.ecke.mitte { background: #f08c00; opacity: 0.55; border-radius: 50%; border: 1px solid #fff; }
+.abstand-oben { margin-top: 12px; }
+pre.notizen { white-space: pre-wrap; background: #f8f9fa; border-radius: 6px; padding: 8px 12px; font: inherit; font-size: 0.85rem; max-height: 200px; overflow: auto; }
+.chip.recht { margin: 2px 4px 2px 0; color: var(--blau); border-color: var(--blau-hell); background: var(--blau-hell); }
+dl.rechte-erklaerung { margin-top: 14px; }
+.raster2 { display: grid; grid-template-columns: 1fr 2fr; gap: 0 16px; }
+.inline-gruppe { display: inline-flex; gap: 4px; align-items: center; }
+.export { margin-bottom: 12px; }
+.export select { font-size: 0.85rem; padding: 4px 8px; }
+
+/* Schichten */
+.schicht { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; padding: 6px 0; border-bottom: 1px solid #eef0f3; }
+.schicht input[type="time"] { width: 110px; }
+.schicht input.anzahl { width: 70px; }
+.schicht .tage { display: flex; gap: 2px; margin: 0; }
+.tagwahl.klein span { width: 30px; padding: 3px 0; font-size: 0.75rem; }
+
+/* Szenarien */
+.szenarioliste { display: flex; flex-direction: column; gap: 10px; }
+.szenario { display: flex; justify-content: space-between; align-items: center; gap: 12px; border: 1px solid var(--linie); border-left: 4px solid #9c36b5; border-radius: var(--radius); padding: 10px 14px; flex-wrap: wrap; }
+.szenario p { margin: 2px 0; }
+.szenariotabelle input[type="time"] { width: 110px; }
+.szenariotabelle td.geaendert { background: #f3e8fd; }
+.szenario-hinweis { background: #f3e8fd; border-left: 4px solid #9c36b5; padding: 8px 12px; border-radius: 6px; }
+.kennzahl small.vergleich { color: var(--gedimmt); font-size: 0.75rem; }
+.vergleich-satz { font-weight: 500; }
+
+/* Woche */
+.wochentabelle { border-collapse: separate; border-spacing: 2px; font-size: 0.8rem; }
+.wochentabelle th { font-weight: 500; color: var(--gedimmt); padding: 2px 6px; text-align: left; white-space: nowrap; }
+.wochentabelle th small { display: block; color: #b07300; }
+.wochentabelle td { min-width: 30px; height: 28px; text-align: center; border-radius: 3px; }
+.wochentabelle td.wzelle a { color: #fff; text-decoration: none; font-weight: 600; display: block; text-shadow: 0 0 2px rgba(0, 0, 0, 0.4); }
+.wochentabelle td.leer-zelle { background: #f8f9fa; }
+.wochentabelle td.zahl { text-align: right; padding: 0 8px; white-space: nowrap; }
+.wochentabelle tr.feiertag th { color: #b07300; }
+.zl-legende.woche { margin-top: 10px; }
+
+/* Import */
+.tabellenrahmen.import { max-height: 50vh; overflow: auto; }
+
+/* Druck: nur Inhalt, keine Bedienelemente */
+@media print {
+  #kopf, .knopf, .knopf-flach, .filter, .export, #meldungen, .kein-druck, .tagesvorschau { display: none !important; }
+  body, :root { background: #fff; }
+  main { padding: 0; max-width: none; }
+  .karte-box { box-shadow: none; border: 0; padding: 0; }
+  .engpass, .kennzahl { break-inside: avoid; }
+  .zl-streifen > *, .wochentabelle td { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+}
