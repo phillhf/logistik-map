@@ -63,7 +63,10 @@ jobs:
           if ($p.ExitCode -ne 0) { throw "Deinstallation fehlgeschlagen ($($p.ExitCode))" }
           if (Get-Service LogistikMap -ErrorAction SilentlyContinue) { throw "Dienst nach Deinstallation noch vorhanden" }
 
+      # nur bei Probeläufen ohne Tag; ein volles Artefakt-Kontingent darf den Lauf nicht scheitern lassen
       - name: Setup als Artefakt
+        if: github.ref_type != 'tag'
+        continue-on-error: true
         uses: actions/upload-artifact@v4
         with:
           name: LogistikMap-Setup
