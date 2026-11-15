@@ -84,6 +84,96 @@ MIGRATIONEN: list[str] = [
         meter_pro_punkt REAL
     );
     """,
+    # 2 – Flächen, Wegenetz, Stammdaten, Lieferungen
+    """
+    CREATE TABLE transportarten (
+        id              INTEGER PRIMARY KEY,
+        name            TEXT NOT NULL,
+        farbe           TEXT NOT NULL DEFAULT '#1f5f8b',
+        geschwindigkeit REAL NOT NULL DEFAULT 1.0,
+        ladezeit        REAL NOT NULL DEFAULT 60,
+        entladezeit     REAL NOT NULL DEFAULT 60,
+        wagen_pro_fahrt INTEGER NOT NULL DEFAULT 1,
+        anzahl          INTEGER NOT NULL DEFAULT 0,
+        aufzug_exklusiv INTEGER NOT NULL DEFAULT 0,
+        treppe          INTEGER NOT NULL DEFAULT 0
+    );
+    CREATE TABLE wagentypen (
+        id     INTEGER PRIMARY KEY,
+        name   TEXT NOT NULL,
+        plaetze REAL NOT NULL DEFAULT 1
+    );
+    CREATE TABLE aufzuege (
+        id             INTEGER PRIMARY KEY,
+        name           TEXT NOT NULL,
+        art            TEXT NOT NULL DEFAULT 'aufzug',
+        plaetze        REAL NOT NULL DEFAULT 2,
+        fahrzeit_etage REAL NOT NULL DEFAULT 8,
+        tuerzeit       REAL NOT NULL DEFAULT 10,
+        raeumzeit      REAL NOT NULL DEFAULT 20,
+        anfahrt        REAL NOT NULL DEFAULT 15,
+        transportarten TEXT NOT NULL DEFAULT '[]'
+    );
+    CREATE TABLE flaechen (
+        id           INTEGER PRIMARY KEY,
+        stockwerk_id INTEGER NOT NULL REFERENCES stockwerke(id) ON DELETE CASCADE,
+        parent_id    INTEGER REFERENCES flaechen(id) ON DELETE SET NULL,
+        art          TEXT NOT NULL DEFAULT 'raum',
+        name         TEXT NOT NULL,
+        nummer       TEXT NOT NULL DEFAULT '',
+        farbe        TEXT NOT NULL DEFAULT '',
+        punkte       TEXT NOT NULL
+    );
+    CREATE TABLE knoten (
+        id           INTEGER PRIMARY KEY,
+        stockwerk_id INTEGER NOT NULL REFERENCES stockwerke(id) ON DELETE CASCADE,
+        x            REAL NOT NULL,
+        y            REAL NOT NULL,
+        art          TEXT NOT NULL DEFAULT 'weg',
+        name         TEXT NOT NULL DEFAULT '',
+        flaeche_id   INTEGER REFERENCES flaechen(id) ON DELETE SET NULL,
+        aufzug_id    INTEGER REFERENCES aufzuege(id) ON DELETE SET NULL,
+        kapazitaet   INTEGER
+    );
+    CREATE TABLE kanten (
+        id         INTEGER PRIMARY KEY,
+        von        INTEGER NOT NULL REFERENCES knoten(id) ON DELETE CASCADE,
+        nach       INTEGER NOT NULL REFERENCES knoten(id) ON DELETE CASCADE,
+        laenge_m   REAL,
+        kapazitaet INTEGER,
+        gesperrt   TEXT NOT NULL DEFAULT '[]',
+        name       TEXT NOT NULL DEFAULT ''
+    );
+    CREATE TABLE lieferungen (
+        id              INTEGER PRIMARY KEY,
+        name            TEXT NOT NULL,
+        lieferant       TEXT NOT NULL DEFAULT '',
+        richtung        TEXT NOT NULL DEFAULT 'versorgung',
+        transportart_id INTEGER NOT NULL REFERENCES transportarten(id) ON DELETE RESTRICT,
+        start_id        INTEGER NOT NULL REFERENCES knoten(id) ON DELETE RESTRICT,
+        ziel_id         INTEGER NOT NULL REFERENCES knoten(id) ON DELETE RESTRICT,
+        uhrzeit         TEXT NOT NULL,
+        spaetestens     TEXT,
+        ladung          TEXT NOT NULL DEFAULT '[]',
+        via             TEXT NOT NULL DEFAULT '[]',
+        regel           TEXT NOT NULL,
+        rueckweg        TEXT NOT NULL DEFAULT '{"modus": "keiner"}',
+        aktiv           INTEGER NOT NULL DEFAULT 1,
+        notiz           TEXT NOT NULL DEFAULT ''
+    );
+    CREATE INDEX knoten_stockwerk ON knoten(stockwerk_id);
+    CREATE INDEX flaechen_stockwerk ON flaechen(stockwerk_id);
+    CREATE INDEX kanten_von ON kanten(von);
+    CREATE INDEX kanten_nach ON kanten(nach);
+    INSERT INTO transportarten (name, farbe, geschwindigkeit, ladezeit, entladezeit, wagen_pro_fahrt, anzahl, aufzug_exklusiv, treppe)
+        VALUES ('FTS', '#7048e8', 0.8, 60, 60, 1, 4, 1, 0);
+    INSERT INTO transportarten (name, farbe, geschwindigkeit, ladezeit, entladezeit, wagen_pro_fahrt, anzahl, aufzug_exklusiv, treppe)
+        VALUES ('Materialtransportdienst', '#e8590c', 1.0, 90, 90, 1, 0, 0, 0);
+    INSERT INTO wagentypen (name, plaetze) VALUES ('Wäschewagen', 1);
+    INSERT INTO wagentypen (name, plaetze) VALUES ('Rollcontainer', 1);
+    INSERT INTO wagentypen (name, plaetze) VALUES ('Speisenwagen', 1);
+    INSERT INTO wagentypen (name, plaetze) VALUES ('Palette', 2)
+    """,
 ]
 
 STANDARD_ROLLEN = [

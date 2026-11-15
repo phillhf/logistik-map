@@ -4,17 +4,24 @@ import { api, darf, formularDialog, h, leeren, melden, spracheLaden, t, ueberset
 import { zeigeBenutzer } from "./benutzer.js";
 import { zeigeEinstellungen } from "./einstellungen.js";
 import { zeigeGebaeude } from "./gebaeude.js";
+import { zeigeAuswertung } from "./auswertung.js";
 import { zeigeKarte } from "./karte.js";
+import { zeigeLieferungen } from "./lieferungen.js";
+import { zeigeStammdaten } from "./stammdaten.js";
 
 const inhalt = document.getElementById("inhalt");
 const SEITEN = [
   { pfad: "karte", recht: "ansehen", zeigen: zeigeKarte },
+  { pfad: "lieferungen", recht: "ansehen", zeigen: zeigeLieferungen },
+  { pfad: "auswertung", recht: "ansehen", zeigen: zeigeAuswertung },
+  { pfad: "stammdaten", recht: "ansehen", zeigen: zeigeStammdaten },
   { pfad: "gebaeude", recht: "bearbeiten", zeigen: zeigeGebaeude },
   { pfad: "benutzer", recht: "verwalten", zeigen: zeigeBenutzer },
   { pfad: "einstellungen", recht: "ansehen", zeigen: zeigeEinstellungen },
 ];
 
 let aufraeumen = null; // Rückgabe der aktuellen Seite, wird beim Wechsel aufgerufen
+let letzteSeite = null;
 
 async function start() {
   let status;
@@ -47,6 +54,8 @@ function seiteWechseln() {
   aufraeumen = null;
   document.querySelectorAll("#navigation a").forEach((a) => a.classList.toggle("aktiv", a.dataset.pfad === seite.pfad));
   leeren(inhalt);
+  if (seite.pfad !== letzteSeite) window.scrollTo(0, 0);
+  letzteSeite = seite.pfad;
   inhalt.className = `seite-${seite.pfad}`;
   Promise.resolve(seite.zeigen(inhalt, rest)).then((r) => (aufraeumen = typeof r === "function" ? r : null));
 }

@@ -122,7 +122,12 @@ export function h(tag, attribute = {}, ...kinder) {
     if (v === undefined || v === null || v === false) continue;
     if (k.startsWith("on")) el.addEventListener(k.slice(2), v);
     else if (k === "class") el.className += (el.className ? " " : "") + v;
-    else if (k === "style" && typeof v === "object") Object.assign(el.style, v);
+    else if (k === "style" && typeof v === "object") {
+      for (const [eig, wert] of Object.entries(v)) {
+        if (eig.startsWith("--")) el.style.setProperty(eig, wert);
+        else el.style[eig] = wert;
+      }
+    }
     else if (k in el && typeof v !== "string") el[k] = v;
     else el.setAttribute(k, v === true ? "" : v);
   }
@@ -154,6 +159,7 @@ export function fehlerMelden(e) {
 // ---------------------------------------------------------------- Dialoge
 /**
  * Formular-Dialog. felder: [{name, label, typ, wert, optionen, pflicht, hilfe, attr}]
+ * typ: text | number | password | time | date | color | auswahl | haken | mehrfach (Häkchenliste, Wert = Array) | textfeld | ueberschrift
  * speichern(werte) darf einen Fehler werfen – dann bleibt der Dialog offen und zeigt ihn an.
  */
 export function formularDialog({ titel, felder, speichernText, speichern }) {
@@ -162,8 +168,17 @@ export function formularDialog({ titel, felder, speichernText, speichern }) {
     const eingaben = {};
     const zeilen = felder.map((f) => {
       let feld;
+      if (f.typ === "ueberschrift") return h("h3.dialog-abschnitt", f.label);
       if (f.typ === "auswahl") {
         feld = h("select", { name: f.name }, f.optionen.map(([wert, text]) => h("option", { value: wert, selected: String(wert) === String(f.wert) }, text)));
+      } else if (f.typ === "mehrfach") {
+        const gewaehlt = new Set((f.wert || []).map(String));
+        feld = h("div.mehrfach", f.optionen.map(([wert, text]) => h("label.haken", h("input", { type: "checkbox", value: wert, checked: gewaehlt.has(String(wert)) }), h("span", text))));
+        feld.wertLesen = () => [...feld.querySelectorAll("input:checked")].map((i) => (isNaN(Number(i.value)) ? i.value : Number(i.value)));
+        eingaben[f.name] = feld;
+        return h("div.feld", h("span", f.label), feld, f.hilfe && h("small", f.hilfe));
+      } else if (f.typ === "textfeld") {
+        feld = h("textarea", { name: f.name, rows: 3, ...(f.attr || {}) }, f.wert ?? "");
       } else if (f.typ === "haken") {
         feld = h("input", { type: "checkbox", name: f.name, checked: !!f.wert });
       } else {
@@ -189,7 +204,7 @@ export function formularDialog({ titel, felder, speichernText, speichern }) {
       e.preventDefault();
       const werte = {};
       for (const [name, el] of Object.entries(eingaben)) {
-        werte[name] = el.type === "checkbox" ? el.checked : el.type === "number" ? (el.value === "" ? null : Number(el.value)) : el.value;
+        werte[name] = el.wertLesen ? el.wertLesen() : el.type === "checkbox" ? el.checked : el.type === "number" ? (el.value === "" ? null : Number(el.value)) : el.value;
       }
       try {
         const ergebnis = await speichern(werte);
@@ -240,4 +255,68 @@ export const zustand = { benutzer: null, version: "" };
 
 export function darf(recht) {
   return !!zustand.benutzer?.rechte.includes(recht);
+}
+
+// ---------------------------------------------------------------- Zeit
+/** Sekunden seit Mitternacht → "08:05" (über Mitternacht hinaus: "+1 00:10") */
+export function uhr(sekunden, mitSekunden = false) {
+  if (sekunden === null || sekunden === undefined) return "–";
+  const tag = Math.floor(sekunden / 86400);
+  const s = Math.round(sekunden - tag * 86400);
+  const hh = String(Math.floor(s / 3600)).padStart(2, "0");
+  const mm = String(Math.floor((s % 3600) / 60)).padStart(2, "0");
+  const ss = String(s % 60).padStart(2, "0");
+  return `${tag ? `+${tag} ` : ""}${hh}:${mm}${mitSekunden ? `:${ss}` : ""}`;
+}
+
+export function sekunden(hhmm) {
+  const [h, m] = hhmm.split(":").map(Number);
+  return h * 3600 + m * 60;
+}
+
+/** Dauer lesbar: "45 s", "4 min", "1 h 05 min" */
+export function dauer(s) {
+  s = Math.round(s || 0);
+  if (s < 60) return `${s} s`;
+  if (s < 3600) return `${Math.floor(s / 60)} min${s % 60 && s < 600 ? ` ${s % 60} s` : ""}`;
+  return `${Math.floor(s / 3600)} h ${String(Math.floor((s % 3600) / 60)).padStart(2, "0")} min`;
+}
+
+export function heute() {
+  const d = new Date();
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+}
+
+// ---------------------------------------------------------------- Stammdaten-Cache
+let stammCache = null;
+export async function stammdaten(neu = false) {
+  if (!stammCache || neu) stammCache = await api("stammdaten");
+  return stammCache;
+}
+export function stammdatenVergessen() {
+  stammCache = null;
+}
+
+/** Anzeigename eines Punkts: "Rampe · UG (A)" */
+export function punktName(p) {
+  if (!p) return "–";
+  const ort = [p.stockwerk, p.kuerzel || p.gebaeudeteil].filter(Boolean).join(" · ");
+  return `${p.name || t(`knoten.art.${p.art}`)}${p.flaeche && p.flaeche !== p.name ? ` (${p.flaeche})` : ""} – ${ort}`;
+}
+
+/** <select> mit Punkten gruppiert nach Gebäudeteil und Stockwerk */
+export function punktAuswahl(punkte, wert, { leer = null, filter = () => true } = {}) {
+  const gruppen = new Map();
+  for (const p of punkte.filter(filter)) {
+    const g = `${p.kuerzel ? p.kuerzel + " · " : ""}${p.gebaeudeteil} – ${p.stockwerk}`;
+    if (!gruppen.has(g)) gruppen.set(g, []);
+    gruppen.get(g).push(p);
+  }
+  return h(
+    "select",
+    leer !== null ? h("option", { value: "" }, leer) : null,
+    [...gruppen].map(([g, liste]) =>
+      h("optgroup", { label: g }, liste.map((p) => h("option", { value: p.id, selected: p.id === wert }, `${p.name || t(`knoten.art.${p.art}`)}${p.flaeche && p.flaeche !== p.name ? ` (${p.flaeche})` : ""}`)))
+    )
+  );
 }

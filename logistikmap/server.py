@@ -11,6 +11,7 @@ import logging
 import re
 import secrets
 import shutil
+import sqlite3
 from contextlib import asynccontextmanager
 from datetime import date
 from pathlib import Path
@@ -20,7 +21,7 @@ from fastapi.responses import FileResponse, JSONResponse
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel, Field
 
-from . import APP_NAME, __version__, auth
+from . import APP_NAME, __version__, auth, planung
 from .config import Pfade, static_ordner
 from .db import RECHTE, Datenbank
 from .feiertage import BUNDESLAENDER, feiertage
@@ -576,6 +577,14 @@ def erstelle_app(pfade: Pfade, kacheln_starten: bool = True) -> FastAPI:
         if pfad.is_file():
             return FileResponse(pfad, media_type="image/png", headers=kopf)
         return Response(leere_kachel(), media_type="image/png", headers=kopf)
+
+    # ---------------------------------------------------------------- Netz, Stammdaten, Lieferungen, Simulation
+    planung.registrieren(app, db, fehler, ansehen, bearbeiten)
+
+    @app.exception_handler(sqlite3.IntegrityError)
+    async def in_verwendung(request: Request, exc):
+        log.info("Integritätsfehler bei %s: %s", request.url.path, exc)
+        return JSONResponse({"detail": {"code": "in_verwendung"}}, status_code=409)
 
     # ---------------------------------------------------------------- Oberfläche
     statisch = static_ordner()

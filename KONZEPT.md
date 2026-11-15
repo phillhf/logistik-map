@@ -12,26 +12,26 @@ das? Wer steht um 8:20 Uhr noch und wartet?
 
 ## Bausteine
 
-### 1. Gebäude und Pläne ✅ (Version 0.1)
+### 1. Gebäude und Pläne ✅
 - **Gebäudeteile** (z. B. Haus A, Haus B) → **Stockwerke** (Ebene −1, 0, 1 …).
 - Jedes Stockwerk bekommt eine Seite aus einem **PDF-Plan**. Große Pläne (A0 und größer) werden
   einmalig in Kartenkacheln umgewandelt und lassen sich danach flüssig zoomen.
 - **Maßstab** je Stockwerk: Du klickst zwei Punkte an und gibst den Abstand in Metern ein.
   Erst damit lassen sich Wegezeiten berechnen.
 
-### 2. Bereiche, Räume und Punkte
+### 2. Bereiche, Räume und Punkte ✅
 - **Bereiche** (z. B. Warenannahme, Station 3B) als Flächen auf dem Plan. Ein Bereich kann
   Räume enthalten, ein Raum kann aber auch allein stehen.
 - **Punkte** mit Rolle: Startpunkt (Rampe, Anlieferung), Zielpunkt (Lager, Station),
   Übergang (Aufzug, Treppe, Durchgang zwischen Gebäudeteilen).
 
-### 3. Wegenetz
+### 3. Wegenetz ✅
 - Flure werden als Linien eingezeichnet. Aufzüge und Treppen verbinden die Stockwerke.
 - Wege berechnet das System selbst (kürzester bzw. schnellster Weg). Bei Bedarf werden sie
   von Hand festgelegt.
 - Sperren je Transportart (z. B. „Flur X nicht für FTS“).
 
-### 4. Stammdaten und Rechengrundlagen (jederzeit änderbar)
+### 4. Stammdaten und Rechengrundlagen (jederzeit änderbar) ✅
 - **Transportarten**: FTS (fahrerlose Transportsysteme), Materialtransportdienst, weitere.
   Je Art: Geschwindigkeit, Lade- und Entladezeit, Anzahl verfügbarer Fahrzeuge bzw. Personen.
 - **Wagentypen** (Wäschewagen, Rollcontainer, Palette …) mit Platzbedarf im Aufzug.
@@ -41,7 +41,7 @@ das? Wer steht um 8:20 Uhr noch und wartet?
   den Aufzug nach Plätzen.
 - **Engstellen**: Flure, Türen und Rampen mit Kapazität („max. 1 Wagen gleichzeitig“).
 
-### 5. Lieferungen und Regeln
+### 5. Lieferungen und Regeln ✅
 - Eine Lieferung hat eine Uhrzeit, Start und Ziel, eine Ladung (z. B. „3× Wäschewagen + 1× Rollcontainer“)
   und eine Transportart.
 - Jeder Transport hat eine Richtung: **Versorgung** (ins Haus) oder **Entsorgung** (aus dem Haus).
@@ -51,11 +51,34 @@ das? Wer steht um 8:20 Uhr noch und wartet?
 - **Feiertage** je Bundesland werden ohne Internet berechnet ✅. Eigene Sondertage lassen sich
   zusätzlich eintragen ✅.
 
-### 6. Auswertung
+### 6. Auswertung ✅
 - Datum und Uhrzeit (oder einen Zeitraum) wählen und alle Flüsse auf den Plänen sehen.
 - Zeitschieber, um den Tagesablauf abzuspielen.
 - **Engpass-Anzeige**: Auslastung von Aufzügen und Engstellen, Wartezeiten, verspätete Ankünfte.
 - Filter nach Startpunkt, Lieferant und Transportart.
+
+## So wird gerechnet
+
+Die Simulation spielt einen Tag ereignisgenau durch (Sekunden seit Mitternacht):
+
+- Eine Lieferung mit N Wagen ergibt ceil(N / „Wagen je Fahrt“) Fahrten, alle zur selben Uhrzeit.
+- Jede Fahrt braucht ein Fahrzeug bzw. eine Person der Transportart. Bei begrenzter Anzahl
+  wartet sie, bis eines frei ist. Belegt ist es bis zur Rückkehr.
+- Ablauf: Laden am Start → schnellster Weg → Entladen am Ziel → Rückweg (leer, beladen oder keiner).
+  „Später zurück“ ist eine eigene Fahrt zur angegebenen Uhrzeit.
+- Gehzeit = Länge (aus Plan und Maßstab) / Geschwindigkeit.
+- Aufzug = eine Kabine. Fahrzeit = Wartezeit auf die Kabine + 2 × Türzeit + Stockwerke × Fahrzeit
+  je Stockwerk, bei FTS zusätzlich die Räumzeit. Wer gleichzeitig mit gleichem Start- und
+  Zielstockwerk wartet, fährt mit, solange die Plätze reichen. FTS fahren immer allein.
+- Treppen kosten nur Zeit und haben keine Kapazität. Sie dürfen nur Transportarten nutzen, die
+  Treppen können.
+- Wegstücke und Punkte mit „gleichzeitig höchstens“ sind Engstellen. Wegstücke sind belegt,
+  solange sie durchfahren werden, Punkte während des Ladens bzw. Entladens.
+- Als Engpass gilt alles, wo jemand mindestens eine Minute wartet oder die Auslastung in einem
+  5-Minuten-Abschnitt 90 % erreicht.
+
+Das ist bewusst grob. Personenverkehr im Aufzug steckt nur in der mittleren Wartezeit, und
+Begegnungsverkehr im Flur gibt es nur, wenn eine Kapazität gesetzt ist.
 
 ## Technik
 

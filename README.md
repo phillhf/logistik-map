@@ -4,9 +4,20 @@ Logistik Map zeigt Warenflüsse und Transportwege in großen Gebäuden, zum Beis
 Krankenhaus. Grundlage sind die Gebäudepläne als PDF: Stockwerke anlegen, Pläne hochladen,
 Wege und Lieferungen einzeichnen und sehen, wo es eng wird.
 
-> **Stand:** Version 0.1. Fertig sind Gebäude, Stockwerke, PDF-Pläne als zoombare Karte,
-> der Maßstab, Benutzer und Rollen sowie die Feiertage je Bundesland. Was noch kommt,
-> steht in [KONZEPT.md](KONZEPT.md).
+## So arbeitest du damit
+
+1. **Gebäude & Pläne**: Gebäudeteile und Stockwerke anlegen, PDF hochladen, Seite zuweisen.
+2. **Karte → Bearbeiten**: Maßstab festlegen, Flure als Wege zeichnen, Start- und Zielpunkte
+   setzen (Rampe, Lager, Stationen), Aufzüge auf jedem Stockwerk als Punkt setzen. Bei Bedarf
+   Bereiche und Räume einzeichnen.
+3. **Stammdaten**: Transportarten (z. B. FTS, Materialtransportdienst), Wagentypen und die
+   Zeiten der Aufzüge an euer Haus anpassen.
+4. **Lieferungen**: „Um 8:00 kommt die Wäsche an der Rampe an und geht ins Wäschelager“ mit
+   Ladung, Wochentagen, Feiertagsregel und Rückweg.
+5. **Karte → Ablauf** und **Auswertung**: Tag und Uhrzeit wählen und sehen, wohin die Ware
+   geht, wo gewartet wird und welcher Aufzug zum Engpass wird.
+
+Wie gerechnet wird, steht in [KONZEPT.md](KONZEPT.md).
 
 ## Installation (Windows-Server)
 
@@ -48,6 +59,10 @@ Ein Tag `vX.Y.Z` baut über GitHub Actions das Setup und veröffentlicht es als 
 | `logistikmap/db.py` | SQLite-Datenbank mit Migrationen |
 | `logistikmap/plaene.py` | PDF → Kartenkacheln (PyMuPDF) |
 | `logistikmap/feiertage.py` | Feiertage je Bundesland |
+| `logistikmap/regeln.py` | Wiederholungsregeln der Lieferungen |
+| `logistikmap/netz.py` | Wegenetz und Wegsuche |
+| `logistikmap/simulation.py` | Ablauf eines Tages mit Wartezeiten |
+| `logistikmap/planung.py` | Schnittstellen für Netz, Stammdaten, Lieferungen, Simulation |
 | `logistikmap/static/` | Oberfläche (ohne Build-Schritt, Leaflet liegt bei) |
 | `logistikmap/static/i18n/` | Texte der Oberfläche je Sprache |
 | `installer/` | Inno-Setup-Skript, Windows-Dienst (WinSW), Build-Skript |
