@@ -1,5 +1,14 @@
 # Änderungen
 
+## [0.6.1] - 2026-11-16
+
+- **Karte mit gedrückter rechter (oder mittlerer) Maustaste verschieben**, auch mitten beim
+  Zeichnen einer Flurlinie.
+- **Punkte automatisch an Flure hängen:** Führt eine neue Flurlinie dicht an einem Punkt vorbei,
+  der noch an keinem Weg hängt, wird er gleich angeschlossen. Dazu der Knopf „Punkte anschließen“
+  im Editor: Er hängt alle losen Punkte des Stockwerks an den nächsten Flur (bis 25 m) und nennt
+  die, die zu weit weg sind. So können Punkte zuerst gesetzt und die Flure danach gezogen werden.
+
 ## [0.6.0] - 2026-11-16
 
 - **Lieferung in einer Zeile:** Oben auf der Seite Lieferungen: „Um [08:00] kommen [5] [Paletten]

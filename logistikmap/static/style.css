@@ -458,3 +458,5 @@ main.seite-start { max-width: 920px; }
 .schnell-satz input.anzahl { width: 70px; }
 .schnell-satz select { max-width: 240px; }
 .schnell-satz .knopf { margin-left: auto; }
+.karte.verschieben, .karte.verschieben * { cursor: grabbing !important; }
+.werkzeugleiste button.anschliessen { border-color: #b07300; color: #8a5a00; background: #fff6e0; }

@@ -444,7 +444,7 @@
     },
     "hilfe": {
       "auswahl": "Klicke ein Element an, um es zu bearbeiten. Punkte lassen sich verschieben. Entf löscht.",
-      "weg": "Klicke Punkt für Punkt entlang der Flure. Vorhandene Punkte und Wege werden gefangen. Doppelklick oder Esc beendet die Linie.",
+      "weg": "Klicke Punkt für Punkt entlang der Flure. Vorhandene Punkte und Wege werden gefangen, Punkte direkt neben der Linie werden angeschlossen. Doppelklick oder Esc beendet die Linie. Karte verschieben: rechte Maustaste gedrückt halten.",
       "punkt": "Klicke auf die Stelle für den Punkt (Rampe, Lager, Station, Aufzug …).",
       "rechteck": "Klicke zwei gegenüberliegende Ecken des Raums an.",
       "vieleck": "Klicke die Ecken an. Klick auf den ersten Punkt oder Doppelklick schließt die Fläche. Rücktaste nimmt den letzten Punkt zurück.",
@@ -499,7 +499,11 @@
       "weg_geloescht": "Wegstück gelöscht",
       "ausrichten": "Ausrichten"
     },
-    "fremde_aenderung": "{benutzer} hat dieses Stockwerk gerade geändert – die Karte wurde neu geladen."
+    "fremde_aenderung": "{benutzer} hat dieses Stockwerk gerade geändert – die Karte wurde neu geladen.",
+    "anschliessen": "⇢ Punkte anschließen ({anzahl})",
+    "anschliessen_hilfe": "Hängt alle Punkte dieses Stockwerks, die noch an keinem Weg hängen, mit einem kurzen Stück an den nächsten Flur.",
+    "angeschlossen": "Angeschlossen an den Flur: {anzahl}",
+    "zu_weit": "Mehr als {meter} m vom nächsten Flur entfernt: {namen}. Dort erst einen Flur zeichnen."
   },
   "aufzug": {
     "art": {

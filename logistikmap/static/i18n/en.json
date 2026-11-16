@@ -444,7 +444,7 @@
     },
     "hilfe": {
       "auswahl": "Click an element to edit it. Points can be dragged. Del deletes.",
-      "weg": "Click point by point along the corridors. Existing points and paths snap. Double-click or Esc ends the line.",
+      "weg": "Click point by point along the corridors. Existing points and paths snap, points right next to the line get connected. Double-click or Esc ends the line. Move the map: hold the right mouse button.",
       "punkt": "Click where the point should be (ramp, store, ward, lift …).",
       "rechteck": "Click two opposite corners of the room.",
       "vieleck": "Click the corners. Clicking the first point or double-clicking closes the area. Backspace removes the last point.",
@@ -499,7 +499,11 @@
       "weg_geloescht": "path segment deleted",
       "ausrichten": "align"
     },
-    "fremde_aenderung": "{benutzer} has just changed this floor – the map was reloaded."
+    "fremde_aenderung": "{benutzer} has just changed this floor – the map was reloaded.",
+    "anschliessen": "⇢ Connect points ({anzahl})",
+    "anschliessen_hilfe": "Attaches every point on this floor that is not on a path to the nearest corridor with a short path.",
+    "angeschlossen": "Connected to the corridor: {anzahl}",
+    "zu_weit": "More than {meter} m from the nearest corridor: {namen}. Draw a corridor there first."
   },
   "aufzug": {
     "art": {

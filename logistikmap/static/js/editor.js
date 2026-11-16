@@ -15,6 +15,7 @@ const FARBEN = [
 const PUNKT_ARTEN = ["start", "ziel", "punkt", "tor", "aufzug", "uebergang"];
 const FANG_KNOTEN = 14; // Pixel
 const FANG_KANTE = 10;
+const FANG_VORBEI = 40; // Pixel: so dicht muss eine neue Flurlinie an einem losen Punkt vorbeiführen
 const WINKEL_FANG = 8; // Grad: fast waagerecht/senkrecht wird gerade gezogen
 
 export function starteEditor(ctx) {
@@ -42,6 +43,12 @@ export function starteEditor(ctx) {
       ),
       h("span.trenner"),
       h("button", { type: "button", title: t("editor.rueckgaengig_hilfe"), onclick: rueckgaengig }, "↶ " + t("editor.rueckgaengig")),
+      (() => {
+        const lose = ctx.stockwerk.meter_pro_punkt ? losePunkte().length : 0;
+        return lose
+          ? h("button.anschliessen", { type: "button", title: t("editor.anschliessen_hilfe"), onclick: alleAnschliessen }, t("editor.anschliessen", { anzahl: lose }))
+          : null;
+      })(),
       ctx.stockwerk.meter_pro_punkt ? null : h("span.warnung", t("editor.massstab_zuerst"))
     );
     werkzeugleiste.hidden = false;
@@ -97,6 +104,80 @@ export function starteEditor(ctx) {
   }
 
   /** Knoten an Position p: vorhandenen fangen, Kante teilen oder neuen Wegknoten setzen. */
+  // ---------------------------------------------------------------- Punkte an Flure anschließen
+  const MAX_ANSCHLUSS_M = 25;
+
+  /** Benannte Punkte (Tor, Lager, Station, Aufzug …) dieses Stockwerks, die an keinem Weg hängen. */
+  function losePunkte() {
+    const verbunden = new Set(ctx.netz.kanten.flatMap((e) => [e.von, e.nach]));
+    return ctx.netz.knoten.filter((k) => k.art !== "weg" && !verbunden.has(k.id));
+  }
+
+  /** Nächstes Wegstück auf diesem Stockwerk (Abstand in Planeinheiten), ohne die am Punkt selbst. */
+  function naechsterFlur(p, ohne) {
+    let beste = null;
+    for (const e of ctx.netz.kanten) {
+      if (e.von === ohne || e.nach === ohne || e.von_stockwerk !== sid || e.nach_stockwerk !== sid) continue;
+      const a = ctx.knotenNachId(e.von);
+      const b = ctx.knotenNachId(e.nach);
+      if (!a || !b) continue;
+      const dx = b.x - a.x, dy = b.y - a.y;
+      const tt = Math.max(0, Math.min(1, ((p.x - a.x) * dx + (p.y - a.y) * dy) / (dx * dx + dy * dy || 1)));
+      const q = { x: a.x + tt * dx, y: a.y + tt * dy };
+      const d = abstand(p, q);
+      if (!beste || d < beste.d) beste = { kante: e, punkt: q, d, tt, a, b };
+    }
+    return beste;
+  }
+
+  /** Punkt mit einem kurzen Wegstück an den nächsten Flur hängen. */
+  async function punktAnschliessen(k, maxAbstand) {
+    const e = naechsterFlur(k, k.id);
+    if (!e || e.d > maxAbstand) return false;
+    let ziel;
+    if (e.tt < 0.02) ziel = e.a.id;
+    else if (e.tt > 0.98) ziel = e.b.id;
+    else ziel = (await api(`kanten/${e.kante.id}/teilen`, { methode: "POST", daten: e.punkt })).id;
+    await api("kanten", { methode: "POST", daten: { von: k.id, nach: ziel } });
+    return true;
+  }
+
+  /** Beim Flurzeichnen: lose Punkte, an denen die neue Linie dicht vorbeiführt, gleich mitnehmen. */
+  async function loseNebenStrecke(a, b) {
+    let angeschlossen = 0;
+    for (const k of losePunkte()) {
+      const dx = b.x - a.x, dy = b.y - a.y;
+      const tt = Math.max(0, Math.min(1, ((k.x - a.x) * dx + (k.y - a.y) * dy) / (dx * dx + dy * dy || 1)));
+      if (ctx.pixel(k, { x: a.x + tt * dx, y: a.y + tt * dy }) > FANG_VORBEI) continue;
+      if (await punktAnschliessen(k, Infinity)) {
+        angeschlossen++;
+        await ctx.netzLaden();
+      }
+    }
+    return angeschlossen;
+  }
+
+  async function alleAnschliessen() {
+    const max = MAX_ANSCHLUSS_M / ctx.stockwerk.meter_pro_punkt;
+    const zuWeit = [];
+    let n = 0;
+    try {
+      await gruppe(async () => {
+        for (const k of losePunkte()) {
+          if (await punktAnschliessen(k, max)) {
+            n++;
+            await ctx.netzLaden();
+          } else zuWeit.push(ctx.knotenTitel(k));
+        }
+      });
+    } catch (e) {
+      fehlerMelden(e);
+    }
+    await ctx.netzLaden();
+    if (n) melden(t("editor.angeschlossen", { anzahl: n }));
+    if (zuWeit.length) melden(t("editor.zu_weit", { namen: zuWeit.join(", "), meter: MAX_ANSCHLUSS_M }), "fehler");
+  }
+
   async function knotenAn(p) {
     const k = naechsterKnoten(p);
     if (k) return k.id;
@@ -323,11 +404,18 @@ export function starteEditor(ctx) {
         const von = letzter ? ctx.knotenNachId(letzter) : null;
         const p = geradeZiehen(von, xy(latlng));
         // ein Klick = ein Rückgängig-Schritt (Flur teilen, Punkt, Wegstück)
+        let mitgenommen = 0;
         const id = await gruppe(async () => {
           const neu = await knotenAn(p);
-          if (letzter && letzter !== neu) await api("kanten", { methode: "POST", daten: { von: letzter, nach: neu } });
+          if (letzter && letzter !== neu) {
+            await api("kanten", { methode: "POST", daten: { von: letzter, nach: neu } });
+            await ctx.netzLaden();
+            const a = ctx.knotenNachId(letzter), b = ctx.knotenNachId(neu);
+            if (a && b) mitgenommen = await loseNebenStrecke(a, b);
+          }
           return neu;
         });
+        if (mitgenommen) melden(t("editor.angeschlossen", { anzahl: mitgenommen }));
         letzter = id;
         await ctx.netzLaden();
       } catch (e) {
@@ -761,6 +849,7 @@ export function starteEditor(ctx) {
   const netzLadenAlt = ctx.netzLaden;
   ctx.netzLaden = async () => {
     await netzLadenAlt();
+    leisteZeichnen();
     try {
       stand = (await api(`stockwerke/${sid}/stand`)).id;
     } catch {}

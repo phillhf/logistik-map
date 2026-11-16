@@ -202,6 +202,41 @@ export function zeigeKarte(wurzel, [stockwerkParam, modusParam, ...rest]) {
     );
   }
 
+  /** Mit gedrückter rechter (oder mittlerer) Maustaste die Karte verschieben – auch mitten beim Zeichnen. */
+  function rechtsZiehen(karte) {
+    const el = karte.getContainer();
+    let start = null;
+    let bewegt = false;
+    el.addEventListener("mousedown", (e) => {
+      if (e.button !== 2 && e.button !== 1) return;
+      e.preventDefault();
+      start = { x: e.clientX, y: e.clientY };
+      bewegt = false;
+      el.classList.add("verschieben");
+    });
+    window.addEventListener("mousemove", (e) => {
+      if (!start) return;
+      const dx = e.clientX - start.x, dy = e.clientY - start.y;
+      if (!bewegt && Math.hypot(dx, dy) < 4) return;
+      bewegt = true;
+      karte.panBy([-dx, -dy], { animate: false });
+      start = { x: e.clientX, y: e.clientY };
+    });
+    window.addEventListener("mouseup", (e) => {
+      if (!start || (e.button !== 2 && e.button !== 1)) return;
+      start = null;
+      el.classList.remove("verschieben");
+    });
+    // Nach dem Verschieben kein Kontextmenü und keine Rechtsklick-Aktion (z. B. Ecke löschen)
+    el.addEventListener("contextmenu", (e) => {
+      e.preventDefault();
+      if (bewegt) {
+        e.stopPropagation();
+        bewegt = false;
+      }
+    }, true);
+  }
+
   // ---------------------------------------------------------------- Karte & Ebenen
   function karteAufbauen(plan) {
     if (ctx.karte) ctx.karte.remove();
@@ -218,6 +253,7 @@ export function zeigeKarte(wurzel, [stockwerkParam, modusParam, ...rest]) {
       doubleClickZoom: modus !== "bearbeiten",
     });
     ctx.karte = karte;
+    rechtsZiehen(karte);
     window.__logistikKarte = ctx; // für die Oberflächentests (Planpunkte → Bildschirm)
     L.tileLayer(`/api/plaene/${plan.id}/kacheln/{z}/{x}/{y}.png`, {
       tileSize: 256,
