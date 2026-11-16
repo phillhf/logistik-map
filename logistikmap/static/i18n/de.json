@@ -426,7 +426,9 @@
     "kapazitaet_hilfe": "Engstelle: Wie viele Wagen passen gleichzeitig durch? Leer = unbegrenzt.",
     "gesperrt": "Gesperrt für",
     "max_gleichzeitig": "max. {anzahl} gleichzeitig",
-    "gesperrt_fuer": "gesperrt für {arten}"
+    "gesperrt_fuer": "gesperrt für {arten}",
+    "gesperrt_hilfe": "Angehakte Transportarten fahren hier nicht. Die Wegsuche nimmt für sie einen anderen Weg; gesperrte Strecken sind rot gestrichelt.",
+    "ganze_strecke": "Für die ganze Strecke bis zur nächsten Kreuzung ({anzahl} Stücke)"
   },
   "flaeche": {
     "name": "Name",

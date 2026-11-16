@@ -426,7 +426,9 @@
     "kapazitaet_hilfe": "Bottleneck: how many trolleys fit through at the same time? Empty = unlimited.",
     "gesperrt": "Blocked for",
     "max_gleichzeitig": "max. {anzahl} at the same time",
-    "gesperrt_fuer": "blocked for {arten}"
+    "gesperrt_fuer": "blocked for {arten}",
+    "gesperrt_hilfe": "Ticked transport types do not use this path. Route finding takes another way for them; blocked paths are shown dashed red.",
+    "ganze_strecke": "For the whole path up to the next junction ({anzahl} pieces)"
   },
   "flaeche": {
     "name": "Name",

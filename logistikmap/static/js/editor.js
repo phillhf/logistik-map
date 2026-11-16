@@ -129,37 +129,38 @@ export function starteEditor(ctx) {
     return treffer.filter((x, i) => !i || x.knoten === null || x.knoten !== treffer[i - 1].knoten);
   }
 
+  /** Alle Wegstücke einer Strecke bis zur nächsten Kreuzung bzw. zum nächsten benannten Punkt. */
+  function streckenStueck(start) {
+    const anschluesse = (id) => ctx.netz.kanten.filter((e) => e.von === id || e.nach === id);
+    const kette = new Set([start.id]);
+    for (const ende of [start.von, start.nach]) {
+      let knoten = ende, kante = start;
+      for (;;) {
+        const k = ctx.knotenNachId(knoten);
+        const an = anschluesse(knoten);
+        if (!k || k.art !== "weg" || an.length !== 2) break;
+        kante = an.find((e) => e.id !== kante.id);
+        if (!kante || kette.has(kante.id)) break;
+        kette.add(kante.id);
+        knoten = kante.von === knoten ? kante.nach : kante.von;
+      }
+    }
+    return [...kette];
+  }
+
   // ---------------------------------------------------------------- Werkzeug: Flur löschen
   /** Klick auf einen Flur löscht das Stück bis zur nächsten Kreuzung bzw. zum nächsten Punkt. */
   function radiererWerkzeug() {
     karte.getContainer().classList.add("radierer");
     ctx.hinweis(t("editor.hilfe.radierer"), [[t("karte.werkzeug_beenden"), () => wechseln("auswahl")]]);
 
-    /** Kette aus Wegstücken über Zwischenpunkte (unbenannt, genau zwei Anschlüsse) */
-    function flurStueck(start) {
-      const grad = (id) => ctx.netz.kanten.filter((e) => e.von === id || e.nach === id);
-      const kette = new Set([start.id]);
-      for (const ende of [start.von, start.nach]) {
-        let knoten = ende, kante = start;
-        for (;;) {
-          const k = ctx.knotenNachId(knoten);
-          const an = grad(knoten);
-          if (!k || k.art !== "weg" || an.length !== 2) break;
-          kante = an.find((e) => e.id !== kante.id);
-          if (!kante || kette.has(kante.id)) break;
-          kette.add(kante.id);
-          knoten = kante.von === knoten ? kante.nach : kante.von;
-        }
-      }
-      return [...kette];
-    }
 
     return {
       async objektKlick(typ, objekt, ereignis) {
         L.DomEvent.stopPropagation(ereignis);
         try {
           if (typ === "kante") {
-            const ids = flurStueck(objekt);
+            const ids = streckenStueck(objekt);
             await gruppe(async () => {
               for (const id of ids) await api(`kanten/${id}`, { methode: "DELETE" });
             });
@@ -983,6 +984,8 @@ export function starteEditor(ctx) {
     const laenge = h("input", { type: "number", min: 0, step: 0.1, value: k.laenge_m ?? "", placeholder: berechnet ? zahl(berechnet) : "" });
     const kap = h("input", { type: "number", min: 0, value: k.kapazitaet ?? "" });
     const sperren = ctx.stamm.transportarten.map((ta) => h("label.haken", h("input", { type: "checkbox", value: ta.id, checked: k.gesperrt.includes(ta.id) }), h("span", ta.name)));
+    const stueck = streckenStueck(k);
+    const ganz = h("input", { type: "checkbox", checked: stueck.length > 1 });
     const form = h(
       "form",
       kopf(t("kante.titel")),
@@ -990,17 +993,28 @@ export function starteEditor(ctx) {
       feld(t("kante.name"), name),
       feld(t("kante.laenge"), laenge, t("kante.laenge_hilfe")),
       feld(t("kante.kapazitaet"), kap, t("kante.kapazitaet_hilfe")),
-      h("div.feld", h("span", t("kante.gesperrt")), h("div.mehrfach", sperren)),
+      h("div.feld", h("span", t("kante.gesperrt")), h("div.mehrfach", sperren), h("small", t("kante.gesperrt_hilfe"))),
+      stueck.length > 1 ? h("label.feld.haken", ganz, h("span", t("kante.ganze_strecke", { anzahl: stueck.length }))) : null,
       fuss(true)
     );
-    form.addEventListener("submit", (e) => {
+    form.addEventListener("submit", async (e) => {
       e.preventDefault();
-      speichernUndNeu(`kanten/${k.id}`, {
-        name: name.value,
-        laenge_m: laenge.value === "" ? 0 : Number(laenge.value),
-        kapazitaet: kap.value === "" ? 0 : Number(kap.value),
-        gesperrt: sperren.map((l) => l.querySelector("input")).filter((i) => i.checked).map((i) => Number(i.value)),
-      });
+      const gesperrt = sperren.map((l) => l.querySelector("input")).filter((i) => i.checked).map((i) => Number(i.value));
+      try {
+        await gruppe(async () => {
+          // Sperre auf die übrigen Stücke derselben Strecke übertragen
+          if (ganz.checked) for (const id of stueck) if (id !== k.id) await api(`kanten/${id}`, { methode: "PUT", daten: { gesperrt } });
+          await api(`kanten/${k.id}`, {
+            methode: "PUT",
+            daten: { name: name.value, laenge_m: laenge.value === "" ? 0 : Number(laenge.value), kapazitaet: kap.value === "" ? 0 : Number(kap.value), gesperrt },
+          });
+        });
+        melden(t("allgemein.gespeichert"));
+        await ctx.netzLaden();
+        panelZeigen();
+      } catch (err) {
+        fehlerMelden(err);
+      }
     });
     return form;
   }

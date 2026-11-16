@@ -1,5 +1,13 @@
 # Änderungen
 
+## [0.7.1] - 2026-11-16
+
+- **Strecke für eine Transportart sperren, auf einen Klick für die ganze Strecke:** Beim
+  Wegstück (Auswählen → Strecke anklicken) gibt es unter „Gesperrt für“ den Haken „Für die ganze
+  Strecke bis zur nächsten Kreuzung“. Die Sperre gilt dann für alle Stücke bis zur nächsten
+  Abzweigung oder zum nächsten Punkt. Die Wegsuche nimmt für gesperrte Transportarten (z. B. FTS)
+  einen anderen Weg; gesperrte Strecken sind rot gestrichelt.
+
 ## [0.7.0] - 2026-11-16
 
 Neu: **mehrere Krankenhäuser (Standorte)** in einer Installation.
