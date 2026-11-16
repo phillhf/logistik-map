@@ -1,5 +1,15 @@
 # Änderungen
 
+## [0.6.7] - 2026-11-16
+
+- **Mehrere PDF-Pläne auf einmal:** Im Dateidialog lassen sich mehrere PDFs auswählen, oder du
+  ziehst sie auf den Bereich „Hochgeladene PDF-Pläne“. Bisher wurde nur die erste Datei
+  hochgeladen.
+- **Ergebnis bleibt stehen:** Für jede Datei steht eine Zeile da, ✓ hochgeladen oder ✗ mit Grund.
+  Vorher verschwand eine Fehlermeldung nach wenigen Sekunden.
+- PDFs mit Zeichen vor der PDF-Kennung (erlaubt laut Norm, kommt bei Plot-Programmen vor) werden
+  angenommen. Abgelehnte Uploads stehen im Server-Log.
+
 ## [0.6.6] - 2026-11-16
 
 - **„Lücken prüfen“ fragt deutlich:** Rechts neben der Karte steht die Frage („Hier endet eine

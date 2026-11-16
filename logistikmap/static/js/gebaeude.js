@@ -5,6 +5,7 @@ import { api, bestaetigen, datumText, fehlerMelden, formularDialog, groesse, h, 
 export function zeigeGebaeude(wurzel) {
   const teileBox = h("div.teile");
   const dokBox = h("div");
+  const uploadErgebnis = h("ul.upload-ergebnis", { hidden: true });
   let timer = null;
 
   wurzel.append(
@@ -15,11 +16,14 @@ export function zeigeGebaeude(wurzel) {
         h("div.box-kopf", h("h2", t("gebaeude.teile")), h("button.knopf", { type: "button", onclick: teilDialog }, "+ " + t("gebaeude.teil_neu"))),
         teileBox
       ),
-      h(
-        "section.karte-box",
-        h("div.box-kopf", h("h2", t("dokumente.titel")), uploadKnopf()),
-        h("p.hinweis", t("dokumente.hinweis")),
-        dokBox
+      ablage(
+        h(
+          "section.karte-box",
+          h("div.box-kopf", h("h2", t("dokumente.titel")), uploadKnopf()),
+          h("p.hinweis", t("dokumente.hinweis")),
+          uploadErgebnis,
+          dokBox
+        )
       )
     )
   );
@@ -246,29 +250,61 @@ export function zeigeGebaeude(wurzel) {
     );
   }
 
-  function uploadKnopf(nachUpload) {
-    const eingabe = h("input", { type: "file", accept: "application/pdf,.pdf", hidden: true });
-    const knopf = h("button.knopf", { type: "button", onclick: () => eingabe.click() }, t("dokumente.hochladen"));
-    eingabe.addEventListener("change", async () => {
-      const datei = eingabe.files[0];
-      eingabe.value = "";
-      if (!datei) return;
-      knopf.disabled = true;
+  /** Mehrere PDFs nacheinander hochladen; jede Datei bekommt eine bleibende Ergebniszeile. */
+  async function dateienHochladen(dateien, knopf, nachUpload) {
+    const liste = [...dateien];
+    if (!liste.length) return;
+    if (knopf) knopf.disabled = true;
+    leeren(uploadErgebnis);
+    uploadErgebnis.hidden = false;
+    let erster = null;
+    for (const [i, datei] of liste.entries()) {
+      const zeile = h("li.laeuft", t("dokumente.upload_zeile", { name: datei.name, nr: i + 1, von: liste.length }));
+      uploadErgebnis.append(zeile);
       try {
         const dok = await hochladen("dokumente", "datei", datei, (anteil) => {
-          knopf.textContent = t("dokumente.hochladen_laeuft", { prozent: zahl(anteil * 100, 0) });
+          zeile.textContent = `${datei.name} – ${zahl(anteil * 100, 0)} %`;
         });
-        melden(t("dokumente.hochgeladen", { name: dok.dateiname, seiten: dok.seiten.length }));
-        if (nachUpload) await nachUpload(dok);
-        else laden();
+        zeile.className = "ok";
+        zeile.textContent = "✓ " + t("dokumente.hochgeladen", { name: dok.dateiname, seiten: dok.seiten.length });
+        erster ??= dok;
       } catch (e) {
-        fehlerMelden(e);
-      } finally {
-        knopf.disabled = false;
-        knopf.textContent = t("dokumente.hochladen");
+        zeile.className = "fehler";
+        zeile.textContent = `✗ ${datei.name}: ${e.message || t("fehler.allgemein")}`;
       }
+    }
+    if (knopf) knopf.disabled = false;
+    if (nachUpload && erster) await nachUpload(erster);
+    else laden();
+  }
+
+  function uploadKnopf(nachUpload) {
+    const eingabe = h("input", { type: "file", accept: "application/pdf,.pdf", hidden: true, multiple: !nachUpload });
+    const knopf = h("button.knopf", { type: "button", onclick: () => eingabe.click() }, t("dokumente.hochladen"));
+    eingabe.addEventListener("change", async () => {
+      const dateien = [...eingabe.files];
+      eingabe.value = "";
+      await dateienHochladen(dateien, knopf, nachUpload);
     });
     return h("span", knopf, eingabe);
+  }
+
+  /** PDFs auf den Bereich ziehen = hochladen */
+  function ablage(el) {
+    el.addEventListener("dragover", (e) => {
+      if (![...(e.dataTransfer?.types || [])].includes("Files")) return;
+      e.preventDefault();
+      el.classList.add("ablage-aktiv");
+    });
+    el.addEventListener("dragleave", (e) => {
+      if (!el.contains(e.relatedTarget)) el.classList.remove("ablage-aktiv");
+    });
+    el.addEventListener("drop", (e) => {
+      e.preventDefault();
+      el.classList.remove("ablage-aktiv");
+      dateienHochladen(e.dataTransfer.files, null, null);
+    });
+    return el;
   }
 
   laden();

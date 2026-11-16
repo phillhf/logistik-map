@@ -129,3 +129,11 @@ def test_nein_bei_luecke_wird_gemerkt(haus):
     assert c.put(f"/api/knoten/{ende}", json={"ohne_hinweis": True}).status_code == 200
     k = next(k for k in c.get(f"/api/stockwerke/{haus['ug']}/netz").json()["knoten"] if k["id"] == ende)
     assert k["ohne_hinweis"] == 1
+
+
+def test_pdf_mit_vorspann_wird_angenommen(admin):
+    from conftest import pdf_bytes
+
+    r = admin.post("/api/dokumente", files={"datei": ("plot.pdf", b"\r\n  " + pdf_bytes(), "application/pdf")})
+    assert r.status_code == 200, r.text
+    assert admin.post("/api/dokumente", files={"datei": ("x.pdf", b"kein pdf" * 10, "application/pdf")}).status_code == 400

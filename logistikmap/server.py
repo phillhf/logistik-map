@@ -831,11 +831,14 @@ def erstelle_app(pfade: Pfade, kacheln_starten: bool = True) -> FastAPI:
                         raise fehler(413, "datei_zu_gross")
                     f.write(chunk)
             with tmp.open("rb") as f:
-                if f.read(5) != b"%PDF-":
+                # Die PDF-Norm erlaubt Zeichen vor der Kennung, manche Plot-Programme nutzen das
+                if b"%PDF-" not in f.read(1024):
+                    log.warning("Upload abgelehnt (kein PDF): %s, %d Bytes", datei.filename, groesse)
                     raise fehler(400, "kein_pdf")
             try:
                 seiten = pdf_seiten(tmp)
             except PdfFehler as e:
+                log.warning("Upload abgelehnt (PDF defekt: %s): %s", e, datei.filename)
                 raise fehler(400, "pdf_defekt", grund=str(e))
             name = Path(datei.filename or "plan.pdf").name[:200]
             did = db.ausfuehren(
@@ -843,6 +846,7 @@ def erstelle_app(pfade: Pfade, kacheln_starten: bool = True) -> FastAPI:
                 (name, groesse, json.dumps(seiten), ich["id"]),
             )
             tmp.replace(pfade.dokumente / f"{did}.pdf")
+            log.info("PDF hochgeladen: %s (%d Seiten, %d Bytes)", name, len(seiten), groesse)
         finally:
             tmp.unlink(missing_ok=True)
         return {"id": did, "dateiname": name, "seiten": seiten}

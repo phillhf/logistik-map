@@ -239,11 +239,12 @@
     "titel": "Hochgeladene PDF-Pläne",
     "hochladen": "PDF hochladen",
     "hochladen_laeuft": "Lade hoch … {prozent} %",
-    "hochgeladen": "„{name}“ hochgeladen ({seiten} Seiten).",
+    "hochgeladen": "„{name}“ hochgeladen – Seiten: {seiten}.",
     "seiten": "{anzahl} Seiten",
     "verwendet": "{anzahl}× verwendet",
     "keine": "Noch keine PDF-Pläne hochgeladen.",
-    "hinweis": "Große Pläne sind kein Problem. Sie werden einmalig in Kartenkacheln umgewandelt, das kann einige Minuten dauern."
+    "hinweis": "Du kannst mehrere PDFs auf einmal auswählen oder hierher ziehen. Danach weist du jedem Stockwerk oben seine Seite zu („Plan zuweisen“). Große Pläne werden einmalig in Kartenkacheln umgewandelt, das kann einige Minuten dauern.",
+    "upload_zeile": "{name} – wartet ({nr} von {von})"
   },
   "benutzer": {
     "titel": "Benutzer",

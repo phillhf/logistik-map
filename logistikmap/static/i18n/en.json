@@ -239,11 +239,12 @@
     "titel": "Uploaded PDF plans",
     "hochladen": "Upload PDF",
     "hochladen_laeuft": "Uploading … {prozent} %",
-    "hochgeladen": "“{name}” uploaded ({seiten} pages).",
+    "hochgeladen": "“{name}” uploaded – pages: {seiten}.",
     "seiten": "{anzahl} pages",
     "verwendet": "used {anzahl}×",
     "keine": "No PDF plans uploaded yet.",
-    "hinweis": "Large plans are no problem. They are converted into map tiles once, which can take a few minutes."
+    "hinweis": "You can select several PDFs at once or drag them here. Then assign each floor its page above (“Assign plan”). Large plans are converted into map tiles once, which can take a few minutes.",
+    "upload_zeile": "{name} – waiting ({nr} of {von})"
   },
   "benutzer": {
     "titel": "Users",
