@@ -54,12 +54,29 @@ async function start() {
       if (!e.fertig) startSeite = "start";
     } catch {}
   }
+  // Nach einem Update die neue Oberfläche laden, statt mit dem alten Stand weiterzuarbeiten
+  setInterval(versionPruefen, 60000);
+  document.addEventListener("visibilitychange", () => document.visibilityState === "visible" && versionPruefen());
   window.addEventListener("hashchange", () => {
+    versionPruefen();
     seiteWechseln();
     // Marke im Menü aktuell halten (die Seite „Erste Schritte“ setzt sie selbst)
     if (darf("bearbeiten") && !location.hash.startsWith("#/start")) offeneSchritte().then(markeSetzen).catch(() => {});
   });
   seiteWechseln();
+}
+
+let letztePruefung = 0;
+async function versionPruefen() {
+  if (Date.now() - letztePruefung < 5000) return;
+  letztePruefung = Date.now();
+  try {
+    const r = await fetch("api/status", { cache: "no-store" });
+    const { version } = await r.json();
+    if (version && zustand.version && version !== zustand.version) location.reload();
+  } catch {
+    /* Server startet gerade neu – beim nächsten Mal */
+  }
 }
 
 function seiteWechseln() {

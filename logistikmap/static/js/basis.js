@@ -270,6 +270,30 @@ export function bestaetigen(text, knopf = null) {
   });
 }
 
+/** Auswahl zwischen mehreren Wegen. optionen: [[wert, titel, erklaerung], …] → gewählter Wert oder null. */
+export function auswahlDialog(titel, text, optionen) {
+  return new Promise((fertig) => {
+    const dialog = h("dialog.dialog");
+    dialog.append(
+      h(
+        "form",
+        { method: "dialog" },
+        h("h2", titel),
+        text ? h("p", text) : null,
+        h("div.auswahl-optionen", optionen.map(([wert, ueberschrift, erklaerung]) =>
+          h("button.auswahl-option", { value: wert }, h("strong", ueberschrift), erklaerung ? h("small", erklaerung) : null))),
+        h("div.dialog-knoepfe", h("button.knopf-flach", { value: "" }, t("allgemein.abbrechen")))
+      )
+    );
+    dialog.addEventListener("close", () => {
+      dialog.remove();
+      fertig(dialog.returnValue || null);
+    });
+    document.body.append(dialog);
+    dialog.showModal();
+  });
+}
+
 // ---------------------------------------------------------------- Angemeldeter Benutzer
 export const zustand = { benutzer: null, version: "" };
 

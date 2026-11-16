@@ -86,7 +86,7 @@
       },
       "massstab": {
         "titel": "Maßstab festlegen",
-        "text": "Trag oben auf der Karte neben „Maßstab 1 :“ die Zahl aus dem Plankopf ein (z. B. 200) und drück Speichern. Steht keiner auf dem Plan, nimm im Modus „Bearbeiten“ „Maßstab abmessen“. Ohne Maßstab lassen sich keine Wegzeiten berechnen.",
+        "text": "Trag oben auf der Karte neben „Maßstab 1 :“ die Zahl aus dem Plankopf ein (z. B. 200) und drück Speichern. Steht keiner auf dem Plan, nimm im Modus „Bearbeiten“ „Maßstab festlegen“ → „Auf dem Plan abmessen“. Ohne Maßstab lassen sich keine Wegzeiten berechnen.",
         "knopf": "Maßstab festlegen"
       },
       "karte": {
@@ -180,8 +180,12 @@
     "massstab_frage": "Wie viele Meter liegen zwischen den beiden Punkten?",
     "massstab_meter": "Abstand in Metern",
     "massstab_gespeichert": "Maßstab gespeichert.",
+    "massstab_wie": "Wie willst du den Maßstab festlegen?",
+    "massstab_wie_tippen": "Eintippen",
+    "massstab_wie_tippen_text": "Die Zahl aus dem Plankopf, z. B. 1:200. Das Feld „Maßstab“ steht oben neben dem Stockwerk.",
+    "massstab_wie_messen": "Auf dem Plan abmessen",
+    "massstab_wie_messen_text": "Zwei Punkte anklicken, deren Abstand du kennst, und die Meter eingeben.",
     "massstab_feld": "Maßstab",
-    "massstab_abmessen": "Maßstab abmessen",
     "massstab_fehlt_kurz": "Zahl aus dem Plankopf eintragen, z. B. 200, dann Speichern",
     "massstab_gefunden_kurz": "Auf dem Plan gelesen: 1:{wert}. Zum Übernehmen Speichern drücken.",
     "massstab_ungueltig": "Bitte die Zahl hinter „1 :“ eintragen, z. B. 100.",

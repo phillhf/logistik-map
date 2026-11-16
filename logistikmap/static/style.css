@@ -169,7 +169,7 @@ main.seite-karte { max-width: none; padding: 0; display: grid; grid-template-col
 .baum .punkt { width: 8px; height: 8px; border-radius: 50%; background: #c5ccd3; }
 
 .kartenrahmen { position: relative; display: flex; flex-direction: column; min-width: 0; }
-.kartenkopf { display: flex; align-items: center; gap: 14px; padding: 8px 14px; background: var(--flaeche); border-bottom: 1px solid var(--linie); min-height: 48px; }
+.kartenkopf { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 14px; padding: 8px 14px; background: var(--flaeche); border-bottom: 1px solid var(--linie); min-height: 48px; }
 .kartenkopf h2 { white-space: nowrap; }
 .kartenkopf .abstand { flex: 1; }
 .massstab-info { font-size: 0.85rem; color: var(--gedimmt); }
@@ -441,3 +441,9 @@ main.seite-start { max-width: 920px; }
 .massstab-feld.fehlt input { border-color: #b07300; box-shadow: 0 0 0 2px rgba(176, 115, 0, 0.25); }
 .massstab-hinweis { color: var(--gedimmt); flex-basis: 100%; }
 .massstab-feld.fehlt .massstab-hinweis { color: #b07300; }
+.auswahl-optionen { display: grid; gap: 10px; margin: 12px 0 4px; }
+.auswahl-option { display: grid; gap: 3px; text-align: left; padding: 12px 14px; border: 1px solid var(--linie); border-radius: 8px; background: var(--flaeche); cursor: pointer; font: inherit; }
+.auswahl-option:hover, .auswahl-option:focus-visible { border-color: var(--blau); background: #eef4fb; }
+.auswahl-option small { color: var(--gedimmt); }
+.massstab-feld.blinken input { animation: blinken 0.4s 4 alternate; }
+@keyframes blinken { to { box-shadow: 0 0 0 4px rgba(31, 94, 160, 0.55); } }

@@ -1,5 +1,13 @@
 # Änderungen
 
+## [0.5.4] - 2026-11-16
+
+- „Maßstab festlegen“ fragt, wie: **Eintippen** (springt ins Feld „Maßstab“ oben) oder
+  **Auf dem Plan abmessen** (zwei Punkte anklicken).
+- Nach einem Update lädt sich eine offene Seite selbst neu, statt mit dem alten Stand
+  weiterzulaufen. Geprüft wird beim Seitenwechsel, beim Zurückkehren in den Tab und jede Minute.
+- Die Kopfzeile der Karte bricht um, statt Knöpfe abzuschneiden.
+
 ## [0.5.3] - 2026-11-16
 
 - **Maßstab-Feld fest oben auf der Karte:** „Maßstab 1 : [___] Speichern“ steht in jedem Modus

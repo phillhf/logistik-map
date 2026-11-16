@@ -86,7 +86,7 @@
       },
       "massstab": {
         "titel": "Set the scale",
-        "text": "Enter the number from the plan's title block (e.g. 200) next to “Scale 1 :” at the top of the map and press Save. If the plan states none, use “Measure scale” in Edit mode. Without a scale no travel times can be calculated.",
+        "text": "Enter the number from the plan's title block (e.g. 200) next to “Scale 1 :” at the top of the map and press Save. If the plan states none, use “Set scale” → “Measure on the plan” in Edit mode. Without a scale no travel times can be calculated.",
         "knopf": "Set scale"
       },
       "karte": {
@@ -180,8 +180,12 @@
     "massstab_frage": "How many metres are between the two points?",
     "massstab_meter": "Distance in metres",
     "massstab_gespeichert": "Scale saved.",
+    "massstab_wie": "How do you want to set the scale?",
+    "massstab_wie_tippen": "Type it in",
+    "massstab_wie_tippen_text": "The number from the title block, e.g. 1:200. The “Scale” field is at the top next to the floor name.",
+    "massstab_wie_messen": "Measure on the plan",
+    "massstab_wie_messen_text": "Click two points with a known distance and enter the metres.",
     "massstab_feld": "Scale",
-    "massstab_abmessen": "Measure scale",
     "massstab_fehlt_kurz": "Enter the number from the title block, e.g. 200, then Save",
     "massstab_gefunden_kurz": "Read from the plan: 1:{wert}. Press Save to apply.",
     "massstab_ungueltig": "Enter the number after “1 :”, e.g. 100.",

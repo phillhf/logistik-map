@@ -7,7 +7,7 @@
 // steht y als "lat" und x als "lng". Zoomstufe z entspricht 2^(z-4) Pixel pro Punkt,
 // passend zu logistikmap/plaene.py.
 
-import { api, darf, dauer, fehlerMelden, formularDialog, h, leeren, melden, stammdaten, t, zahl } from "./basis.js";
+import { api, auswahlDialog, darf, dauer, fehlerMelden, formularDialog, h, leeren, melden, stammdaten, t, zahl } from "./basis.js";
 import { starteAblauf } from "./ablauf.js";
 import { starteEditor } from "./editor.js";
 
@@ -197,7 +197,7 @@ export function zeigeKarte(wurzel, [stockwerkParam, modusParam, ...rest]) {
       fertig ? h("div.umschalter", modi.map(([m, text, link]) => h("a", { href: link, class: m === modus || (modus === "weg" && m === "ansehen") ? "aktiv" : "" }, text))) : null,
       fertig && s.meter_pro_punkt && modus !== "ablauf" ? h("button.knopf-flach", { type: "button", onclick: () => werkzeugStarten(messen) }, t("karte.messen")) : null,
       fertig && darf("bearbeiten") && modus === "bearbeiten"
-        ? h("button.knopf-flach", { type: "button", onclick: () => werkzeugStarten(massstabMessen) }, t("karte.massstab_abmessen"))
+        ? h("button.knopf-flach", { type: "button", onclick: massstabWaehlen }, t("karte.massstab_festlegen"))
         : null
     );
   }
@@ -539,6 +539,22 @@ export function zeigeKarte(wurzel, [stockwerkParam, modusParam, ...rest]) {
       },
       beiEnde: (_, w) => setTimeout(() => w.beenden(), 0),
     });
+  }
+
+  /** „Maßstab festlegen“: eintippen oder auf dem Plan abmessen? */
+  async function massstabWaehlen() {
+    const wahl = await auswahlDialog(t("karte.massstab_festlegen"), t("karte.massstab_wie"), [
+      ["tippen", t("karte.massstab_wie_tippen"), t("karte.massstab_wie_tippen_text")],
+      ["messen", t("karte.massstab_wie_messen"), t("karte.massstab_wie_messen_text")],
+    ]);
+    if (wahl === "messen") werkzeugStarten(massstabMessen);
+    if (wahl === "tippen") {
+      const eingabe = kopfzeile.querySelector(".massstab-feld input");
+      eingabe?.focus();
+      eingabe?.select();
+      eingabe?.closest("form").classList.add("blinken");
+      setTimeout(() => eingabe?.closest("form")?.classList.remove("blinken"), 1600);
+    }
   }
 
   /** Festes Feld in der Kopfzeile: „Maßstab 1 : [200] Speichern“. */
