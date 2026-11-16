@@ -27,6 +27,7 @@ from .netz import Netz, Weg, WegFehler, aufzug_fahrzeit
 
 RASTER = 300  # Auslastung in 5-Minuten-Schritten
 MAX_ZEIT = 2 * 86400
+LKW_MINUTEN_JE_EINHEIT = 2.0  # Entladen am Tor je Palette/Wagen, wenn am Tor nichts angegeben ist
 
 
 def zeit_in_sekunden(hhmm: str) -> int:
@@ -210,6 +211,7 @@ class Fahrt:
     rueck_ziel_id: int | None
     art: str = "hin"  # hin | spaeter (eigene Rückfahrt zu fester Uhrzeit)
     vortag: bool = False  # Lieferung des Vortags, die über Mitternacht läuft
+    lkw: bool = False  # Ware kam per LKW an einem Tor an, Tor ist schon wieder frei
     start: float | None = None
     ankunft: float | None = None
     fertig: float | None = None
@@ -296,10 +298,11 @@ class Simulation:
 
     def _knoten(self, nid: int) -> Ressource | None:
         n = self.netz.knoten[nid]
-        if not n["kapazitaet"]:
+        kapazitaet = n["kapazitaet"] or (1 if n["art"] == "tor" else None)  # Tor ohne Angabe: ein Tor
+        if not kapazitaet:
             return None
         if nid not in self.knoten:
-            self.knoten[nid] = Ressource(self.uhr, "knoten", nid, n["name"] or f"#{nid}", n["kapazitaet"], n["stockwerk_id"])
+            self.knoten[nid] = Ressource(self.uhr, "knoten", nid, n["name"] or f"#{nid}", kapazitaet, n["stockwerk_id"])
         return self.knoten[nid]
 
     def _weg(self, start: int, ziel: int, ta: dict, via: list[int]) -> Weg:
@@ -338,6 +341,8 @@ class Simulation:
             return
         pro = max(1, ta["wagen_pro_fahrt"])
         gruppen = [wagen[i : i + pro] for i in range(0, len(wagen), pro)]
+        tor = self.netz.knoten[l["start_id"]]["art"] == "tor"
+        lkw_fahrten: list[Fahrt] = []
         for nr, gruppe in enumerate(gruppen, start=1):
             f = Fahrt(
                 id=len(self.fahrten) + 1,
@@ -351,9 +356,13 @@ class Simulation:
                 rueck="leer" if modus == "spaeter" else modus,
                 rueck_ziel_id=rueck_ziel,
                 vortag=vortag,
+                lkw=tor,
             )
             self.fahrten.append(f)
-            self.uhr.plane(f.geplant, _Prozess(self.uhr, self._ablauf(f, ta)).weiter)
+            if tor:
+                lkw_fahrten.append(f)
+            else:
+                self.uhr.plane(f.geplant, _Prozess(self.uhr, self._ablauf(f, ta)).weiter)
             if modus == "spaeter" and rueck.get("uhrzeit"):
                 r = Fahrt(
                     id=len(self.fahrten) + 1,
@@ -371,6 +380,27 @@ class Simulation:
                 )
                 self.fahrten.append(r)
                 self.uhr.plane(r.geplant, _Prozess(self.uhr, self._ablauf(r, ta)).weiter)
+        if lkw_fahrten:
+            einheiten = sum(len(f.wagen) for f in lkw_fahrten)
+            self.uhr.plane(lkw_fahrten[0].geplant, _Prozess(self.uhr, self._lkw(l["start_id"], lkw_fahrten, einheiten, ta)).weiter)
+
+    def _lkw(self, tor_id: int, fahrten: list[Fahrt], einheiten: int, ta: dict):
+        """LKW kommt am Tor an, wartet auf ein freies Tor, wird entladen; danach geht die Ware weiter."""
+        tor = self._knoten(tor_id)
+        erste = fahrten[0]
+        seit = self.uhr.jetzt
+        yield ("belege", tor, 1)
+        if self.uhr.jetzt > seit:
+            for f in fahrten:
+                f.warte["engstelle"] += self.uhr.jetzt - seit
+            self._notiz(erste, "warten", tor_id, seit, self.uhr.jetzt, grund="tor")
+        t0 = self.uhr.jetzt
+        minuten = self.netz.knoten[tor_id].get("minuten_je_einheit") or LKW_MINUTEN_JE_EINHEIT
+        yield ("warte", einheiten * minuten * 60)
+        self._notiz(erste, "entladen", tor_id, t0, self.uhr.jetzt)
+        tor.freigeben(1)
+        for f in fahrten:
+            self.uhr.plane(self.uhr.jetzt, _Prozess(self.uhr, self._ablauf(f, ta)).weiter)
 
     # -- Ablauf einer Fahrt (Generator) ---------------------------------------------
     def _ablauf(self, f: Fahrt, ta: dict):
@@ -383,7 +413,7 @@ class Simulation:
             if uhr.jetzt > seit:
                 self._notiz(f, "warten", f.start_id, seit, uhr.jetzt, grund="fahrzeug")
         f.start = uhr.jetzt
-        yield from self._an_knoten(f, f.start_id, ta["ladezeit"], "laden")
+        yield from self._an_knoten(f, f.start_id, ta["ladezeit"], "laden", ohne_ressource=f.lkw and f.art == "hin")
         via = f.lieferung["via"] if f.art == "hin" else []
         yield from self._fahren(f, self._weg(f.start_id, f.ziel_id, ta, via), ta, rueck=False)
         f.ankunft = uhr.jetzt
@@ -397,8 +427,8 @@ class Simulation:
         if flotte:
             flotte.freigeben(1)
 
-    def _an_knoten(self, f: Fahrt, nid: int, dauer: float, art: str, rueck: bool = False):
-        res = self._knoten(nid)
+    def _an_knoten(self, f: Fahrt, nid: int, dauer: float, art: str, rueck: bool = False, ohne_ressource: bool = False):
+        res = None if ohne_ressource else self._knoten(nid)
         if res:
             seit = self.uhr.jetzt
             yield ("belege", res, 1)
@@ -506,7 +536,7 @@ class Simulation:
             "lieferung_id": l["id"],
             "name": l["name"],
             "lieferant": l["lieferant"],
-            "richtung": ("entsorgung" if l["richtung"] == "versorgung" else "versorgung") if f.art == "spaeter" else l["richtung"],
+            "richtung": {"versorgung": "entsorgung", "entsorgung": "versorgung"}.get(l["richtung"], l["richtung"]) if f.art == "spaeter" else l["richtung"],
             "art": f.art,
             "vortag": f.vortag,
             "transportart_id": l["transportart_id"],

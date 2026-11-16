@@ -95,6 +95,7 @@
         "liste": [
           "Die Flure als Wege („Weg zeichnen“): Punkt für Punkt entlang der Flure klicken.",
           "Start- und Zielpunkte („Punkt setzen“): Rampe, Lager, Küche, Stationen …",
+          "LKW-Tore an der Rampe als Punkt der Art „Tor / Rampe (LKW)“, bei „Gleichzeitig höchstens“ die Anzahl der Tore.",
           "Aufzüge und Treppen als Punkt: auf jedem Stockwerk, auf dem sie halten, und dort jeweils denselben Aufzug wählen.",
           "Übergänge zwischen Gebäudeteilen, falls es welche gibt.",
           "Jeder Punkt muss an einem Weg hängen. Räume und Bereiche sind optional."
@@ -108,7 +109,7 @@
       },
       "lieferungen": {
         "titel": "Lieferungen erfassen",
-        "text": "Trage ein, was wann von wo nach wo gebracht wird, wie oft (zum Beispiel Mo–Fr um 8:00) und ob es einen Rückweg gibt. Viele Lieferungen auf einmal übernimmst du auf der Seite Lieferungen mit „Importieren“ aus einer Excel-Liste; der Knopf „Excel“ lädt die passende Vorlage herunter. Für jede Lieferung wird geprüft, ob es einen Weg gibt.",
+        "text": "Leg Lieferungen und interne Transporte in der Zeile oben auf der Seite Lieferungen an: „Um 08:00 kommen 5 Paletten von Tor nach B25“. Weg, Aufzug und Transportart sucht das System selbst. Für einen Bettentausch (schmutzig hin, sauber zurück) wähl „beladen zurück“. Viele Lieferungen auf einmal übernimmst du mit „Importieren“ aus einer Excel-Liste; der Knopf „Excel“ lädt die passende Vorlage herunter.",
         "knopf": "Zu den Lieferungen"
       },
       "ergebnis": {
@@ -393,6 +394,7 @@
       "start": "Startpunkt",
       "ziel": "Zielpunkt",
       "punkt": "Start-/Zielpunkt",
+      "tor": "Tor / Rampe (LKW)",
       "aufzug": "Aufzug/Treppe",
       "uebergang": "Übergang"
     },
@@ -400,8 +402,10 @@
     "name": "Name",
     "aufzug": "Aufzug oder Treppe",
     "kapazitaet": "Gleichzeitig höchstens",
-    "kapazitaet_hilfe": "Für Rampen, Annahme oder Ausgabe: Wie viele Wagen können hier gleichzeitig be- oder entladen werden? Leer = unbegrenzt.",
+    "kapazitaet_hilfe": "Bei Tor / Rampe: Anzahl der Tore, an denen gleichzeitig ein LKW entladen werden kann (leer = 1). Bei Annahme oder Ausgabe: wie viele Wagen gleichzeitig be- oder entladen werden können. Leer = unbegrenzt.",
     "kapazitaet_text": "Höchstens {anzahl} gleichzeitig beim Laden/Entladen",
+    "minuten_je_einheit": "Entladen je Palette/Wagen (Minuten)",
+    "minuten_je_einheit_hilfe": "Wie lange ein Tor je Ladeeinheit belegt ist. Leer = 2 Minuten.",
     "liegt_in": "Liegt in",
     "weiter_nach": "Weiter nach:"
   },
@@ -510,7 +514,8 @@
   },
   "richtung": {
     "versorgung": "Versorgung",
-    "entsorgung": "Entsorgung"
+    "entsorgung": "Entsorgung",
+    "intern": "Intern"
   },
   "rueckweg": {
     "label": "Nach dem Entladen",
@@ -587,7 +592,26 @@
     "start_ziel_fehlt": "Bitte Start und Ziel wählen.",
     "export": "Excel",
     "import": "Importieren",
-    "aktiv_kurz": "Aktiv"
+    "aktiv_kurz": "Aktiv",
+    "transportart_auto": "Automatisch (was durchkommt)",
+    "name_auto": "leer = „Start → Ziel“",
+    "schnell": {
+      "titel": "Neue Lieferung in einer Zeile",
+      "hilfe": "Den Weg, den Aufzug und die Transportart sucht das System selbst. Alles Weitere lässt sich danach in der Liste ändern.",
+      "um": "Um",
+      "kommen": "kommen",
+      "von": "von",
+      "nach": "nach",
+      "danach": ", danach",
+      "wo": "– Wo? –",
+      "wohin": "– Wohin? –",
+      "rueck_leer": "leer zurück",
+      "rueck_beladen": "beladen zurück (z. B. sauberes Bett)",
+      "rueck_keiner": "bleibt dort / LKW fährt weg",
+      "anlegen": "Anlegen",
+      "ok": "Angelegt: {name} um {uhrzeit}, fährt mit {transportart}, ca. {minuten} Min. Weg.",
+      "ohne_weg": "Angelegt: {name}. Es gibt aber noch keinen Weg dorthin, „Erste Schritte“ zeigt, woran es liegt."
+    }
   },
   "stamm": {
     "transportarten": "Transportarten",

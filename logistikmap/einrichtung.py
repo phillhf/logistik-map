@@ -23,7 +23,7 @@ from .db import Datenbank
 from .netz import BENANNTE_ARTEN, Netz, WegFehler
 
 MAX_PROBLEME = 12  # je Schritt; der Rest wird nur gezählt
-PUNKT_ARTEN = ("start", "ziel", "punkt")
+PUNKT_ARTEN = ("start", "ziel", "punkt", "tor")
 
 
 class Bestaetigung(BaseModel):

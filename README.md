@@ -18,7 +18,11 @@ Holidays are calculated for all German federal states.
   itself what is missing (a floor without scale, a point not attached to a path, a delivery
   without a route – and where the network breaks) and jumps straight to the place to fix it.
 - **Floor plans from PDF**, also very large CAD exports (A0 and beyond), converted once into a
-  zoomable map. Scale is set by clicking two points with a known distance.
+  zoomable map. Enter the scale (e.g. 1:200; suggested when it is text in the PDF) or click two
+  points with a known distance.
+- **Deliveries in one line**: “At 08:00, 5 pallets from the gate to B25” – the system finds
+  route, lift and transport type. Truck gates at the dock with their number of gates; internal
+  transports such as a bed exchange.
 - **Map editor**: corridors as a path network, start and destination points (ramps, stores,
   wards), lifts and stairs across floors, connections between building sections, areas and rooms.
   Undo, snapping, re-aligning everything to a new version of the plan.

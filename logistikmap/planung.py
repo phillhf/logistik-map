@@ -22,6 +22,7 @@ from .simulation import Simulation
 UHRZEIT = re.compile(r"^([01]\d|2[0-3]):[0-5]\d$")
 FARBE = re.compile(r"^(#[0-9a-fA-F]{6})?$")
 RUECKWEG_MODI = ("leer", "beladen", "spaeter", "keiner")
+RICHTUNGEN = ("versorgung", "entsorgung", "intern")
 VORTAG_AB = "16:00"  # Lieferungen ab dieser Uhrzeit können in den nächsten Tag hineinlaufen
 
 
@@ -89,6 +90,7 @@ class Knoten(BaseModel):
     name: str = Field(default="", max_length=100)
     aufzug_id: int | None = None
     kapazitaet: int | None = Field(default=None, ge=1, le=1000)
+    minuten_je_einheit: float | None = Field(default=None, ge=0, le=240)  # nur Tore: Entladen je Palette/Wagen
 
 
 class KnotenAenderung(BaseModel):
@@ -98,6 +100,7 @@ class KnotenAenderung(BaseModel):
     name: str | None = Field(default=None, max_length=100)
     aufzug_id: int | None = None
     kapazitaet: int | None = Field(default=None, ge=0, le=1000)
+    minuten_je_einheit: float | None = Field(default=None, ge=0, le=240)
 
 
 class Kante(BaseModel):
@@ -153,10 +156,10 @@ Transportart.model_rebuild()
 
 
 class Lieferung(BaseModel):
-    name: str = Field(min_length=1, max_length=150)
+    name: str = Field(default="", max_length=150)  # leer: „Start → Ziel“
     lieferant: str = Field(default="", max_length=150)
     richtung: str = "versorgung"
-    transportart_id: int
+    transportart_id: int | None = None  # leer: die erste Transportart, die den Weg schafft
     start_id: int
     ziel_id: int
     uhrzeit: str
@@ -612,8 +615,8 @@ def registrieren(app: FastAPI, db: Datenbank, fehler, ansehen, bearbeiten, liefe
         knoten_pruefen(d.art, d.aufzug_id)
         merken(d.stockwerk_id, request, "punkt_neu" if d.art != "weg" else "weg")
         kid = db.ausfuehren(
-            "INSERT INTO knoten (stockwerk_id, x, y, art, name, aufzug_id, kapazitaet) VALUES (?,?,?,?,?,?,?)",
-            (d.stockwerk_id, d.x, d.y, d.art, d.name.strip(), d.aufzug_id, d.kapazitaet))
+            "INSERT INTO knoten (stockwerk_id, x, y, art, name, aufzug_id, kapazitaet, minuten_je_einheit) VALUES (?,?,?,?,?,?,?,?)",
+            (d.stockwerk_id, d.x, d.y, d.art, d.name.strip(), d.aufzug_id, d.kapazitaet, d.minuten_je_einheit or None))
         knoten_zuordnen(d.stockwerk_id)
         return {"id": kid}
 
@@ -625,6 +628,8 @@ def registrieren(app: FastAPI, db: Datenbank, fehler, ansehen, bearbeiten, liefe
         merken(k["stockwerk_id"], request, "punkt_verschoben" if set(felder) <= {"x", "y"} else "punkt_geaendert")
         if felder.get("kapazitaet") == 0:
             felder["kapazitaet"] = None
+        if felder.get("minuten_je_einheit") == 0:
+            felder["minuten_je_einheit"] = None
         if "name" in felder:
             felder["name"] = felder["name"].strip()
         if felder:
@@ -726,17 +731,42 @@ def registrieren(app: FastAPI, db: Datenbank, fehler, ansehen, bearbeiten, liefe
         row["aktiv"] = bool(row["aktiv"])
         return row
 
+    def knoten_name(kid: int) -> str:
+        k = db.eins("SELECT k.name, k.art, a.name AS aufzug FROM knoten k LEFT JOIN aufzuege a ON a.id = k.aufzug_id WHERE k.id = ?", (kid,))
+        return (k["name"] or k["aufzug"] or f"#{kid}") if k else f"#{kid}"
+
+    def transportart_waehlen(d: Lieferung) -> int:
+        """Erste Transportart (nach Reihenfolge der Stammdaten), die hin und zurück einen Weg findet."""
+        arten = db.alle("SELECT * FROM transportarten ORDER BY id")
+        if not arten:
+            raise fehler(400, "transportart_fehlt")
+        netz = Netz(db)
+        rueck_ziel = d.rueckweg.ziel_id or d.start_id
+        for ta in arten:
+            try:
+                netz.weg(d.start_id, d.ziel_id, ta, d.via)
+                if d.rueckweg.modus != "keiner":
+                    netz.weg(d.ziel_id, rueck_ziel, ta, [])
+                return ta["id"]
+            except WegFehler:
+                continue
+        return arten[0]["id"]  # noch kein Weg: „Erste Schritte“ zeigt, woran es liegt
+
     def lieferung_pruefen(d: Lieferung) -> dict:
-        if d.richtung not in ("versorgung", "entsorgung"):
+        if d.richtung not in RICHTUNGEN:
             raise fehler(400, "richtung_ungueltig")
         for z in (d.uhrzeit, d.spaetestens, d.rueckweg.uhrzeit):
             if z and not UHRZEIT.match(z):
                 raise fehler(400, "uhrzeit_ungueltig")
-        holen("transportarten", d.transportart_id)
         for kid in [d.start_id, d.ziel_id, *d.via, *([d.rueckweg.ziel_id] if d.rueckweg.ziel_id else [])]:
             holen("knoten", kid)
         if d.start_id == d.ziel_id:
             raise fehler(400, "start_gleich_ziel")
+        if d.transportart_id is None:
+            d.transportart_id = transportart_waehlen(d)
+        holen("transportarten", d.transportart_id)
+        if not d.name.strip():
+            d.name = f"{knoten_name(d.start_id)} → {knoten_name(d.ziel_id)}"[:150]
         wt = {w["id"] for w in db.alle("SELECT id FROM wagentypen")}
         if any(p.wagentyp_id not in wt for p in d.ladung):
             raise fehler(400, "wagentyp_unbekannt")
@@ -765,7 +795,14 @@ def registrieren(app: FastAPI, db: Datenbank, fehler, ansehen, bearbeiten, liefe
     def lieferung_anlegen(d: Lieferung, _: dict = Depends(lieferungen_recht)):
         werte = lieferung_pruefen(d)
         sp = ", ".join(werte)
-        return {"id": db.ausfuehren(f"INSERT INTO lieferungen ({sp}) VALUES ({', '.join('?' * len(werte))})", tuple(werte.values()))}
+        lid = db.ausfuehren(f"INSERT INTO lieferungen ({sp}) VALUES ({', '.join('?' * len(werte))})", tuple(werte.values()))
+        ta = holen("transportarten", werte["transportart_id"])
+        try:
+            weg = Netz(db).weg(werte["start_id"], werte["ziel_id"], ta, json.loads(werte["via"]))
+            weg_info = {"weg_ok": True, "dauer": round(weg.dauer, 1)}
+        except WegFehler as e:
+            weg_info = {"weg_ok": False, "code": e.code}
+        return {"id": lid, "name": werte["name"], "transportart": ta["name"], **weg_info}
 
     @app.put("/api/lieferungen/{lid}")
     def lieferung_aendern(lid: int, d: Lieferung, _: dict = Depends(lieferungen_recht)):

@@ -160,7 +160,7 @@ def lieferungen_xlsx(punkte: list[dict], stamm: dict, lieferungen: list[dict]) -
     for l in lieferungen:
         r = l["rueckweg"] or {}
         ws.append([
-            l["id"], l["name"], l["lieferant"], "Entsorgung" if l["richtung"] == "entsorgung" else "Versorgung",
+            l["id"], l["name"], l["lieferant"], {"entsorgung": "Entsorgung", "intern": "Intern"}.get(l["richtung"], "Versorgung"),
             ta.get(l["transportart_id"], ""), punkt_bezeichnung(nach_id.get(l["start_id"]), punkte), punkt_bezeichnung(nach_id.get(l["ziel_id"]), punkte),
             l["uhrzeit"], l["spaetestens"] or "", ladung_text(l["ladung"], stamm["wagentypen"]), tage_text(l["regel"]),
             {"ausser": "nicht", "auch": "auch", "nur": "nur"}[l["regel"].get("feiertage", "ausser")],
@@ -268,7 +268,7 @@ def lieferungen_zuordnen(zeilen: list[dict], kontext: dict) -> list[dict]:
         rueck_ziel = punkt_finden(g("Rückweg nach"), benannt) if g("Rückweg nach") else None
         if g("Rückweg nach") and rueck_ziel is None:
             fehler.append("rueckweg_ziel_unbekannt")
-        richtung = "entsorgung" if g("Richtung").lower().startswith("ent") else "versorgung"
+        richtung = "entsorgung" if g("Richtung").lower().startswith("ent") else "intern" if g("Richtung").lower().startswith("int") else "versorgung"
         aktiv = g("Aktiv").lower() not in ("nein", "0", "false", "aus")
         lid = None
         if g("ID"):
@@ -425,7 +425,7 @@ def karte_pdf(db, pfade, sid: int, e: dict, von: str, bis: str, start_filter: in
         seite.draw_line((a["x0"], a["y0"]), (a["x1"], a["y1"]), color=farbe, width=e_ * (2 + 10 * x["anzahl"] / maximal), stroke_opacity=0.6, lineCap=1)
 
     # Punkte mit Namen
-    punkt_farben = {"start": (0.17, 0.54, 0.24), "ziel": (0.79, 0.16, 0.16), "punkt": (0.11, 0.49, 0.84), "aufzug": (0.44, 0.28, 0.91), "uebergang": (0.9, 0.47, 0.0)}
+    punkt_farben = {"start": (0.17, 0.54, 0.24), "ziel": (0.79, 0.16, 0.16), "punkt": (0.11, 0.49, 0.84), "tor": (0.36, 0.25, 0.2), "aufzug": (0.44, 0.28, 0.91), "uebergang": (0.9, 0.47, 0.0)}
     aufzuege = {a["id"]: a["name"] for a in kontext["stamm"]["aufzuege"]}
     for k in knoten.values():
         if k["art"] == "weg":

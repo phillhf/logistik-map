@@ -14,13 +14,16 @@ zum Beispiel zu einem Punkt, der an keinem Weg hängt, oder zu einer Lieferung, 
 Weg gibt. Die Reihenfolge:
 
 1. **Gebäude & Pläne**: Gebäudeteile und Stockwerke anlegen, PDF hochladen, Seite zuweisen.
-2. **Karte → Bearbeiten**: Maßstab festlegen, Flure als Wege zeichnen, Start- und Zielpunkte
-   setzen (Rampe, Lager, Stationen), Aufzüge auf jedem Stockwerk als Punkt setzen. Bei Bedarf
-   Bereiche und Räume einzeichnen.
+2. **Karte → Bearbeiten**: Maßstab eintragen (z. B. 1:200, steht er als Text im Plan, wird er
+   vorgeschlagen), Flure als Wege zeichnen, Start- und Zielpunkte setzen (Lager, Stationen,
+   Aufbereitung), LKW-Tore an der Rampe mit ihrer Anzahl, Aufzüge auf jedem Stockwerk als Punkt.
+   Bei Bedarf Bereiche und Räume einzeichnen.
 3. **Stammdaten**: Transportarten (z. B. FTS, Materialtransportdienst), Wagentypen und die
    Zeiten der Aufzüge an euer Haus anpassen.
-4. **Lieferungen**: „Um 8:00 kommt die Wäsche an der Rampe an und geht ins Wäschelager“ mit
-   Ladung, Wochentagen, Feiertagsregel und Rückweg.
+4. **Lieferungen**: in einer Zeile „Um 08:00 kommen 5 Paletten vom Tor nach B25“. Weg, Aufzug
+   und Transportart sucht das System selbst. Interne Transporte genauso, z. B. Bettentausch
+   Station → Aufbereitung, beladen zurück. Wochentage, Feiertagsregel und Rückweg lassen sich
+   danach anpassen.
 5. **Karte → Ablauf** und **Auswertung**: Tag und Uhrzeit wählen und sehen, wohin die Ware
    geht, wo gewartet wird und welcher Aufzug zum Engpass wird.
 

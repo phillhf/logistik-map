@@ -211,6 +211,7 @@ textarea { font: inherit; padding: 8px 10px; border: 1px solid var(--linie); bor
 .chip { display: inline-block; border: 1.5px solid; border-radius: 12px; padding: 1px 9px; font-size: 0.8rem; font-weight: 500; white-space: nowrap; }
 .farbpunkt { display: inline-block; width: 10px; height: 10px; border-radius: 50%; margin-right: 8px; vertical-align: middle; }
 .tabelle td small.richtung.entsorgung { color: #9c36b5; }
+.tabelle td small.richtung.intern { color: #0b7285; }
 .linkliste { list-style: none; padding: 0; margin: 4px 0 10px; }
 .linkliste li { padding: 3px 0; }
 dl.werte { display: grid; grid-template-columns: auto 1fr; gap: 4px 12px; margin: 8px 0 0; font-size: 0.9rem; }
@@ -447,3 +448,13 @@ main.seite-start { max-width: 920px; }
 .auswahl-option small { color: var(--gedimmt); }
 .massstab-feld.blinken input { animation: blinken 0.4s 4 alternate; }
 @keyframes blinken { to { box-shadow: 0 0 0 4px rgba(31, 94, 160, 0.55); } }
+
+/* Lieferung in einer Zeile */
+.schnellzeile { background: #f1f6fb; border: 1px solid #cfe0f1; border-radius: 10px; padding: 12px 14px; margin-bottom: 14px; }
+.schnell-kopf { display: flex; gap: 10px; align-items: baseline; flex-wrap: wrap; margin-bottom: 8px; }
+.schnell-kopf small { color: var(--gedimmt); }
+.schnell-satz { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 8px; }
+.schnell-satz .wort { color: var(--gedimmt); font-weight: 600; }
+.schnell-satz input.anzahl { width: 70px; }
+.schnell-satz select { max-width: 240px; }
+.schnell-satz .knopf { margin-left: auto; }

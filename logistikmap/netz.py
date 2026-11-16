@@ -18,8 +18,8 @@ from dataclasses import dataclass, field
 
 from .db import Datenbank
 
-KNOTEN_ARTEN = ("weg", "start", "ziel", "punkt", "aufzug", "uebergang")
-BENANNTE_ARTEN = ("start", "ziel", "punkt", "aufzug", "uebergang")
+KNOTEN_ARTEN = ("weg", "start", "ziel", "punkt", "tor", "aufzug", "uebergang")
+BENANNTE_ARTEN = ("start", "ziel", "punkt", "tor", "aufzug", "uebergang")
 
 
 class WegFehler(Exception):

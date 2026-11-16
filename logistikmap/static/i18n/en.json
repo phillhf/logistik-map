@@ -95,6 +95,7 @@
         "liste": [
           "The corridors as paths (“Draw path”): click point by point along the corridors.",
           "Start and destination points (“Add point”): ramp, store, kitchen, wards …",
+          "Truck gates at the dock as a point of type “Gate / dock (truck)”, with the number of gates under “At most at once”.",
           "Lifts and stairs as points: on every floor where they stop, choosing the same lift each time.",
           "Connections between building sections, if there are any.",
           "Every point must be attached to a path. Rooms and areas are optional."
@@ -108,7 +109,7 @@
       },
       "lieferungen": {
         "titel": "Enter deliveries",
-        "text": "Enter what is brought from where to where and when, how often (for example Mon–Fri at 8:00) and whether there is a return trip. To add many deliveries at once, use “Import” on the Deliveries page with an Excel list; the “Excel” button downloads a matching template. Every delivery is checked for a route.",
+        "text": "Add deliveries and internal transports with the line at the top of the Deliveries page: “At 08:00, 5 pallets from gate to B25”. The system finds route, lift and transport type itself. For a bed exchange (dirty there, clean back) choose “return loaded”. To add many at once, use “Import” with an Excel list; the “Excel” button downloads a matching template.",
         "knopf": "To deliveries"
       },
       "ergebnis": {
@@ -393,6 +394,7 @@
       "start": "Start point",
       "ziel": "Destination",
       "punkt": "Start/destination",
+      "tor": "Gate / dock (truck)",
       "aufzug": "Lift/stairs",
       "uebergang": "Connection"
     },
@@ -400,8 +402,10 @@
     "name": "Name",
     "aufzug": "Lift or stairs",
     "kapazitaet": "At most at the same time",
-    "kapazitaet_hilfe": "For ramps, goods receipt or issue: how many trolleys can be loaded or unloaded here at the same time? Empty = unlimited.",
+    "kapazitaet_hilfe": "For a gate / dock: number of gates where a truck can unload at the same time (empty = 1). For receiving or dispatch: how many carts can be loaded or unloaded at once. Empty = unlimited.",
     "kapazitaet_text": "At most {anzahl} at the same time while loading/unloading",
+    "minuten_je_einheit": "Unloading per pallet/cart (minutes)",
+    "minuten_je_einheit_hilfe": "How long a gate is occupied per unit. Empty = 2 minutes.",
     "liegt_in": "Located in",
     "weiter_nach": "Continue to:"
   },
@@ -510,7 +514,8 @@
   },
   "richtung": {
     "versorgung": "Supply",
-    "entsorgung": "Disposal"
+    "entsorgung": "Disposal",
+    "intern": "Internal"
   },
   "rueckweg": {
     "label": "After unloading",
@@ -587,7 +592,26 @@
     "start_ziel_fehlt": "Please choose start and destination.",
     "export": "Excel",
     "import": "Import",
-    "aktiv_kurz": "Active"
+    "aktiv_kurz": "Active",
+    "transportart_auto": "Automatic (whatever gets through)",
+    "name_auto": "empty = “Start → Destination”",
+    "schnell": {
+      "titel": "New delivery in one line",
+      "hilfe": "The system finds the route, lift and transport type itself. Everything else can be changed in the list afterwards.",
+      "um": "At",
+      "kommen": ",",
+      "von": "from",
+      "nach": "to",
+      "danach": ", then",
+      "wo": "– From where? –",
+      "wohin": "– To where? –",
+      "rueck_leer": "return empty",
+      "rueck_beladen": "return loaded (e.g. clean bed)",
+      "rueck_keiner": "stays there / truck leaves",
+      "anlegen": "Add",
+      "ok": "Added: {name} at {uhrzeit}, uses {transportart}, approx. {minuten} min route.",
+      "ohne_weg": "Added: {name}. There is no route there yet, “Getting started” shows why."
+    }
   },
   "stamm": {
     "transportarten": "Transport types",

@@ -12,7 +12,7 @@ const FARBEN = [
   ["#7048e8", "editor.farbe.lila"],
   ["#495057", "editor.farbe.grau"],
 ];
-const PUNKT_ARTEN = ["start", "ziel", "punkt", "aufzug", "uebergang"];
+const PUNKT_ARTEN = ["start", "ziel", "punkt", "tor", "aufzug", "uebergang"];
 const FANG_KNOTEN = 14; // Pixel
 const FANG_KANTE = 10;
 const WINKEL_FANG = 8; // Grad: fast waagerecht/senkrecht wird gerade gezogen
@@ -591,6 +591,11 @@ export function starteEditor(ctx) {
     const art = h("select", ["weg", ...PUNKT_ARTEN].map((x) => h("option", { value: x, selected: x === k.art }, t(`knoten.art.${x}`))));
     const aufzug = h("select", aufzugOptionen().map(([w, text]) => h("option", { value: w, selected: String(w) === String(k.aufzug_id ?? "") }, text)));
     const kap = h("input", { type: "number", min: 0, value: k.kapazitaet ?? "" });
+    const minuten = h("input", { type: "number", min: 0, step: 0.5, placeholder: "2", value: k.minuten_je_einheit ?? "" });
+    const minutenFeld = feld(t("knoten.minuten_je_einheit"), minuten, t("knoten.minuten_je_einheit_hilfe"));
+    const torSichtbar = () => (minutenFeld.hidden = art.value !== "tor");
+    art.addEventListener("change", torSichtbar);
+    torSichtbar();
     const p = ctx.punkte.find((x) => x.id === k.id);
     const uebergaenge = ctx.netz.kanten.filter((e) => (e.von === k.id || e.nach === k.id) && e.von_stockwerk !== e.nach_stockwerk);
     const form = h(
@@ -601,6 +606,7 @@ export function starteEditor(ctx) {
       feld(t("knoten.art_label"), art),
       feld(t("knoten.aufzug"), aufzug, t("editor.aufzug_hilfe")),
       feld(t("knoten.kapazitaet"), kap, t("knoten.kapazitaet_hilfe")),
+      minutenFeld,
       h("h4", t("editor.uebergaenge")),
       h("p.hinweis", t("editor.uebergaenge_hilfe")),
       uebergaenge.length
@@ -624,7 +630,8 @@ export function starteEditor(ctx) {
       e.preventDefault();
       try {
         const aufzug_id = await aufzugWert(aufzug.value, null);
-        await speichernUndNeu(`knoten/${k.id}`, { name: name.value, art: art.value, aufzug_id, kapazitaet: kap.value === "" ? 0 : Number(kap.value) });
+        await speichernUndNeu(`knoten/${k.id}`, { name: name.value, art: art.value, aufzug_id, kapazitaet: kap.value === "" ? 0 : Number(kap.value),
+          minuten_je_einheit: minuten.value === "" ? 0 : Number(minuten.value) });
       } catch (err) {
         fehlerMelden(err);
       }

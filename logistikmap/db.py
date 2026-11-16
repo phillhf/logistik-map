@@ -211,6 +211,11 @@ MIGRATIONEN: list[str] = [
     """
     ALTER TABLE netz_verlauf ADD COLUMN gruppe TEXT
     """,
+    # 5 – Tore (Entladezeit je Ladeeinheit), Wagentyp Bett für interne Transporte
+    """
+    ALTER TABLE knoten ADD COLUMN minuten_je_einheit REAL;
+    INSERT INTO wagentypen (name, plaetze) SELECT 'Bett', 2 WHERE NOT EXISTS (SELECT 1 FROM wagentypen WHERE name = 'Bett')
+    """,
 ]
 
 STANDARD_ROLLEN = [

@@ -191,7 +191,7 @@ export async function starteAblauf(ctx) {
       filterLeiste,
       auswahl("start", startIds.map((id) => [id, punktName(ctx.punkte.find((p) => p.id === id))]), t("ablauf.filter.alle_starts")),
       auswahl("transportart", ctx.stamm.transportarten.map((x) => [x.id, x.name]), t("ablauf.filter.alle_transportarten")),
-      auswahl("richtung", [["versorgung", t("richtung.versorgung")], ["entsorgung", t("richtung.entsorgung")]], t("ablauf.filter.alle_richtungen")),
+      auswahl("richtung", [["versorgung", t("richtung.versorgung")], ["entsorgung", t("richtung.entsorgung")], ["intern", t("richtung.intern")]], t("ablauf.filter.alle_richtungen")),
       auswahl("lieferung", lieferungen.map((f) => [f.lieferung_id, `${uhr(f.geplant)} ${f.name}`]), t("ablauf.filter.alle_lieferungen"))
     );
   }

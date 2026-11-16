@@ -1,5 +1,20 @@
 # Änderungen
 
+## [0.6.0] - 2026-11-16
+
+- **Lieferung in einer Zeile:** Oben auf der Seite Lieferungen: „Um [08:00] kommen [5] [Paletten]
+  von [Lager] nach [B25], danach [leer zurück] [Mo–Fr] → Anlegen“. Den Namen bildet das System
+  selbst („Lager → B25“). Die Transportart wählt es nach dem, was durchkommt, zum Beispiel den
+  Transportdienst, wenn das FTS den Aufzug nicht nutzen darf. Nach dem Anlegen sagt eine Meldung,
+  ob es einen Weg gibt. Auch im großen Dialog sind Name und Transportart jetzt optional
+  („Automatisch“).
+- **Tor / Rampe (LKW)** als neue Punktart. „Gleichzeitig höchstens“ ist dort die Anzahl der Tore.
+  Ein LKW belegt ein Tor, bis alle Paletten bzw. Wagen entladen sind (Standard 2 Minuten je
+  Einheit, am Tor einstellbar), erst dann geht die Ware weiter. Sind alle Tore belegt, wartet
+  der nächste LKW, und die Auswertung zeigt das Tor als Engpass.
+- **Interne Transporte:** Neue Richtung „Intern“ und Wagentyp „Bett“. Bettentausch: Station →
+  Aufbereitung mit 1 Bett, „beladen zurück“ bringt das saubere Bett zurück.
+
 ## [0.5.4] - 2026-11-16
 
 - „Maßstab festlegen“ fragt, wie: **Eintippen** (springt ins Feld „Maßstab“ oben) oder

@@ -26,6 +26,7 @@ export function zeigeLieferungen(wurzel, [sprung] = []) {
   const suche = h("input", { type: "search", placeholder: t("lieferung.suchen") });
   const box = h("div");
   const vorschau = h("div.tagesvorschau");
+  const schnell = h("form.schnellzeile", { hidden: true });
   let liste = [];
   let punkte = [];
   let stamm = null;
@@ -44,6 +45,7 @@ export function zeigeLieferungen(wurzel, [sprung] = []) {
           bearbeiten ? h("button.knopf", { type: "button", onclick: () => dialog() }, "+ " + t("lieferung.neu")) : null
         )
       ),
+      schnell,
       vorschau,
       box
     )
@@ -54,6 +56,7 @@ export function zeigeLieferungen(wurzel, [sprung] = []) {
     try {
       [liste, punkte, stamm] = await Promise.all([api("lieferungen"), api("punkte"), stammdaten(true)]);
       zeigen();
+      schnellAufbauen();
       vorschauLaden();
       sprungZiel();
     } catch (e) {
@@ -93,6 +96,64 @@ export function zeigeLieferungen(wurzel, [sprung] = []) {
   function feiertagName(k) {
     const x = t(`feiertag.${k}`);
     return x.startsWith("⟨") ? k : x;
+  }
+
+  // ---------------------------------------------------------------- Lieferung in einer Zeile
+  // „Um 08:00 kommen 5 Paletten von Lager nach B25, danach leer zurück → Anlegen“
+  let schnellWerte = { uhrzeit: "08:00", anzahl: 1, wagentyp_id: null, start_id: null, ziel_id: null, rueck: "leer", tage: "1,2,3,4,5" };
+  function schnellAufbauen() {
+    if (!bearbeiten || !punkte.length) return (schnell.hidden = true);
+    const v = schnellWerte;
+    const orte = (p) => ["start", "ziel", "punkt", "tor"].includes(p.art);
+    const el = {
+      uhrzeit: h("input", { type: "time", value: v.uhrzeit, required: true }),
+      anzahl: h("input.anzahl", { type: "number", min: 1, max: 1000, value: v.anzahl, required: true }),
+      wagentyp: h("select", stamm.wagentypen.map((w) => h("option", { value: w.id, selected: w.id === v.wagentyp_id }, w.name))),
+      start: punktAuswahl(punkte, v.start_id, { filter: orte, leer: t("lieferung.schnell.wo") }),
+      ziel: punktAuswahl(punkte, v.ziel_id, { filter: orte, leer: t("lieferung.schnell.wohin") }),
+      rueck: h("select", ["leer", "beladen", "keiner"].map((m) => h("option", { value: m, selected: m === v.rueck }, t(`lieferung.schnell.rueck_${m}`)))),
+      tage: h("select", [["1,2,3,4,5", t("regel.mo_fr")], ["1,2,3,4,5,6", t("regel.mo_sa")], ["1,2,3,4,5,6,7", t("regel.taeglich")]].map(([w, text]) => h("option", { value: w, selected: w === v.tage }, text))),
+    };
+    el.start.required = el.ziel.required = true;
+    const wort = (text) => h("span.wort", text);
+    leeren(
+      schnell,
+      h("div.schnell-kopf", h("strong", t("lieferung.schnell.titel")), h("small", t("lieferung.schnell.hilfe"))),
+      h(
+        "div.schnell-satz",
+        wort(t("lieferung.schnell.um")), el.uhrzeit,
+        wort(t("lieferung.schnell.kommen")), el.anzahl, el.wagentyp,
+        wort(t("lieferung.schnell.von")), el.start,
+        wort(t("lieferung.schnell.nach")), el.ziel,
+        wort(t("lieferung.schnell.danach")), el.rueck, el.tage,
+        h("button.knopf", { type: "submit" }, t("lieferung.schnell.anlegen"))
+      )
+    );
+    schnell.hidden = false;
+    schnell.onsubmit = async (e) => {
+      e.preventDefault();
+      const start = Number(el.start.value), ziel = Number(el.ziel.value);
+      schnellWerte = { uhrzeit: el.uhrzeit.value, anzahl: 1, wagentyp_id: Number(el.wagentyp.value), start_id: start, ziel_id: ziel, rueck: el.rueck.value, tage: el.tage.value };
+      const art = (id) => punkt(id)?.art;
+      try {
+        const r = await api("lieferungen", {
+          methode: "POST",
+          daten: {
+            richtung: art(ziel) === "tor" ? "entsorgung" : "versorgung",
+            start_id: start, ziel_id: ziel, uhrzeit: el.uhrzeit.value,
+            ladung: [{ wagentyp_id: Number(el.wagentyp.value), anzahl: Number(el.anzahl.value) }],
+            regel: { wochentage: el.tage.value.split(",").map(Number), feiertage: "ausser" },
+            rueckweg: { modus: el.rueck.value },
+          },
+        });
+        simulationVergessen();
+        if (r.weg_ok) melden(t("lieferung.schnell.ok", { name: r.name, uhrzeit: el.uhrzeit.value, transportart: r.transportart, minuten: Math.max(1, Math.round(r.dauer / 60)) }));
+        else melden(t("lieferung.schnell.ohne_weg", { name: r.name }), "fehler");
+        laden();
+      } catch (err) {
+        fehlerMelden(err);
+      }
+    };
   }
 
   const punkt = (id) => punkte.find((p) => p.id === id);
@@ -246,16 +307,16 @@ export function zeigeLieferungen(wurzel, [sprung] = []) {
     if (!punkte.length) return melden(t("lieferung.erst_punkte"), "fehler");
     const neu = !l?.id;
     const v = {
-      name: "", lieferant: "", richtung: "versorgung", transportart_id: stamm.transportarten[0]?.id, start_id: null, ziel_id: null,
+      name: "", lieferant: "", richtung: "versorgung", transportart_id: null, start_id: null, ziel_id: null,
       uhrzeit: "08:00", spaetestens: "", ladung: [], via: [], regel: { wochentage: [1, 2, 3, 4, 5], feiertage: "ausser" },
       rueckweg: { modus: "leer", uhrzeit: "", ziel_id: null }, aktiv: true, notiz: "", ...(l || {}),
     };
     const startPunkte = (p) => p.art !== "weg";
     const el = {
-      name: h("input", { value: v.name, required: true, maxlength: 150 }),
+      name: h("input", { value: v.name, maxlength: 150, placeholder: t("lieferung.name_auto") }),
       lieferant: h("input", { value: v.lieferant, maxlength: 150 }),
-      richtung: h("select", ["versorgung", "entsorgung"].map((r) => h("option", { value: r, selected: r === v.richtung }, t(`richtung.${r}`)))),
-      transportart: h("select", stamm.transportarten.map((x) => h("option", { value: x.id, selected: x.id === v.transportart_id }, x.name))),
+      richtung: h("select", ["versorgung", "entsorgung", "intern"].map((r) => h("option", { value: r, selected: r === v.richtung }, t(`richtung.${r}`)))),
+      transportart: h("select", h("option", { value: "" }, t("lieferung.transportart_auto")), stamm.transportarten.map((x) => h("option", { value: x.id, selected: x.id === v.transportart_id }, x.name))),
       uhrzeit: h("input", { type: "time", value: v.uhrzeit, required: true }),
       spaetestens: h("input", { type: "time", value: v.spaetestens || "" }),
       start: punktAuswahl(punkte, v.start_id, { filter: startPunkte, leer: t("lieferung.waehlen") }),
@@ -366,7 +427,7 @@ export function zeigeLieferungen(wurzel, [sprung] = []) {
         name: el.name.value,
         lieferant: el.lieferant.value,
         richtung: el.richtung.value,
-        transportart_id: Number(el.transportart.value),
+        transportart_id: el.transportart.value ? Number(el.transportart.value) : null,
         start_id: Number(el.start.value) || 0,
         ziel_id: Number(el.ziel.value) || 0,
         uhrzeit: el.uhrzeit.value,
