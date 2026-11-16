@@ -390,7 +390,9 @@
     "rueckgaengig_fremd": "The last change on this floor was made by {benutzer}. You can only undo your own changes.",
     "beide_benannt": "Two named points cannot be merged. Connect them with “Draw paths”.",
     "unbekannt": "Error {status} from the server: {text}",
-    "upload_reihenfolge": "The upload got out of order. Please upload the file again."
+    "upload_reihenfolge": "The upload got out of order. Please upload the file again.",
+    "letzter_standort": "The last hospital cannot be deleted.",
+    "name_fehlt": "Please enter a name."
   },
   "knoten": {
     "art": {
@@ -1001,5 +1003,25 @@
   },
   "zeit": {
     "vortag": "previous day"
+  },
+  "standort": {
+    "titel": "Choose hospital",
+    "neu_menue": "＋ New hospital …",
+    "neu_titel": "New hospital",
+    "name": "Name",
+    "name_beispiel": "e.g. North Hospital",
+    "stammdaten_von": "Copy transport types and cart types from",
+    "standardwerte": "– defaults –",
+    "stammdaten_hilfe": "Buildings, plans, lifts and deliveries start empty. The “Getting started” page guides you through the setup.",
+    "anlegen": "Create and switch",
+    "verwalten": "Hospitals",
+    "hilfe": "Each hospital has its own buildings, plans, paths, master data, deliveries and analyses. Users and sign-in are shared. Switch at the top next to “Logistik Map”.",
+    "inhalt": "Content",
+    "zahlen": "{gebaeude} building sections · {lieferungen} deliveries",
+    "aktuell": "open",
+    "wechseln": "Open",
+    "loeschen_frage": "Delete “{name}” with everything: {gebaeude} building sections with plans and paths, {lieferungen} deliveries, master data and scenarios? This cannot be undone (only from a backup).",
+    "geloescht": "“{name}” deleted.",
+    "bundesland_gilt": "Applies to {name}. Each hospital has its own federal state."
   }
 }

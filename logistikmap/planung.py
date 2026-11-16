@@ -11,7 +11,7 @@ from fastapi import Depends, FastAPI, File, Request, UploadFile
 from fastapi.responses import Response
 from pydantic import BaseModel, Field
 
-from . import export
+from . import export, standort
 
 from .db import Datenbank
 from .feiertage import feiertage
@@ -277,6 +277,9 @@ def szenario_anwenden(aenderungen: dict, lieferungen: list[dict], stamm: dict, n
 
 
 def registrieren(app: FastAPI, db: Datenbank, fehler, ansehen, bearbeiten, lieferungen_recht=None, verwalten=None, pfade=None) -> None:
+    def ort() -> int:
+        return standort.aktuell(db)
+
     lieferungen_recht = lieferungen_recht or bearbeiten
     def holen(tabelle: str, rid: int) -> dict:
         row = db.eins(f"SELECT * FROM {tabelle} WHERE id = ?", (rid,))
@@ -290,14 +293,14 @@ def registrieren(app: FastAPI, db: Datenbank, fehler, ansehen, bearbeiten, liefe
 
     # ---------------------------------------------------------------- Stammdaten
     def stammdaten() -> dict:
-        auf = db.alle("SELECT * FROM aufzuege ORDER BY art, name")
+        auf = db.alle("SELECT * FROM aufzuege WHERE standort_id = ? ORDER BY art, name", (ort(),))
         for a in auf:
             a["transportarten"] = json.loads(a["transportarten"])
-        ta = db.alle("SELECT * FROM transportarten ORDER BY id")
+        ta = db.alle("SELECT * FROM transportarten WHERE standort_id = ? ORDER BY id", (ort(),))
         for t in ta:
             t["aufzug_exklusiv"], t["treppe"] = bool(t["aufzug_exklusiv"]), bool(t["treppe"])
             t["schichten"] = json.loads(t.get("schichten") or "[]")
-        return {"transportarten": ta, "wagentypen": db.alle("SELECT * FROM wagentypen ORDER BY name"), "aufzuege": auf}
+        return {"transportarten": ta, "wagentypen": db.alle("SELECT * FROM wagentypen WHERE standort_id = ? ORDER BY name", (ort(),)), "aufzuege": auf}
 
     @app.get("/api/stammdaten")
     def stammdaten_lesen(_: dict = Depends(ansehen)):
@@ -315,8 +318,8 @@ def registrieren(app: FastAPI, db: Datenbank, fehler, ansehen, bearbeiten, liefe
     def transportart_anlegen(d: Transportart, _: dict = Depends(bearbeiten)):
         farbe_pruefen(d.farbe)
         return {"id": db.ausfuehren(
-            "INSERT INTO transportarten (name, farbe, geschwindigkeit, ladezeit, entladezeit, wagen_pro_fahrt, anzahl, aufzug_exklusiv, treppe, schichten) VALUES (?,?,?,?,?,?,?,?,?,?)",
-            (d.name.strip(), d.farbe, d.geschwindigkeit, d.ladezeit, d.entladezeit, d.wagen_pro_fahrt, d.anzahl, int(d.aufzug_exklusiv), int(d.treppe), schichten_pruefen(d.schichten)))}
+            "INSERT INTO transportarten (name, farbe, geschwindigkeit, ladezeit, entladezeit, wagen_pro_fahrt, anzahl, aufzug_exklusiv, treppe, schichten, standort_id) VALUES (?,?,?,?,?,?,?,?,?,?,?)",
+            (d.name.strip(), d.farbe, d.geschwindigkeit, d.ladezeit, d.entladezeit, d.wagen_pro_fahrt, d.anzahl, int(d.aufzug_exklusiv), int(d.treppe), schichten_pruefen(d.schichten), ort()))}
 
     @app.put("/api/transportarten/{tid}")
     def transportart_aendern(tid: int, d: Transportart, _: dict = Depends(bearbeiten)):
@@ -336,7 +339,7 @@ def registrieren(app: FastAPI, db: Datenbank, fehler, ansehen, bearbeiten, liefe
 
     @app.post("/api/wagentypen")
     def wagentyp_anlegen(d: Wagentyp, _: dict = Depends(bearbeiten)):
-        return {"id": db.ausfuehren("INSERT INTO wagentypen (name, plaetze) VALUES (?, ?)", (d.name.strip(), d.plaetze))}
+        return {"id": db.ausfuehren("INSERT INTO wagentypen (name, plaetze, standort_id) VALUES (?, ?, ?)", (d.name.strip(), d.plaetze, ort()))}
 
     @app.put("/api/wagentypen/{wid}")
     def wagentyp_aendern(wid: int, d: Wagentyp, _: dict = Depends(bearbeiten)):
@@ -360,8 +363,8 @@ def registrieren(app: FastAPI, db: Datenbank, fehler, ansehen, bearbeiten, liefe
     def aufzug_anlegen(d: AufzugModell, _: dict = Depends(bearbeiten)):
         aufzug_pruefen(d)
         return {"id": db.ausfuehren(
-            "INSERT INTO aufzuege (name, art, plaetze, fahrzeit_etage, tuerzeit, raeumzeit, anfahrt, transportarten) VALUES (?,?,?,?,?,?,?,?)",
-            (d.name.strip(), d.art, d.plaetze, d.fahrzeit_etage, d.tuerzeit, d.raeumzeit, d.anfahrt, json.dumps(d.transportarten)))}
+            "INSERT INTO aufzuege (name, art, plaetze, fahrzeit_etage, tuerzeit, raeumzeit, anfahrt, transportarten, standort_id) VALUES (?,?,?,?,?,?,?,?,?)",
+            (d.name.strip(), d.art, d.plaetze, d.fahrzeit_etage, d.tuerzeit, d.raeumzeit, d.anfahrt, json.dumps(d.transportarten), ort()))}
 
     @app.put("/api/aufzuege/{aid}")
     def aufzug_aendern(aid: int, d: AufzugModell, _: dict = Depends(bearbeiten)):
@@ -599,8 +602,9 @@ def registrieren(app: FastAPI, db: Datenbank, fehler, ansehen, bearbeiten, liefe
                  FROM knoten k JOIN stockwerke s ON s.id = k.stockwerk_id
                  JOIN gebaeudeteile g ON g.id = s.gebaeudeteil_id
                  LEFT JOIN flaechen f ON f.id = k.flaeche_id
-                WHERE k.art <> 'weg' OR k.name <> ''
-                ORDER BY g.reihenfolge, g.name, s.ebene DESC, k.name"""
+                WHERE (k.art <> 'weg' OR k.name <> '') AND g.standort_id = ?
+                ORDER BY g.reihenfolge, g.name, s.ebene DESC, k.name""",
+            (ort(),),
         )
 
     @app.get("/api/engstellen")
@@ -776,7 +780,7 @@ def registrieren(app: FastAPI, db: Datenbank, fehler, ansehen, bearbeiten, liefe
 
     def transportart_waehlen(d: Lieferung) -> int:
         """Erste Transportart (nach Reihenfolge der Stammdaten), die hin und zurück einen Weg findet."""
-        arten = db.alle("SELECT * FROM transportarten ORDER BY id")
+        arten = db.alle("SELECT * FROM transportarten WHERE standort_id = ? ORDER BY id", (ort(),))
         if not arten:
             raise fehler(400, "transportart_fehlt")
         netz = Netz(db)
@@ -806,7 +810,7 @@ def registrieren(app: FastAPI, db: Datenbank, fehler, ansehen, bearbeiten, liefe
         holen("transportarten", d.transportart_id)
         if not d.name.strip():
             d.name = f"{knoten_name(d.start_id)} → {knoten_name(d.ziel_id)}"[:150]
-        wt = {w["id"] for w in db.alle("SELECT id FROM wagentypen")}
+        wt = {w["id"] for w in db.alle("SELECT id FROM wagentypen WHERE standort_id = ?", (ort(),))}
         if any(p.wagentyp_id not in wt for p in d.ladung):
             raise fehler(400, "wagentyp_unbekannt")
         if d.rueckweg.modus not in RUECKWEG_MODI:
@@ -828,11 +832,11 @@ def registrieren(app: FastAPI, db: Datenbank, fehler, ansehen, bearbeiten, liefe
 
     @app.get("/api/lieferungen")
     def lieferungen(_: dict = Depends(ansehen)):
-        return [lieferung_lesen(r) for r in db.alle("SELECT * FROM lieferungen ORDER BY uhrzeit, name")]
+        return [lieferung_lesen(r) for r in db.alle("SELECT * FROM lieferungen WHERE standort_id = ? ORDER BY uhrzeit, name", (ort(),))]
 
     @app.post("/api/lieferungen")
     def lieferung_anlegen(d: Lieferung, _: dict = Depends(lieferungen_recht)):
-        werte = lieferung_pruefen(d)
+        werte = {**lieferung_pruefen(d), "standort_id": ort()}
         sp = ", ".join(werte)
         lid = db.ausfuehren(f"INSERT INTO lieferungen ({sp}) VALUES ({', '.join('?' * len(werte))})", tuple(werte.values()))
         ta = holen("transportarten", werte["transportart_id"])
@@ -877,8 +881,9 @@ def registrieren(app: FastAPI, db: Datenbank, fehler, ansehen, bearbeiten, liefe
 
     # ---------------------------------------------------------------- Simulation
     def ist_feiertag_fn():
-        bl = db.einstellung("bundesland", "NW")
-        sonder = {s["datum"] for s in db.alle("SELECT datum FROM sondertage")}
+        bl = db.ort_einstellung("bundesland", db.einstellung("bundesland", "NW"))
+        sid = ort()
+        sonder = {s["datum"] for s in db.alle("SELECT datum FROM sondertage WHERE standort_id = ?", (sid,))}
         cache: dict[int, set] = {}
 
         def pruefen(tag: date) -> tuple[bool, str | None]:
@@ -888,7 +893,7 @@ def registrieren(app: FastAPI, db: Datenbank, fehler, ansehen, bearbeiten, liefe
             if iso in cache[tag.year]:
                 return True, cache[tag.year][iso]
             if iso in sonder:
-                return True, db.eins("SELECT name FROM sondertage WHERE datum = ?", (iso,))["name"]
+                return True, db.eins("SELECT name FROM sondertage WHERE datum = ? AND standort_id = ?", (iso, sid))["name"]
             return False, None
 
         return pruefen
@@ -896,7 +901,7 @@ def registrieren(app: FastAPI, db: Datenbank, fehler, ansehen, bearbeiten, liefe
     def szenario_laden(szenario: int | None) -> dict:
         if not szenario:
             return {}
-        row = db.eins("SELECT aenderungen FROM szenarien WHERE id = ?", (szenario,))
+        row = db.eins("SELECT aenderungen FROM szenarien WHERE id = ? AND standort_id = ?", (szenario, ort()))
         if row is None:
             raise fehler(404, "nicht_gefunden")
         return json.loads(row["aenderungen"])
@@ -904,7 +909,7 @@ def registrieren(app: FastAPI, db: Datenbank, fehler, ansehen, bearbeiten, liefe
     def tag_simulieren(tag: date, aenderungen: dict, pruefen=None) -> dict:
         pruefen = pruefen or ist_feiertag_fn()
         feiertag, feiertag_name = pruefen(tag)
-        alle = [lieferung_lesen(r) for r in db.alle("SELECT * FROM lieferungen ORDER BY uhrzeit, id")]
+        alle = [lieferung_lesen(r) for r in db.alle("SELECT * FROM lieferungen WHERE standort_id = ? ORDER BY uhrzeit, id", (ort(),))]
         sd = stammdaten()
         netz = Netz(db)
         szenario_anwenden(aenderungen, alle, sd, netz)
@@ -964,7 +969,7 @@ def registrieren(app: FastAPI, db: Datenbank, fehler, ansehen, bearbeiten, liefe
 
     @app.get("/api/szenarien")
     def szenarien(_: dict = Depends(ansehen)):
-        return [szenario_lesen(r) for r in db.alle("SELECT * FROM szenarien ORDER BY name")]
+        return [szenario_lesen(r) for r in db.alle("SELECT * FROM szenarien WHERE standort_id = ? ORDER BY name", (ort(),))]
 
     def aenderungen_pruefen(a: dict) -> str:
         erlaubt = {"lieferungen", "transportarten", "aufzuege", "kanten", "knoten"}
@@ -978,8 +983,8 @@ def registrieren(app: FastAPI, db: Datenbank, fehler, ansehen, bearbeiten, liefe
 
     @app.post("/api/szenarien")
     def szenario_anlegen(d: Szenario, _: dict = Depends(lieferungen_recht)):
-        return {"id": db.ausfuehren("INSERT INTO szenarien (name, beschreibung, aenderungen) VALUES (?, ?, ?)",
-                                    (d.name.strip(), d.beschreibung, aenderungen_pruefen(d.aenderungen)))}
+        return {"id": db.ausfuehren("INSERT INTO szenarien (name, beschreibung, aenderungen, standort_id) VALUES (?, ?, ?, ?)",
+                                    (d.name.strip(), d.beschreibung, aenderungen_pruefen(d.aenderungen), ort()))}
 
     @app.put("/api/szenarien/{sid}")
     def szenario_aendern(sid: int, d: Szenario, _: dict = Depends(lieferungen_recht)):
@@ -1010,7 +1015,7 @@ def registrieren(app: FastAPI, db: Datenbank, fehler, ansehen, bearbeiten, liefe
 
     # ---------------------------------------------------------------- Import & Export
     def export_kontext():
-        return {"punkte": punkte(None), "stamm": stammdaten(), "lieferungen": [lieferung_lesen(r) for r in db.alle("SELECT * FROM lieferungen ORDER BY uhrzeit, name")]}
+        return {"punkte": punkte(None), "stamm": stammdaten(), "lieferungen": [lieferung_lesen(r) for r in db.alle("SELECT * FROM lieferungen WHERE standort_id = ? ORDER BY uhrzeit, name", (ort(),))]}
 
     def datei_antwort(daten: bytes, name: str, art: str) -> Response:
         return Response(daten, media_type=art, headers={"Content-Disposition": f'attachment; filename="{name}"'})
@@ -1040,11 +1045,12 @@ def registrieren(app: FastAPI, db: Datenbank, fehler, ansehen, bearbeiten, liefe
                     detail = getattr(ex, "detail", {"code": "allgemein"})
                     z["fehler"].append(detail.get("code", "allgemein") if isinstance(detail, dict) else "allgemein")
                     continue
-                if z.get("id") and db.eins("SELECT 1 FROM lieferungen WHERE id = ?", (z["id"],)):
+                if z.get("id") and db.eins("SELECT 1 FROM lieferungen WHERE id = ? AND standort_id = ?", (z["id"], ort())):
                     sets = ", ".join(f"{k} = ?" for k in werte)
                     db.ausfuehren(f"UPDATE lieferungen SET {sets} WHERE id = ?", (*werte.values(), z["id"]))
                     z["aktion"] = "geaendert"
                 else:
+                    werte["standort_id"] = ort()
                     z["id"] = db.ausfuehren(f"INSERT INTO lieferungen ({', '.join(werte)}) VALUES ({', '.join('?' * len(werte))})", tuple(werte.values()))
                     z["aktion"] = "neu"
         uebernommen = (not pruefen) and all(not z["fehler"] for z in ergebnis)
@@ -1080,7 +1086,7 @@ def registrieren(app: FastAPI, db: Datenbank, fehler, ansehen, bearbeiten, liefe
             raise fehler(400, "datum_ungueltig")
         tage = max(1, min(tage, 62))
         pruefen = ist_feiertag_fn()
-        alle = [lieferung_lesen(r) for r in db.alle("SELECT id, regel, aktiv, ladung, via, rueckweg FROM lieferungen")]
+        alle = [lieferung_lesen(r) for r in db.alle("SELECT id, regel, aktiv, ladung, via, rueckweg FROM lieferungen WHERE standort_id = ?", (ort(),))]
         ergebnis = []
         for i in range(tage):
             tag = date.fromordinal(start.toordinal() + i)

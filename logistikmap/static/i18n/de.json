@@ -390,7 +390,9 @@
     "rueckgaengig_fremd": "Die letzte Änderung auf diesem Stockwerk stammt von {benutzer}. Rückgängig geht nur für eigene Änderungen.",
     "beide_benannt": "Zwei benannte Punkte lassen sich nicht zusammenlegen. Verbinde sie mit „Strecken zeichnen“.",
     "unbekannt": "Fehler {status} vom Server: {text}",
-    "upload_reihenfolge": "Der Upload ist durcheinandergeraten. Bitte die Datei noch einmal hochladen."
+    "upload_reihenfolge": "Der Upload ist durcheinandergeraten. Bitte die Datei noch einmal hochladen.",
+    "letzter_standort": "Das letzte Krankenhaus lässt sich nicht löschen.",
+    "name_fehlt": "Bitte einen Namen eingeben."
   },
   "knoten": {
     "art": {
@@ -1001,5 +1003,25 @@
   },
   "zeit": {
     "vortag": "Vortag"
+  },
+  "standort": {
+    "titel": "Krankenhaus wählen",
+    "neu_menue": "＋ Neues Krankenhaus …",
+    "neu_titel": "Neues Krankenhaus",
+    "name": "Name",
+    "name_beispiel": "z. B. Klinikum Nord",
+    "stammdaten_von": "Transportarten und Wagentypen übernehmen von",
+    "standardwerte": "– Standardwerte –",
+    "stammdaten_hilfe": "Gebäude, Pläne, Aufzüge und Lieferungen beginnen leer. Die Seite „Erste Schritte“ führt durch die Einrichtung.",
+    "anlegen": "Anlegen und wechseln",
+    "verwalten": "Krankenhäuser",
+    "hilfe": "Jedes Krankenhaus hat eigene Gebäude, Pläne, Strecken, Stammdaten, Lieferungen und Auswertungen. Benutzer und Anmeldung sind gemeinsam. Gewechselt wird oben neben „Logistik Map“.",
+    "inhalt": "Inhalt",
+    "zahlen": "{gebaeude} Gebäudeteile · {lieferungen} Lieferungen",
+    "aktuell": "geöffnet",
+    "wechseln": "Öffnen",
+    "loeschen_frage": "„{name}“ mit allem löschen: {gebaeude} Gebäudeteile mit Plänen und Strecken, {lieferungen} Lieferungen, Stammdaten und Szenarien? Das lässt sich nicht rückgängig machen (nur über eine Sicherung).",
+    "geloescht": "„{name}“ gelöscht.",
+    "bundesland_gilt": "Gilt für {name}. Jedes Krankenhaus hat sein eigenes Bundesland."
   }
 }

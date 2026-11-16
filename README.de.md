@@ -30,6 +30,11 @@ Weg gibt. Die Reihenfolge:
 6. **Szenarien**: „Was wäre, wenn die Wäsche um 7:30 käme?“ oder „… wenn Aufzug West in
    Wartung ist?“ Das Szenario lässt sich mit dem Ist-Zustand vergleichen und auf Wunsch übernehmen.
 
+**Mehrere Krankenhäuser:** Oben neben „Logistik Map“ wählst du das Krankenhaus. Über
+„＋ Neues Krankenhaus …“ legst du ein weiteres an. Jedes hat eigene Gebäude, Pläne, Strecken,
+Stammdaten, Lieferungen und Auswertungen; Benutzer und Anmeldung sind gemeinsam. Verwaltet
+(umbenennen, löschen) werden die Häuser unter Einstellungen.
+
 Wie gerechnet wird, steht in [KONZEPT.md](KONZEPT.md).
 
 ![Ablauf auf der Karte](docs/screenshots/ablauf.png)
@@ -143,6 +148,7 @@ Ein Tag `vX.Y.Z` baut über GitHub Actions das Setup und veröffentlicht es als 
 | `logistikmap/simulation.py` | Ablauf eines Tages mit Wartezeiten |
 | `logistikmap/planung.py` | Schnittstellen für Netz, Stammdaten, Lieferungen, Szenarien, Simulation |
 | `logistikmap/einrichtung.py` | Prüfung für die Seite „Erste Schritte“ |
+| `logistikmap/standort.py` | Aktuelles Krankenhaus je Anfrage (mehrere Standorte) |
 | `logistikmap/export.py` | Excel-Import/-Export, Karte als PDF |
 | `logistikmap/wartung.py` | Sicherung, Wiederherstellung, Updates |
 | `logistikmap/verzeichnis.py` | Anmeldung über Active Directory (LDAP) |

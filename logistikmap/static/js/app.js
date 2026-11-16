@@ -1,5 +1,6 @@
 // Einstieg: Anmeldung, Navigation und Seitenwechsel (Hash-Routing: #/karte/3, #/gebaeude …)
 
+import { standortKopf } from "./standorte.js";
 import { api, darf, formularDialog, h, leeren, melden, spracheLaden, t, uebersetzen, wennAbgemeldet, zustand } from "./basis.js";
 import { zeigeBenutzer } from "./benutzer.js";
 import { zeigeEinstellungen } from "./einstellungen.js";
@@ -114,6 +115,7 @@ function kopfAufbauen() {
     document.getElementById("navigation"),
     SEITEN.filter((s) => darf(s.recht) && !s.versteckt).map((s) => h("a", { href: `#/${s.pfad}`, "data-pfad": s.pfad }, t(`nav.${s.pfad}`)))
   );
+  standortKopf(kopf);
   const knopf = document.getElementById("benutzer-knopf");
   const liste = document.getElementById("benutzer-liste");
   knopf.textContent = zustand.benutzer.anzeigename;

@@ -78,13 +78,20 @@ def aufzug_fahrzeit(aufzug: dict, etagen: int, exklusiv: bool, mit_anfahrt: bool
 class Netz:
     """Momentaufnahme des Wegenetzes aus der Datenbank."""
 
-    def __init__(self, db: Datenbank):
-        self.stockwerke = {s["id"]: s for s in db.alle("SELECT id, name, ebene, gebaeudeteil_id, meter_pro_punkt FROM stockwerke")}
-        self.knoten = {k["id"]: k for k in db.alle("SELECT * FROM knoten")}
-        self.aufzuege = {a["id"]: a for a in db.alle("SELECT * FROM aufzuege")}
+    def __init__(self, db: Datenbank, standort_id: int | None = None):
+        from . import standort
+
+        sid = standort_id or standort.aktuell(db)
+        self.stockwerke = {s["id"]: s for s in db.alle(
+            """SELECT s.id, s.name, s.ebene, s.gebaeudeteil_id, s.meter_pro_punkt FROM stockwerke s
+                 JOIN gebaeudeteile g ON g.id = s.gebaeudeteil_id WHERE g.standort_id = ?""", (sid,))}
+        self.knoten = {k["id"]: k for k in db.alle(
+            """SELECT k.* FROM knoten k JOIN stockwerke s ON s.id = k.stockwerk_id
+                 JOIN gebaeudeteile g ON g.id = s.gebaeudeteil_id WHERE g.standort_id = ?""", (sid,))}
+        self.aufzuege = {a["id"]: a for a in db.alle("SELECT * FROM aufzuege WHERE standort_id = ?", (sid,))}
         for a in self.aufzuege.values():
             a["transportarten"] = json.loads(a["transportarten"])
-        self.kanten = {k["id"]: k for k in db.alle("SELECT * FROM kanten")}
+        self.kanten = {k["id"]: k for k in db.alle("SELECT * FROM kanten") if k["von"] in self.knoten and k["nach"] in self.knoten}
         self.nachbarn: dict[int, list[tuple[int, dict]]] = {kid: [] for kid in self.knoten}
         for k in self.kanten.values():
             k["gesperrt"] = json.loads(k["gesperrt"])

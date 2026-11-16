@@ -220,7 +220,35 @@ MIGRATIONEN: list[str] = [
     """
     ALTER TABLE knoten ADD COLUMN ohne_hinweis INTEGER NOT NULL DEFAULT 0
     """,
+    # 7 – Standorte: mehrere Krankenhäuser; vorhandene Daten werden Standort 1
+    """
+    CREATE TABLE standorte (
+        id       INTEGER PRIMARY KEY,
+        name     TEXT NOT NULL,
+        erstellt TEXT NOT NULL DEFAULT (datetime('now'))
+    );
+    INSERT INTO standorte (id, name) VALUES (1, COALESCE((SELECT name FROM gebaeudeteile ORDER BY reihenfolge, id LIMIT 1), 'Krankenhaus'));
+    ALTER TABLE gebaeudeteile ADD COLUMN standort_id INTEGER NOT NULL DEFAULT 1;
+    ALTER TABLE dokumente ADD COLUMN standort_id INTEGER NOT NULL DEFAULT 1;
+    ALTER TABLE aufzuege ADD COLUMN standort_id INTEGER NOT NULL DEFAULT 1;
+    ALTER TABLE transportarten ADD COLUMN standort_id INTEGER NOT NULL DEFAULT 1;
+    ALTER TABLE wagentypen ADD COLUMN standort_id INTEGER NOT NULL DEFAULT 1;
+    ALTER TABLE lieferungen ADD COLUMN standort_id INTEGER NOT NULL DEFAULT 1;
+    ALTER TABLE szenarien ADD COLUMN standort_id INTEGER NOT NULL DEFAULT 1;
+    ALTER TABLE sondertage ADD COLUMN standort_id INTEGER NOT NULL DEFAULT 1;
+    CREATE INDEX idx_gebaeudeteile_standort ON gebaeudeteile(standort_id);
+    CREATE INDEX idx_lieferungen_standort ON lieferungen(standort_id);
+    INSERT OR IGNORE INTO einstellungen (schluessel, wert)
+        SELECT 's1.' || schluessel, wert FROM einstellungen WHERE schluessel IN ('bundesland', 'bundesland_bestaetigt', 'stammdaten_bestaetigt')
+    """,
 ]
+
+# Stammdaten für einen neuen Standort (wie bei der Erstinstallation)
+STANDARD_TRANSPORTARTEN = [
+    {"name": "FTS", "farbe": "#7048e8", "geschwindigkeit": 0.8, "ladezeit": 60, "entladezeit": 60, "wagen_pro_fahrt": 1, "anzahl": 4, "aufzug_exklusiv": 1, "treppe": 0},
+    {"name": "Materialtransportdienst", "farbe": "#e8590c", "geschwindigkeit": 1.0, "ladezeit": 90, "entladezeit": 90, "wagen_pro_fahrt": 1, "anzahl": 0, "aufzug_exklusiv": 0, "treppe": 0},
+]
+STANDARD_WAGENTYPEN = [("Wäschewagen", 1), ("Rollcontainer", 1), ("Speisenwagen", 1), ("Palette", 2), ("Bett", 2)]
 
 STANDARD_ROLLEN = [
     ("admin", "Administrator", ["ansehen", "lieferungen", "bearbeiten", "verwalten"]),
@@ -328,6 +356,18 @@ class Datenbank:
         return _Transaktion(self)
 
     # -- Einstellungen ---------------------------------------------------------
+    def ort_einstellung(self, schluessel: str, standard=None):
+        """Einstellung des aktuellen Standorts (Bundesland, Bestätigungen in „Erste Schritte“)."""
+        from . import standort
+
+        row = self.eins("SELECT wert FROM einstellungen WHERE schluessel = ?", (f"s{standort.aktuell(self)}.{schluessel}",))
+        return json.loads(row["wert"]) if row else standard
+
+    def setze_ort_einstellung(self, schluessel: str, wert) -> None:
+        from . import standort
+
+        self.setze_einstellung(f"s{standort.aktuell(self)}.{schluessel}", wert)
+
     def einstellung(self, schluessel: str, standard=None):
         row = self.eins("SELECT wert FROM einstellungen WHERE schluessel = ?", (schluessel,))
         return json.loads(row["wert"]) if row else standard

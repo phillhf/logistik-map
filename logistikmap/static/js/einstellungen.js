@@ -2,6 +2,7 @@
 // Sicherung, Update, HTTPS, Anmeldung über Active Directory und Protokoll.
 
 import { api, bestaetigen, darf, dateiWaehlen, datumText, fehlerMelden, groesse, h, herunterladen, hochladen, leeren, melden, t, zahl, zustand } from "./basis.js";
+import { standortBox } from "./standorte.js";
 
 export function zeigeEinstellungen(wurzel) {
   const allgemein = h("div");
@@ -13,6 +14,7 @@ export function zeigeEinstellungen(wurzel) {
   wurzel.append(
     h(
       "div.stapel",
+      verwalten ? standortBox() : null,
       h(
         "div.spalten.gleich",
         h("section.karte-box", h("div.box-kopf", h("h2", t("einstellungen.allgemein"))), allgemein),
@@ -62,7 +64,8 @@ export function zeigeEinstellungen(wurzel) {
         );
       leeren(
         allgemein,
-        h("label.feld", h("span", t("einstellungen.bundesland")), auswahl("bundesland", e.bundeslaender, e.bundesland)),
+        h("label.feld", h("span", t("einstellungen.bundesland")), auswahl("bundesland", e.bundeslaender, e.bundesland),
+          zustand.standort ? h("small", t("standort.bundesland_gilt", { name: zustand.standort.name })) : null),
         h("label.feld", h("span", t("einstellungen.sprache")), auswahl("sprache", e.sprachen, e.sprache), h("small", t("einstellungen.sprache_hilfe"))),
         verwalten ? zahlFeld("sitzung_inaktiv_stunden", t("einstellungen.sitzung_inaktiv"), e.sitzung_inaktiv_stunden, { min: 0.25, step: 0.25 }) : null,
         verwalten ? zahlFeld("sitzung_ad_stunden", t("einstellungen.sitzung_ad"), e.sitzung_ad_stunden, { min: 1, step: 1 }) : null,

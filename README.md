@@ -14,6 +14,8 @@ Holidays are calculated for all German federal states.
 
 ## Features
 
+- **Several hospitals** in one installation: switch at the top, each with its own buildings,
+  plans, paths, master data, deliveries and analyses; users are shared.
 - **Getting started** page that guides you through the setup in the right order, checks by
   itself what is missing (a floor without scale, a point not attached to a path, a delivery
   without a route – and where the network breaks) and jumps straight to the place to fix it.

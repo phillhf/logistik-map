@@ -22,12 +22,12 @@ from fastapi.responses import FileResponse, JSONResponse
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel, Field
 
-from . import APP_NAME, __version__, auth, einrichtung, planung, verzeichnis, wartung
+from . import APP_NAME, __version__, auth, einrichtung, planung, standort, verzeichnis, wartung
 from .config import Konfiguration, lade_konfiguration, speichere_konfiguration
 from . import protokoll as protokoll_modul
 from .protokoll import protokoll_einrichten
 from .config import Pfade, static_ordner
-from .db import RECHTE, Datenbank
+from .db import RECHTE, STANDARD_TRANSPORTARTEN, STANDARD_WAGENTYPEN, Datenbank
 from .feiertage import BUNDESLAENDER, feiertage
 from .plaene import KachelDienst, PdfFehler, leere_kachel, massstab_suchen, max_zoom_fuer, pdf_seiten, vorschau
 
@@ -144,6 +144,12 @@ class PlanZuweisung(BaseModel):
     seite: int = Field(ge=1)
 
 
+class StandortNeu(BaseModel):
+    name: str = Field(min_length=1, max_length=120)
+    stammdaten_von: int | None = None  # Transportarten und Wagentypen von diesem Standort übernehmen
+    wechseln: bool = True
+
+
 class UploadFertig(BaseModel):
     dateiname: str = Field(default="plan.pdf", max_length=255)
 
@@ -232,6 +238,18 @@ def erstelle_app(pfade: Pfade, kacheln_starten: bool = True) -> FastAPI:
     ansehen, bearbeiten, verwalten = recht("ansehen"), recht("bearbeiten"), recht("verwalten")
     lieferungen_recht = recht("lieferungen")
     protokoll_einrichten(app, db)
+
+    # ---------------------------------------------------------------- Standort der Anfrage
+    @app.middleware("http")
+    async def standort_setzen(request: Request, call_next):
+        token = standort.setzen(standort.gueltig(db, request.cookies.get(standort.COOKIE)))
+        try:
+            return await call_next(request)
+        finally:
+            standort._aktuell.reset(token)
+
+    def ort() -> int:
+        return standort.aktuell(db)
 
     def benutzer_anzahl() -> int:
         return db.eins("SELECT COUNT(*) AS n FROM benutzer")["n"]
@@ -480,7 +498,7 @@ def erstelle_app(pfade: Pfade, kacheln_starten: bool = True) -> FastAPI:
     @app.get("/api/einstellungen")
     def einstellungen(_: dict = Depends(ansehen)):
         return {
-            "bundesland": db.einstellung("bundesland", "NW"),
+            "bundesland": db.ort_einstellung("bundesland", db.einstellung("bundesland", "NW")),
             "sprache": db.einstellung("sprache", "de"),
             "bundeslaender": BUNDESLAENDER,
             "sprachen": SPRACHEN,
@@ -495,8 +513,8 @@ def erstelle_app(pfade: Pfade, kacheln_starten: bool = True) -> FastAPI:
         if daten.bundesland is not None:
             if daten.bundesland not in BUNDESLAENDER:
                 raise fehler(400, "bundesland_unbekannt")
-            db.setze_einstellung("bundesland", daten.bundesland)
-            db.setze_einstellung("bundesland_bestaetigt", True)
+            db.setze_ort_einstellung("bundesland", daten.bundesland)
+            db.setze_ort_einstellung("bundesland_bestaetigt", True)
         if daten.sprache is not None:
             if daten.sprache not in SPRACHEN:
                 raise fehler(400, "sprache_unbekannt")
@@ -631,16 +649,16 @@ def erstelle_app(pfade: Pfade, kacheln_starten: bool = True) -> FastAPI:
         jahr = jahr or date.today().year
         if not 1900 <= jahr <= 2200:
             raise fehler(400, "jahr_ungueltig")
-        bl = db.einstellung("bundesland", "NW")
+        bl = db.ort_einstellung("bundesland", db.einstellung("bundesland", "NW"))
         tage = [{"datum": d.isoformat(), "schluessel": k, "art": "gesetzlich"} for d, k in feiertage(jahr, bl)]
-        for s in db.alle("SELECT id, datum, name FROM sondertage WHERE datum LIKE ? ORDER BY datum", (f"{jahr}-%",)):
+        for s in db.alle("SELECT id, datum, name FROM sondertage WHERE datum LIKE ? AND standort_id = ? ORDER BY datum", (f"{jahr}-%", ort())):
             tage.append({"datum": s["datum"], "name": s["name"], "art": "sondertag", "id": s["id"]})
         tage.sort(key=lambda t: t["datum"])
         return {"jahr": jahr, "bundesland": bl, "tage": tage}
 
     @app.post("/api/sondertage")
     def sondertag_anlegen(daten: Sondertag, _: dict = Depends(verwalten)):
-        return {"id": db.ausfuehren("INSERT INTO sondertage (datum, name) VALUES (?, ?)", (daten.datum.isoformat(), daten.name.strip()))}
+        return {"id": db.ausfuehren("INSERT INTO sondertage (datum, name, standort_id) VALUES (?, ?, ?)", (daten.datum.isoformat(), daten.name.strip(), ort()))}
 
     @app.delete("/api/sondertage/{sid}")
     def sondertag_loeschen(sid: int, _: dict = Depends(verwalten)):
@@ -661,7 +679,7 @@ def erstelle_app(pfade: Pfade, kacheln_starten: bool = True) -> FastAPI:
 
     @app.get("/api/gebaeude")
     def gebaeude(_: dict = Depends(ansehen)):
-        teile = db.alle("SELECT * FROM gebaeudeteile ORDER BY reihenfolge, name")
+        teile = db.alle("SELECT * FROM gebaeudeteile WHERE standort_id = ? ORDER BY reihenfolge, name", (ort(),))
         stockwerke = db.alle("SELECT * FROM stockwerke ORDER BY ebene DESC, name")
         for t in teile:
             t["stockwerke"] = []
@@ -676,8 +694,8 @@ def erstelle_app(pfade: Pfade, kacheln_starten: bool = True) -> FastAPI:
     def gebaeudeteil_anlegen(daten: Gebaeudeteil, _: dict = Depends(bearbeiten)):
         return {
             "id": db.ausfuehren(
-                "INSERT INTO gebaeudeteile (name, kuerzel, reihenfolge) VALUES (?, ?, ?)",
-                (daten.name.strip(), daten.kuerzel.strip(), daten.reihenfolge),
+                "INSERT INTO gebaeudeteile (name, kuerzel, reihenfolge, standort_id) VALUES (?, ?, ?, ?)",
+                (daten.name.strip(), daten.kuerzel.strip(), daten.reihenfolge, ort()),
             )
         }
 
@@ -750,6 +768,98 @@ def erstelle_app(pfade: Pfade, kacheln_starten: bool = True) -> FastAPI:
         db.ausfuehren("DELETE FROM plaene WHERE id = ?", (plan_id,))
         shutil.rmtree(dienst.ordner(plan_id), ignore_errors=True)
 
+    # ---------------------------------------------------------------- Standorte
+    def standort_liste() -> list[dict]:
+        rows = db.alle("SELECT id, name FROM standorte ORDER BY name COLLATE NOCASE, id")
+        for r in rows:
+            r["gebaeudeteile"] = db.eins("SELECT COUNT(*) AS n FROM gebaeudeteile WHERE standort_id = ?", (r["id"],))["n"]
+            r["lieferungen"] = db.eins("SELECT COUNT(*) AS n FROM lieferungen WHERE standort_id = ?", (r["id"],))["n"]
+        return rows
+
+    @app.get("/api/standorte")
+    def standorte(_: dict = Depends(ansehen)):
+        return {"aktuell": ort(), "standorte": standort_liste()}
+
+    def standort_cookie(response: Response, sid: int) -> None:
+        response.set_cookie(standort.COOKIE, str(sid), max_age=10 * 365 * 86400, samesite="lax", path="/")
+
+    @app.post("/api/standorte/{sid}/waehlen")
+    def standort_waehlen(sid: int, response: Response, _: dict = Depends(ansehen)):
+        if db.eins("SELECT 1 FROM standorte WHERE id = ?", (sid,)) is None:
+            raise fehler(404, "nicht_gefunden")
+        standort_cookie(response, sid)
+        return {"ok": True}
+
+    @app.post("/api/standorte")
+    def standort_anlegen(d: StandortNeu, response: Response, _: dict = Depends(verwalten)):
+        """Neues Krankenhaus. Transportarten und Wagentypen kommen aus einem vorhandenen Standort
+        oder aus den Standardwerten; Gebäude, Aufzüge und Lieferungen sind leer."""
+        name = d.name.strip()
+        if not name:
+            raise fehler(400, "name_fehlt")
+        with db.transaktion() as con:
+            neu = con.execute("INSERT INTO standorte (name) VALUES (?)", (name,)).lastrowid
+            quelle = d.stammdaten_von
+            if quelle and con.execute("SELECT 1 FROM standorte WHERE id = ?", (quelle,)).fetchone():
+                for t in con.execute("SELECT * FROM transportarten WHERE standort_id = ?", (quelle,)).fetchall():
+                    werte = {k: t[k] for k in t.keys() if k not in ("id", "standort_id")}
+                    werte["standort_id"] = neu
+                    con.execute(f"INSERT INTO transportarten ({', '.join(werte)}) VALUES ({', '.join('?' * len(werte))})", tuple(werte.values()))
+                for w in con.execute("SELECT name, plaetze FROM wagentypen WHERE standort_id = ?", (quelle,)).fetchall():
+                    con.execute("INSERT INTO wagentypen (name, plaetze, standort_id) VALUES (?, ?, ?)", (w["name"], w["plaetze"], neu))
+            else:
+                for t in STANDARD_TRANSPORTARTEN:
+                    werte = {**t, "standort_id": neu}
+                    con.execute(f"INSERT INTO transportarten ({', '.join(werte)}) VALUES ({', '.join('?' * len(werte))})", tuple(werte.values()))
+                for wname, plaetze in STANDARD_WAGENTYPEN:
+                    con.execute("INSERT INTO wagentypen (name, plaetze, standort_id) VALUES (?, ?, ?)", (wname, plaetze, neu))
+            # Bundesland vom aktuellen Standort als Vorschlag (muss in „Erste Schritte“ bestätigt werden)
+            bl = db.ort_einstellung("bundesland", db.einstellung("bundesland", "NW"))
+            con.execute("INSERT OR REPLACE INTO einstellungen (schluessel, wert) VALUES (?, ?)", (f"s{neu}.bundesland", json.dumps(bl)))
+        if d.wechseln:
+            standort_cookie(response, neu)
+        log.info("Standort angelegt: %s (%d)", name, neu)
+        return {"id": neu}
+
+    @app.put("/api/standorte/{sid}")
+    def standort_umbenennen(sid: int, d: StandortNeu, _: dict = Depends(verwalten)):
+        if db.eins("SELECT 1 FROM standorte WHERE id = ?", (sid,)) is None:
+            raise fehler(404, "nicht_gefunden")
+        if not d.name.strip():
+            raise fehler(400, "name_fehlt")
+        db.ausfuehren("UPDATE standorte SET name = ? WHERE id = ?", (d.name.strip(), sid))
+        return {"ok": True}
+
+    @app.delete("/api/standorte/{sid}")
+    def standort_loeschen(sid: int, _: dict = Depends(verwalten)):
+        """Löscht ein Krankenhaus mit allem, was dazugehört (Gebäude, Pläne, Strecken, Lieferungen …)."""
+        if db.eins("SELECT 1 FROM standorte WHERE id = ?", (sid,)) is None:
+            raise fehler(404, "nicht_gefunden")
+        if db.eins("SELECT COUNT(*) AS n FROM standorte")["n"] <= 1:
+            raise fehler(409, "letzter_standort")
+        plaene = {r["plan_id"] for r in db.alle(
+            """SELECT s.plan_id FROM stockwerke s JOIN gebaeudeteile g ON g.id = s.gebaeudeteil_id
+                WHERE g.standort_id = ? AND s.plan_id IS NOT NULL""", (sid,))}
+        doks = [r["id"] for r in db.alle("SELECT id FROM dokumente WHERE standort_id = ?", (sid,))]
+        for did in doks:
+            plaene |= {r["id"] for r in db.alle("SELECT id FROM plaene WHERE dokument_id = ?", (did,))}
+        with db.transaktion() as con:
+            for tabelle in ("lieferungen", "szenarien", "gebaeudeteile"):
+                con.execute(f"DELETE FROM {tabelle} WHERE standort_id = ?", (sid,))
+        for pid in plaene:
+            plan_entfernen(pid)
+        with db.transaktion() as con:
+            for tabelle in ("dokumente", "aufzuege", "transportarten", "wagentypen", "sondertage"):
+                con.execute(f"DELETE FROM {tabelle} WHERE standort_id = ?", (sid,))
+            con.execute("DELETE FROM einstellungen WHERE schluessel LIKE ?", (f"s{sid}.%",))
+            con.execute("DELETE FROM standorte WHERE id = ?", (sid,))
+        for did in doks:
+            (pfade.dokumente / f"{did}.pdf").unlink(missing_ok=True)
+            for png in pfade.dokumente.glob(f"{did}_s*.png"):
+                png.unlink(missing_ok=True)
+        log.info("Standort %d gelöscht", sid)
+        return {"ok": True}
+
     @app.put("/api/stockwerke/{sid}/plan")
     def plan_zuweisen(sid: int, daten: PlanZuweisung, _: dict = Depends(bearbeiten)):
         s = stockwerk_holen(sid)
@@ -819,7 +929,7 @@ def erstelle_app(pfade: Pfade, kacheln_starten: bool = True) -> FastAPI:
     # ---------------------------------------------------------------- Dokumente (PDF)
     @app.get("/api/dokumente")
     def dokumente(_: dict = Depends(ansehen)):
-        rows = db.alle("SELECT id, dateiname, groesse, seiten, hochgeladen FROM dokumente ORDER BY hochgeladen DESC, id DESC")
+        rows = db.alle("SELECT id, dateiname, groesse, seiten, hochgeladen FROM dokumente WHERE standort_id = ? ORDER BY hochgeladen DESC, id DESC", (ort(),))
         for r in rows:
             r["seiten"] = json.loads(r["seiten"])
             r["verwendet"] = db.eins("SELECT COUNT(*) AS n FROM plaene WHERE dokument_id = ?", (r["id"],))["n"]
@@ -839,8 +949,8 @@ def erstelle_app(pfade: Pfade, kacheln_starten: bool = True) -> FastAPI:
             raise fehler(400, "pdf_defekt", grund=str(e))
         name = Path(dateiname or "plan.pdf").name[:200]
         did = db.ausfuehren(
-            "INSERT INTO dokumente (dateiname, groesse, seiten, hochgeladen_von) VALUES (?, ?, ?, ?)",
-            (name, groesse, json.dumps(seiten), ich["id"]),
+            "INSERT INTO dokumente (dateiname, groesse, seiten, hochgeladen_von, standort_id) VALUES (?, ?, ?, ?, ?)",
+            (name, groesse, json.dumps(seiten), ich["id"], ort()),
         )
         tmp.replace(pfade.dokumente / f"{did}.pdf")
         log.info("PDF hochgeladen: %s (%d Seiten, %d Bytes)", name, len(seiten), groesse)

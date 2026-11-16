@@ -19,6 +19,7 @@ import json
 from fastapi import Depends, FastAPI, Request
 from pydantic import BaseModel
 
+from . import standort
 from .db import Datenbank
 from .netz import BENANNTE_ARTEN, Netz, WegFehler
 
@@ -48,13 +49,16 @@ def _schritt(sid: str, grundlage: bool, probleme: list[dict], link: str, **zahle
 
 
 def pruefen(db: Datenbank, https: bool = False) -> dict:
-    teile = db.alle("SELECT * FROM gebaeudeteile ORDER BY reihenfolge, name")
+    ort = standort.aktuell(db)
+    teile = db.alle("SELECT * FROM gebaeudeteile WHERE standort_id = ? ORDER BY reihenfolge, name", (ort,))
     teil_namen = {t["id"]: t["kuerzel"] or t["name"] for t in teile}
     stockwerke = db.alle(
         """SELECT s.*, p.status AS plan_status, p.fehler AS plan_fehler
              FROM stockwerke s JOIN gebaeudeteile g ON g.id = s.gebaeudeteil_id
              LEFT JOIN plaene p ON p.id = s.plan_id
-            ORDER BY g.reihenfolge, g.name, s.ebene DESC, s.name"""
+            WHERE g.standort_id = ?
+            ORDER BY g.reihenfolge, g.name, s.ebene DESC, s.name""",
+        (ort,),
     )
     mehrere_teile = len(teile) > 1
 
@@ -65,8 +69,8 @@ def pruefen(db: Datenbank, https: bool = False) -> dict:
 
     # 1 – Bundesland (Feiertage)
     schritte.append(_schritt(
-        "bundesland", bool(db.einstellung("bundesland_bestaetigt", False)), [], "#/einstellungen",
-        bundesland=db.einstellung("bundesland", "NW"),
+        "bundesland", bool(db.ort_einstellung("bundesland_bestaetigt", False)), [], "#/einstellungen",
+        bundesland=db.ort_einstellung("bundesland", db.einstellung("bundesland", "NW")),
     ))
 
     # 2 – Gebäudeteile und Stockwerke
@@ -89,7 +93,7 @@ def pruefen(db: Datenbank, https: bool = False) -> dict:
     fertig = [s for s in stockwerke if s["plan_status"] == "fertig"]
     schritte.append(_schritt(
         "plaene", bool(fertig), probleme, "#/gebaeude",
-        mit_plan=len(fertig), stockwerke=len(stockwerke), dokumente=db.eins("SELECT COUNT(*) AS n FROM dokumente")["n"],
+        mit_plan=len(fertig), stockwerke=len(stockwerke), dokumente=db.eins("SELECT COUNT(*) AS n FROM dokumente WHERE standort_id = ?", (ort,))["n"],
     ))
 
     # 4 – Maßstab
@@ -167,8 +171,8 @@ def pruefen(db: Datenbank, https: bool = False) -> dict:
     ))
 
     # 6 – Stammdaten: Transportarten, Wagentypen, Aufzugzeiten
-    transportarten = db.alle("SELECT * FROM transportarten ORDER BY id")
-    wagentypen = db.alle("SELECT id FROM wagentypen")
+    transportarten = db.alle("SELECT * FROM transportarten WHERE standort_id = ? ORDER BY id", (ort,))
+    wagentypen = db.alle("SELECT id FROM wagentypen WHERE standort_id = ?", (ort,))
     probleme = []
     if not transportarten:
         probleme.append(_problem("keine_transportart", link="#/stammdaten"))
@@ -178,14 +182,14 @@ def pruefen(db: Datenbank, https: bool = False) -> dict:
     for aid, auf in netz.aufzuege.items():
         if not netz.aufzug_halte.get(aid):
             probleme.append(_problem("aufzug_nicht_eingezeichnet", art="hinweis", link="#/stammdaten", aufzug=auf["name"]))
-    bestaetigt = bool(db.einstellung("stammdaten_bestaetigt", False))
+    bestaetigt = bool(db.ort_einstellung("stammdaten_bestaetigt", False))
     schritte.append(_schritt(
         "stammdaten", bestaetigt and bool(transportarten) and bool(wagentypen), probleme, "#/stammdaten",
         transportarten=len(transportarten), wagentypen=len(wagentypen), aufzuege=len(netz.aufzuege), bestaetigt=bestaetigt,
     ))
 
     # 7 – Lieferungen: gibt es für jede einen Weg?
-    lieferungen = db.alle("SELECT id, name, transportart_id, start_id, ziel_id, via, rueckweg FROM lieferungen WHERE aktiv = 1 ORDER BY uhrzeit, name")
+    lieferungen = db.alle("SELECT id, name, transportart_id, start_id, ziel_id, via, rueckweg FROM lieferungen WHERE aktiv = 1 AND standort_id = ? ORDER BY uhrzeit, name", (ort,))
     ta_index = {t["id"]: t for t in transportarten}
     probleme = []
     for l in lieferungen:
@@ -239,11 +243,11 @@ def registrieren(app: FastAPI, db: Datenbank, fehler, bearbeiten, verwalten) -> 
     @app.post("/api/einrichtung/bestaetigen")
     def bestaetigen(d: Bestaetigung, benutzer: dict = Depends(bearbeiten)):
         if d.schritt == "stammdaten":
-            db.setze_einstellung("stammdaten_bestaetigt", True)
+            db.setze_ort_einstellung("stammdaten_bestaetigt", True)
         elif d.schritt == "bundesland":
             if "verwalten" not in benutzer.get("rechte", []):
                 raise fehler(403, "keine_berechtigung")
-            db.setze_einstellung("bundesland_bestaetigt", True)
+            db.setze_ort_einstellung("bundesland_bestaetigt", True)
         else:
             raise fehler(400, "schritt_unbekannt")
         return {"ok": True}

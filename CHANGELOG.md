@@ -1,5 +1,21 @@
 # Änderungen
 
+## [0.7.0] - 2026-11-16
+
+Neu: **mehrere Krankenhäuser (Standorte)** in einer Installation.
+
+- Oben neben „Logistik Map“ steht das aktuelle Krankenhaus als Auswahl. Wechseln lädt die
+  Oberfläche neu; jedes Haus hat eigene Gebäude, Stockwerke, Pläne, Strecken, Aufzüge,
+  Transportarten, Wagentypen, Lieferungen, Szenarien, Sondertage, Bundesland und
+  „Erste Schritte“. Benutzer, Rollen, Anmeldung, Sicherung und Update sind gemeinsam.
+- „＋ Neues Krankenhaus …“ (für Administratoren): Name eingeben, Transportarten und Wagentypen
+  aus einem vorhandenen Haus übernehmen oder mit Standardwerten beginnen. Danach führt
+  „Erste Schritte“ durch die Einrichtung.
+- Einstellungen → „Krankenhäuser“: umbenennen, öffnen, löschen (mit allem, was dazugehört;
+  das letzte Haus bleibt).
+- Bestehende Daten werden beim Update zum ersten Krankenhaus; es heißt wie der erste
+  Gebäudeteil und lässt sich umbenennen.
+
 ## [0.6.8] - 2026-11-16
 
 - **Große PDF-Pläne (über ~25 MB) lassen sich hochladen.** Der Browser schickt die Datei jetzt
