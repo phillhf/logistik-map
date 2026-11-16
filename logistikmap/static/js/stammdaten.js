@@ -86,7 +86,8 @@ export function zeigeStammdaten(wurzel) {
               a.art === "treppe"
                 ? t("stamm.treppe_zeit", { s: zahl(a.fahrzeit_etage, 0) })
                 : t("stamm.aufzug_zeit", { etage: zahl(a.fahrzeit_etage, 0), tuer: zahl(a.tuerzeit, 0), anfahrt: zahl(a.anfahrt, 0), raeum: zahl(a.raeumzeit, 0) }),
-              a.transportarten.length ? h("small", `${t("stamm.nur_fuer")}: ${a.transportarten.map((id) => stamm.transportarten.find((x) => x.id === id)?.name).join(", ")}`) : null
+              a.transportarten.length ? h("small", `${t("stamm.nur_fuer")}: ${a.transportarten.map((id) => stamm.transportarten.find((x) => x.id === id)?.name).join(", ")}`) : null,
+              a.grundlast?.length ? h("small", `${t("stamm.grundlast_kurz")}: ${grundlastText(a.grundlast)}`) : null
             ),
             aktionen(() => aufzugDialog(a), () => loeschen(`aufzuege/${a.id}`, a.name))
           )
@@ -145,6 +146,45 @@ export function zeigeStammdaten(wurzel) {
     return { el, lesen };
   }
 
+  /** Grundlast: „Mo–Fr 08:00–10:00 zu 40 % durch Personen belegt“ */
+  function grundlastEditor(liste) {
+    const box = h("div.schichten");
+    const zeile = (g = { von: "08:00", bis: "10:00", prozent: 30, wochentage: [1, 2, 3, 4, 5] }) => {
+      const tage = [1, 2, 3, 4, 5, 6, 7].map((d) =>
+        h("label.tagwahl.klein", h("input", { type: "checkbox", value: d, checked: !g.wochentage?.length || g.wochentage.includes(d) }), h("span", t("wochentag")[d % 7]))
+      );
+      const z = h(
+        "div.schicht",
+        h("input", { type: "time", value: g.von, required: true, "aria-label": t("stamm.schicht_von") }),
+        h("span", "–"),
+        h("input", { type: "time", value: g.bis, required: true, "aria-label": t("stamm.schicht_bis") }),
+        h("input.anzahl", { type: "number", min: 0, max: 100, step: 5, value: g.prozent, "aria-label": t("stamm.grundlast_prozent") }),
+        h("span", "%"),
+        h("div.tage", tage),
+        h("button.knopf-flach.gefahr", { type: "button", onclick: () => z.remove(), "aria-label": t("allgemein.loeschen") }, "×")
+      );
+      box.append(z);
+    };
+    (liste || []).forEach(zeile);
+    const el = h("div", box, h("button.knopf-flach", { type: "button", onclick: () => zeile() }, "+ " + t("stamm.grundlast_hinzu")));
+    const lesen = () =>
+      [...box.querySelectorAll(".schicht")].map((z) => {
+        const [von, bis, prozent] = z.querySelectorAll("input:not([type=checkbox])");
+        const tage = [...z.querySelectorAll("input[type=checkbox]:checked")].map((i) => Number(i.value));
+        return { von: von.value, bis: bis.value, prozent: Math.max(0, Math.min(100, Number(prozent.value) || 0)), wochentage: tage };
+      });
+    return { el, lesen };
+  }
+
+  function grundlastText(liste) {
+    return (liste || [])
+      .map((g) => {
+        const tage = g.wochentage.length === 7 ? t("regel.taeglich") : g.wochentage.join() === "1,2,3,4,5" ? t("regel.mo_fr") : g.wochentage.map((d) => t("wochentag")[d % 7]).join(", ");
+        return `${tage} ${g.von}–${g.bis} ${zahl(g.prozent, 0)} %`;
+      })
+      .join(" · ");
+  }
+
   async function transportartDialog(x = {}) {
     const schichten = schichtenEditor(x.schichten);
     const ok = await formularDialog({
@@ -169,7 +209,9 @@ export function zeigeStammdaten(wurzel) {
   }
 
   async function aufzugDialog(a = {}) {
+    const grundlast = grundlastEditor(a.grundlast);
     const ok = await formularDialog({
+      gross: true,
       titel: a.id ? `${t(`aufzug.art.${a.art}`)}: ${a.name}` : t("stamm.aufzug_neu"),
       felder: [
         { name: "name", label: t("stamm.name"), pflicht: true, wert: a.name },
@@ -180,6 +222,8 @@ export function zeigeStammdaten(wurzel) {
         { name: "anfahrt", label: t("stamm.anfahrt"), typ: "number", pflicht: true, wert: a.anfahrt ?? 30, attr: { min: 0 }, hilfe: t("stamm.anfahrt_hilfe") },
         { name: "raeumzeit", label: t("stamm.raeumzeit"), typ: "number", pflicht: true, wert: a.raeumzeit ?? 20, attr: { min: 0 }, hilfe: t("stamm.raeumzeit_hilfe") },
         { name: "transportarten", label: t("stamm.erlaubt_fuer"), typ: "mehrfach", wert: a.transportarten || [], optionen: stamm.transportarten.map((x) => [x.id, x.name]), hilfe: t("stamm.erlaubt_fuer_hilfe") },
+        { typ: "ueberschrift", label: t("stamm.grundlast") },
+        { name: "grundlast", typ: "element", element: grundlast.el, lesen: grundlast.lesen, hilfe: t("stamm.grundlast_hilfe") },
       ],
       speichern: (w) => speichern("aufzuege", a.id, w),
     });

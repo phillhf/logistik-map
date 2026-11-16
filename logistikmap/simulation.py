@@ -12,6 +12,10 @@ Grob gerechnet, aber mit echten Wartezeiten (ereignisgesteuerte Simulation):
   FTS (aufzug_exklusiv) fahren allein und brauchen zusätzlich die Räumzeit.
 * Kanten und Knoten mit Kapazität (Engstellen, Rampen) lassen nur so viele Fahrten gleichzeitig zu.
   Knoten werden während des Ladens bzw. Entladens belegt, Kanten während des Durchfahrens.
+* Grundlast: Aufzüge können zeitweise zu einem Anteil durch Personen belegt sein. Diese Fahrten
+  blockieren die Kabine, zählen aber nicht als Wartezeit der Waren.
+* Mit Zufall (zufall=random.Random) schwanken Ankunftszeiten (± streuung der Lieferung, Dreieck-
+  verteilung) und Entladezeiten am Tor (von–bis); ohne Zufall gilt genau der Plan bzw. der Mittelwert.
 
 Alle Zeiten in Sekunden seit Mitternacht des simulierten Tages.
 """
@@ -20,6 +24,7 @@ from __future__ import annotations
 
 import heapq
 import math
+import random
 from collections import deque
 from dataclasses import dataclass, field
 
@@ -152,8 +157,9 @@ class Aufzug:
     def plaetze(self) -> float | None:
         return self.daten["plaetze"] or None
 
-    def anfordern(self, prozess, von_ebene: int, nach_ebene: int, plaetze: float, exklusiv: bool) -> None:
-        self.schlange.append({"p": prozess, "von": von_ebene, "nach": nach_ebene, "plaetze": plaetze, "exklusiv": exklusiv, "seit": self.uhr.jetzt})
+    def anfordern(self, prozess, von_ebene: int, nach_ebene: int, plaetze: float, exklusiv: bool, person: bool = False) -> None:
+        self.schlange.append({"p": prozess, "von": von_ebene, "nach": nach_ebene, "plaetze": plaetze, "exklusiv": exklusiv,
+                              "seit": self.uhr.jetzt, "person": person})
         self.verlauf.append((self.uhr.jetzt, int(self.unterwegs), len(self.schlange)))
         if not self.unterwegs and not self.abfahrt_geplant:
             # erst am Ende dieses Zeitpunkts abfahren: Wagen, die gleichzeitig ankommen, fahren mit
@@ -181,10 +187,11 @@ class Aufzug:
         self.kabine_ebene = erste["nach"]
         start = self.uhr.jetzt
         self.unterwegs = True
-        self.fahrten.append((start, start + dauer, sum(a["plaetze"] for a in gruppe), len(gruppe), erste["exklusiv"]))
+        self.fahrten.append((start, start + dauer, sum(a["plaetze"] for a in gruppe), len(gruppe), erste["exklusiv"], erste["person"]))
         self.verlauf.append((start, 1, len(self.schlange)))
         for anf in gruppe:
-            self.wartezeiten.append(start - anf["seit"])
+            if not anf["person"]:
+                self.wartezeiten.append(start - anf["seit"])
             self.uhr.plane(start + dauer, anf["p"].weiter, (start - anf["seit"], start, start + dauer))
         self.uhr.plane(start + dauer, self._angekommen)
 
@@ -194,6 +201,13 @@ class Aufzug:
         self.verlauf.append((self.uhr.jetzt, 0, len(self.schlange)))
         if self.schlange:
             self._abfahren()
+
+
+class _Person:
+    """Stellvertreter für eine Personenfahrt im Aufzug (Grundlast): tut nach der Fahrt nichts."""
+
+    def weiter(self, *_):
+        pass
 
 
 # --------------------------------------------------------------------------- Fahrten
@@ -250,7 +264,9 @@ def schicht_verlauf(schichten: list[dict], wochentag: int) -> list[tuple[float, 
 
 
 class Simulation:
-    def __init__(self, netz: Netz, transportarten: dict[int, dict], wagentypen: dict[int, dict], wochentag: int = 1):
+    def __init__(self, netz: Netz, transportarten: dict[int, dict], wagentypen: dict[int, dict], wochentag: int = 1,
+                 zufall: random.Random | None = None):
+        self.zufall = zufall
         self.wochentag = wochentag
         self.netz = netz
         self.transportarten = transportarten
@@ -315,6 +331,10 @@ class Simulation:
     def lieferung_einplanen(self, l: dict, vortag: bool = False) -> None:
         """Plant alle Fahrten einer Lieferung ein. vortag=True: Lieferung vom Vortag (Zeiten −24 h)."""
         versatz = -86400 if vortag else 0
+        # Ankunft schwankt um ± streuung Minuten (Dreieck: Plan am häufigsten)
+        abweichung = 0.0
+        if self.zufall and l.get("streuung"):
+            abweichung = self.zufall.triangular(-l["streuung"], l["streuung"], 0) * 60
         ta = self.transportarten.get(l["transportart_id"])
         if ta is None:
             self.fehler.append({"lieferung_id": l["id"], "name": l["name"], "code": "transportart_fehlt"})
@@ -349,7 +369,7 @@ class Simulation:
                 lieferung=l,
                 nr=nr,
                 von_n=len(gruppen),
-                geplant=zeit_in_sekunden(l["uhrzeit"]) + versatz,
+                geplant=zeit_in_sekunden(l["uhrzeit"]) + versatz + abweichung,
                 wagen=gruppe,
                 start_id=l["start_id"],
                 ziel_id=l["ziel_id"],
@@ -395,8 +415,14 @@ class Simulation:
                 f.warte["engstelle"] += self.uhr.jetzt - seit
             self._notiz(erste, "warten", tor_id, seit, self.uhr.jetzt, grund="tor")
         t0 = self.uhr.jetzt
-        minuten = self.netz.knoten[tor_id].get("minuten_je_einheit") or LKW_MINUTEN_JE_EINHEIT
-        yield ("warte", einheiten * minuten * 60)
+        tor_daten = self.netz.knoten[tor_id]
+        von = tor_daten.get("minuten_je_einheit") or LKW_MINUTEN_JE_EINHEIT
+        bis = tor_daten.get("minuten_je_einheit_bis") or von
+        if bis > von:
+            dauer = sum(self.zufall.uniform(von, bis) for _ in range(einheiten)) if self.zufall else einheiten * (von + bis) / 2
+        else:
+            dauer = einheiten * von
+        yield ("warte", dauer * 60)
         self._notiz(erste, "entladen", tor_id, t0, self.uhr.jetzt)
         tor.freigeben(1)
         for f in fahrten:
@@ -497,7 +523,36 @@ class Simulation:
         f.abschnitte.append(eintrag)
 
     # -- Ergebnis -------------------------------------------------------------------
+    def grundlast_einplanen(self) -> None:
+        """Personenfahrten in Aufzügen nach deren Grundlast (Anteil der Zeit belegt je Zeitfenster)."""
+        for aid, daten in self.netz.aufzuege.items():
+            eintraege = [g for g in (daten.get("grundlast") or []) if self.wochentag in (g.get("wochentage") or [1, 2, 3, 4, 5, 6, 7])]
+            ebenen = sorted({self.netz.stockwerke[self.netz.knoten[k]["stockwerk_id"]]["ebene"]
+                             for k in self.netz.aufzug_halte.get(aid, []) if self.netz.knoten[k]["stockwerk_id"] in self.netz.stockwerke})
+            if not eintraege or len(ebenen) < 2:
+                continue
+            aufzug = self._aufzug(aid)
+            dauer = aufzug_fahrzeit(daten, 1, False, mit_anfahrt=True)
+            for g in eintraege:
+                anteil = max(0.0, min(100.0, float(g.get("prozent") or 0))) / 100
+                if anteil <= 0:
+                    continue
+                abstand = dauer / anteil  # im Mittel alle … Sekunden eine Personenfahrt
+                t, ende = zeit_in_sekunden(g["von"]), zeit_in_sekunden(g["bis"])
+                if ende <= t:
+                    ende += 86400
+                nr = 0
+                while t < ende:
+                    if self.zufall:
+                        von, nach = self.zufall.sample(ebenen, 2)
+                    else:
+                        von, nach = (ebenen[0], ebenen[1]) if nr % 2 == 0 else (ebenen[1], ebenen[0])
+                    self.uhr.plane(t, aufzug.anfordern, _Person(), von, nach, 0.0, True, True)
+                    nr += 1
+                    t += self.zufall.expovariate(1 / abstand) if self.zufall else abstand
+
     def laufen(self) -> dict:
+        self.grundlast_einplanen()
         self.uhr.laufen()
         ressourcen = [self._ressource_auswerten(r) for r in self.flotten.values()]
         ressourcen += [self._aufzug_auswerten(a) for a in self.aufzuege.values()]
@@ -591,6 +646,7 @@ class Simulation:
 
     def _aufzug_auswerten(self, a: Aufzug) -> dict:
         raster = self._raster([(s, e, 1) for s, e, *_ in a.fahrten], 1)
+        waren = [f for f in a.fahrten if not f[5]]
         return {
             "typ": "aufzug",
             "id": a.daten["id"],
@@ -598,8 +654,9 @@ class Simulation:
             "stockwerk_id": None,
             "kapazitaet": a.daten["plaetze"],
             "anzahl": len(a.wartezeiten),
-            "fahrten": len(a.fahrten),
-            "exklusiv": sum(1 for f in a.fahrten if f[4]),
+            "fahrten": len(waren),
+            "personenfahrten": len(a.fahrten) - len(waren),
+            "exklusiv": sum(1 for f in waren if f[4]),
             "zu_gross": a.zu_gross,
             "max_wartezeit": round(max(a.wartezeiten, default=0.0), 1),
             "summe_wartezeit": round(sum(a.wartezeiten), 1),
@@ -607,5 +664,5 @@ class Simulation:
             "spitze": max((v for _, v in raster), default=0.0),
             "raster": raster,
             "verlauf": [[round(t, 1), b, w] for t, b, w in a.verlauf],
-            "belegungen": [[round(s, 1), round(e, 1), n, int(x)] for s, e, _, n, x in a.fahrten],
+            "belegungen": [[round(s, 1), round(e, 1), n, int(x), int(p)] for s, e, _, n, x, p in a.fahrten],
         }

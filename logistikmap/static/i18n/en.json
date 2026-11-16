@@ -411,9 +411,11 @@
     "kapazitaet_hilfe": "For a gate / dock: number of gates where a truck can unload at the same time (empty = 1). For receiving or dispatch: how many carts can be loaded or unloaded at once. Empty = unlimited.",
     "kapazitaet_text": "At most {anzahl} at the same time while loading/unloading",
     "minuten_je_einheit": "Unloading per pallet/cart (minutes)",
-    "minuten_je_einheit_hilfe": "How long a gate is occupied per unit. Empty = 2 minutes.",
+    "minuten_je_einheit_hilfe": "How long a gate is occupied per unit. Empty = 2 minutes. With “to” the time varies (for the “Variation” analysis); otherwise the average applies.",
     "liegt_in": "Located in",
-    "weiter_nach": "Continue to:"
+    "weiter_nach": "Continue to:",
+    "bis": "to",
+    "bis_leer": "(fixed)"
   },
   "kante": {
     "titel": "Path segment",
@@ -636,7 +638,9 @@
       "anlegen": "Add",
       "ok": "Added: {name} at {uhrzeit}, uses {transportart}, approx. {minuten} min route.",
       "ohne_weg": "Added: {name}. There is no route there yet, “Getting started” shows why."
-    }
+    },
+    "streuung": "Variation ± min",
+    "streuung_hilfe": "How many minutes earlier or later the arrival can be. Only used in the “Variation” analysis."
   },
   "stamm": {
     "transportarten": "Transport types",
@@ -691,7 +695,12 @@
     "schichten_hilfe": "Optional. If shifts are entered, their number applies instead of the fixed number above. Outside all shifts nobody is available.",
     "schicht_hinzu": "Add shift",
     "schicht_von": "from",
-    "schicht_bis": "to"
+    "schicht_bis": "to",
+    "grundlast": "Base load by people",
+    "grundlast_hilfe": "What percentage of the time the lift is used by people (staff, patients, visitors) in this time window. These trips block the car, the waiting time of goods increases. If you enter a base load, keep the “average wait for the car” small (e.g. 10 s) – otherwise passenger traffic counts twice.",
+    "grundlast_hinzu": "Add time window",
+    "grundlast_prozent": "Percent occupied",
+    "grundlast_kurz": "People"
   },
   "ablauf": {
     "tempo": "Playback speed",
@@ -776,7 +785,9 @@
     },
     "ansicht": {
       "tag": "Day",
-      "woche": "Week"
+      "woche": "Week",
+      "streuung": "Variation",
+      "bedarf": "Minimum needed"
     },
     "export_excel": "Excel",
     "export_karte": "Map as PDF",
@@ -967,7 +978,8 @@
       "feiertage_ungueltig": "Holidays: nicht, auch or nur",
       "rueckweg_ungueltig": "Return: leer, beladen, später or keiner",
       "rueckweg_ziel_unbekannt": "“Rückweg nach” unknown",
-      "id_ungueltig": "Invalid ID"
+      "id_ungueltig": "Invalid ID",
+      "streuung_ungueltig": "Variation is not a number (e.g. 15)"
     }
   },
   "szenario": {
@@ -1025,5 +1037,62 @@
     "loeschen_frage": "Delete “{name}” with everything: {gebaeude} building sections with plans and paths, {lieferungen} deliveries, master data and scenarios? This cannot be undone (only from a backup).",
     "geloescht": "“{name}” deleted.",
     "bundesland_gilt": "Applies to {name}. Each hospital has its own federal state."
+  },
+  "streuung": {
+    "hilfe": "Calculates the selected day many times with random deviations: arrival ± variation of the delivery, unloading time at the gate from–to, passenger trips in lifts (base load). This shows how often it gets tight – not just on the planned day.",
+    "eingetragen": "Entered: variation for {lieferungen} of {von} deliveries, base load for {aufzuege} lifts.",
+    "noch_keine": "Without variation every delivery arrives on time – enter it under Deliveries → Edit (“Variation ± min”).",
+    "laeufe": "Days",
+    "schwelle": "Threshold (min)",
+    "berechnen": "Calculate",
+    "rechnet": "Calculating {anzahl} days …",
+    "tage_ueber": "of days someone waits somewhere longer than {minuten} min",
+    "p90_tag": "longest wait on 9 of 10 days at most",
+    "durchlaeufe": "days calculated",
+    "engpaesse": "Where it gets tight",
+    "wo": "Location",
+    "anteil": "Days over {minuten} min",
+    "median": "typical (median)",
+    "p90": "9 of 10 days at most",
+    "max": "worst day",
+    "auslastung": "Utilisation (90 %)",
+    "keine": "Nobody waits anywhere.",
+    "lieferungen": "Deliveries",
+    "lieferung": "Delivery",
+    "verspaetet": "late on",
+    "lesen": "How to read: “Days over 30 min = 20 %” means that on every fifth day at least one transport waits there longer than 30 minutes. The values refer to the longest wait of the day at that location.",
+    "typ": {
+      "fahrzeuge": "Vehicles / staff",
+      "aufzug": "Lift",
+      "kante": "Bottleneck",
+      "knoten": "Gate / dock / receiving"
+    }
+  },
+  "bedarf": {
+    "hilfe": "How many vehicles, staff, gates or places at a bottleneck are enough so that nobody waits there longer than the chosen time? The system tries 1, 2, 3 … and names the smallest number.",
+    "was": "What?",
+    "ziel": "maximum wait (min)",
+    "mit_streuung": "with variation (30 days, 9 of 10 must fit)",
+    "berechnen": "Calculate",
+    "rechnet": "Trying …",
+    "gruppe": {
+      "transportart": "Number of vehicles / staff",
+      "knoten": "Gates, docks, receiving",
+      "kante": "Bottlenecks"
+    },
+    "einheit": {
+      "transportart": "vehicles or staff",
+      "knoten": "gates or places at once",
+      "kante": "at once on the bottleneck"
+    },
+    "ergebnis": "Minimum needed: {anzahl} – {einheit}. At “{name}” nobody then waits longer than {minuten} min.",
+    "reicht_nicht": "Even with {anzahl} ({einheit}) someone waits at “{name}” longer than {minuten} min. The bottleneck is probably elsewhere (e.g. lift or vehicles) – check the “Day” view.",
+    "schichten_hinweis": "This transport type has a shift plan. For this calculation the same number applies all day.",
+    "streuung_hinweis": "With variation: {laeufe} days per number, shown is the value not exceeded on 9 of 10 days.",
+    "anzahl": "Number",
+    "wartezeit": "longest wait there",
+    "auslastung": "Utilisation (peak)",
+    "verspaetet": "late trips",
+    "reicht": "enough"
   }
 }

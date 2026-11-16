@@ -411,9 +411,11 @@
     "kapazitaet_hilfe": "Bei Tor / Rampe: Anzahl der Tore, an denen gleichzeitig ein LKW entladen werden kann (leer = 1). Bei Annahme oder Ausgabe: wie viele Wagen gleichzeitig be- oder entladen werden können. Leer = unbegrenzt.",
     "kapazitaet_text": "Höchstens {anzahl} gleichzeitig beim Laden/Entladen",
     "minuten_je_einheit": "Entladen je Palette/Wagen (Minuten)",
-    "minuten_je_einheit_hilfe": "Wie lange ein Tor je Ladeeinheit belegt ist. Leer = 2 Minuten.",
+    "minuten_je_einheit_hilfe": "Wie lange ein Tor je Palette/Wagen belegt ist. Leer = 2 Minuten. Mit „bis“ schwankt die Zeit (für die Auswertung „Streuung“); sonst gilt der Mittelwert.",
     "liegt_in": "Liegt in",
-    "weiter_nach": "Weiter nach:"
+    "weiter_nach": "Weiter nach:",
+    "bis": "bis",
+    "bis_leer": "(fest)"
   },
   "kante": {
     "titel": "Wegstück",
@@ -636,7 +638,9 @@
       "anlegen": "Anlegen",
       "ok": "Angelegt: {name} um {uhrzeit}, fährt mit {transportart}, ca. {minuten} Min. Weg.",
       "ohne_weg": "Angelegt: {name}. Es gibt aber noch keinen Weg dorthin, „Erste Schritte“ zeigt, woran es liegt."
-    }
+    },
+    "streuung": "Schwankung ± Min.",
+    "streuung_hilfe": "Wie viele Minuten die Ankunft früher oder später sein kann. Zählt nur für die Auswertung „Streuung“."
   },
   "stamm": {
     "transportarten": "Transportarten",
@@ -691,7 +695,12 @@
     "schichten_hilfe": "Optional. Sind Schichten eingetragen, gilt deren Anzahl statt der festen Anzahl oben. Außerhalb aller Schichten steht niemand zur Verfügung.",
     "schicht_hinzu": "Schicht hinzufügen",
     "schicht_von": "von",
-    "schicht_bis": "bis"
+    "schicht_bis": "bis",
+    "grundlast": "Grundlast durch Personen",
+    "grundlast_hilfe": "Wie viel Prozent der Zeit der Aufzug in diesem Zeitfenster für Personen (Personal, Patienten, Besucher) unterwegs ist. Diese Fahrten blockieren die Kabine, die Wartezeit der Waren steigt. Trägst du Grundlast ein, setz die „Mittlere Wartezeit auf die Kabine“ eher klein (z. B. 10 s) – sonst zählt der Personenverkehr doppelt.",
+    "grundlast_hinzu": "Zeitfenster hinzufügen",
+    "grundlast_prozent": "Prozent belegt",
+    "grundlast_kurz": "Personen"
   },
   "ablauf": {
     "tempo": "Abspieltempo",
@@ -776,7 +785,9 @@
     },
     "ansicht": {
       "tag": "Tag",
-      "woche": "Woche"
+      "woche": "Woche",
+      "streuung": "Streuung",
+      "bedarf": "Mindestbedarf"
     },
     "export_excel": "Excel",
     "export_karte": "Karte als PDF",
@@ -967,7 +978,8 @@
       "feiertage_ungueltig": "Feiertage: nicht, auch oder nur",
       "rueckweg_ungueltig": "Rückweg: leer, beladen, später oder keiner",
       "rueckweg_ziel_unbekannt": "„Rückweg nach“ unbekannt",
-      "id_ungueltig": "ID ungültig"
+      "id_ungueltig": "ID ungültig",
+      "streuung_ungueltig": "Schwankung keine Zahl (z. B. 15)"
     }
   },
   "szenario": {
@@ -1025,5 +1037,62 @@
     "loeschen_frage": "„{name}“ mit allem löschen: {gebaeude} Gebäudeteile mit Plänen und Strecken, {lieferungen} Lieferungen, Stammdaten und Szenarien? Das lässt sich nicht rückgängig machen (nur über eine Sicherung).",
     "geloescht": "„{name}“ gelöscht.",
     "bundesland_gilt": "Gilt für {name}. Jedes Krankenhaus hat sein eigenes Bundesland."
+  },
+  "streuung": {
+    "hilfe": "Rechnet den gewählten Tag viele Male mit zufälligen Abweichungen: Ankunft ± Schwankung der Lieferung, Entladezeit am Tor von–bis, Personenfahrten in Aufzügen (Grundlast). So siehst du, wie oft es eng wird – nicht nur am Plan-Tag.",
+    "eingetragen": "Eingetragen: Schwankung bei {lieferungen} von {von} Lieferungen, Grundlast bei {aufzuege} Aufzügen.",
+    "noch_keine": "Ohne Schwankung kommt jede Lieferung pünktlich – trag sie unter Lieferungen → Bearbeiten ein („Schwankung ± Min.“).",
+    "laeufe": "Tage",
+    "schwelle": "Schwelle (Min.)",
+    "berechnen": "Berechnen",
+    "rechnet": "Rechne {anzahl} Tage …",
+    "tage_ueber": "der Tage wartet irgendwo jemand länger als {minuten} Min.",
+    "p90_tag": "längste Wartezeit an 9 von 10 Tagen höchstens",
+    "durchlaeufe": "gerechnete Tage",
+    "engpaesse": "Wo es eng wird",
+    "wo": "Stelle",
+    "anteil": "Tage über {minuten} Min.",
+    "median": "üblich (Median)",
+    "p90": "9 von 10 Tagen höchstens",
+    "max": "schlimmster Tag",
+    "auslastung": "Auslastung (90 %)",
+    "keine": "An keiner Stelle wird gewartet.",
+    "lieferungen": "Lieferungen",
+    "lieferung": "Lieferung",
+    "verspaetet": "verspätet an",
+    "lesen": "Lesehilfe: „Tage über 30 Min. = 20 %“ heißt, an jedem fünften Tag wartet dort mindestens ein Transport länger als 30 Minuten. Die Werte beziehen sich jeweils auf die längste Wartezeit des Tages an dieser Stelle.",
+    "typ": {
+      "fahrzeuge": "Fahrzeuge / Personal",
+      "aufzug": "Aufzug",
+      "kante": "Engstelle",
+      "knoten": "Tor / Rampe / Annahme"
+    }
+  },
+  "bedarf": {
+    "hilfe": "Wie viele Fahrzeuge, Mitarbeiter, Tore oder Plätze an einer Engstelle reichen, damit dort niemand länger als die gewünschte Zeit wartet? Das System probiert 1, 2, 3 … durch und nennt die kleinste Anzahl.",
+    "was": "Was?",
+    "ziel": "höchstens warten (Min.)",
+    "mit_streuung": "mit Streuung (30 Tage, 9 von 10 müssen passen)",
+    "berechnen": "Berechnen",
+    "rechnet": "Probiere durch …",
+    "gruppe": {
+      "transportart": "Anzahl Fahrzeuge / Mitarbeiter",
+      "knoten": "Tore, Rampen, Annahmen",
+      "kante": "Engstellen"
+    },
+    "einheit": {
+      "transportart": "Fahrzeuge bzw. Mitarbeiter",
+      "knoten": "Tore bzw. Plätze gleichzeitig",
+      "kante": "gleichzeitig auf der Engstelle"
+    },
+    "ergebnis": "Mindestens nötig: {anzahl} – {einheit}. Bei „{name}“ wartet dann niemand länger als {minuten} Min.",
+    "reicht_nicht": "Auch mit {anzahl} ({einheit}) wartet bei „{name}“ jemand länger als {minuten} Min. Dann liegt der Engpass vermutlich woanders (z. B. Aufzug oder Fahrzeuge) – schau unter „Tag“ nach.",
+    "schichten_hinweis": "Diese Transportart hat einen Schichtplan. Für die Rechnung gilt den ganzen Tag dieselbe Anzahl.",
+    "streuung_hinweis": "Mit Streuung: je Anzahl {laeufe} Tage gerechnet, gezeigt ist der Wert, der an 9 von 10 Tagen nicht überschritten wird.",
+    "anzahl": "Anzahl",
+    "wartezeit": "längste Wartezeit dort",
+    "auslastung": "Auslastung (Spitze)",
+    "verspaetet": "verspätete Fahrten",
+    "reicht": "reicht"
   }
 }

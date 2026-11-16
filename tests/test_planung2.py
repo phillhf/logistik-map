@@ -130,11 +130,11 @@ def test_export_und_import_rundweg(haus):
     wb = load_workbook(io.BytesIO(r.content))
     ws = wb["Lieferungen"]
     zeile = [x.value for x in ws[2]]
-    assert zeile[1:11] == ["Wäsche", "Wäscherei", "Versorgung", "Materialtransportdienst", "Rampe", "Wäschelager", "08:00", None, "3 Wäschewagen", "Mo-Fr"]
+    assert zeile[1:12] == ["Wäsche", "Wäscherei", "Versorgung", "Materialtransportdienst", "Rampe", "Wäschelager", "08:00", None, 0, "3 Wäschewagen", "Mo-Fr"]
     # Uhrzeit ändern und eine neue Zeile ohne ID ergänzen
     ws.cell(2, 8).value = "07:45"
-    ws.append([None, "Apotheke", "Apotheke", "Versorgung", "FTS", "Rampe", "Wäschelager", "10:00", "", "2 Rollcontainer", "Mo, Mi, Fr", "nicht", "", "", "leer", "", "", "ja", ""])
-    ws.append([None, "Kaputt", "", "", "Rakete", "Mond", "Wäschelager", "25:00", "", "3 Einhörner", "Funtag", "", "", "", "", "", "", "", ""])
+    ws.append([None, "Apotheke", "Apotheke", "Versorgung", "FTS", "Rampe", "Wäschelager", "10:00", "", 10, "2 Rollcontainer", "Mo, Mi, Fr", "nicht", "", "", "leer", "", "", "ja", ""])
+    ws.append([None, "Kaputt", "", "", "Rakete", "Mond", "Wäschelager", "25:00", "", "viel", "3 Einhörner", "Funtag", "", "", "", "", "", "", "", ""])
     puffer = io.BytesIO()
     wb.save(puffer)
     datei = {"datei": ("l.xlsx", puffer.getvalue(), "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")}

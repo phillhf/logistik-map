@@ -241,6 +241,12 @@ MIGRATIONEN: list[str] = [
     INSERT OR IGNORE INTO einstellungen (schluessel, wert)
         SELECT 's1.' || schluessel, wert FROM einstellungen WHERE schluessel IN ('bundesland', 'bundesland_bestaetigt', 'stammdaten_bestaetigt')
     """,
+    # 8 – Streuung (Ankunft ± Minuten, Entladezeit am Tor von–bis), Grundlast der Aufzüge durch Personen
+    """
+    ALTER TABLE lieferungen ADD COLUMN streuung INTEGER NOT NULL DEFAULT 0;
+    ALTER TABLE knoten ADD COLUMN minuten_je_einheit_bis REAL;
+    ALTER TABLE aufzuege ADD COLUMN grundlast TEXT NOT NULL DEFAULT '[]'
+    """,
 ]
 
 # Stammdaten für einen neuen Standort (wie bei der Erstinstallation)

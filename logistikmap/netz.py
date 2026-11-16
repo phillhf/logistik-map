@@ -91,6 +91,7 @@ class Netz:
         self.aufzuege = {a["id"]: a for a in db.alle("SELECT * FROM aufzuege WHERE standort_id = ?", (sid,))}
         for a in self.aufzuege.values():
             a["transportarten"] = json.loads(a["transportarten"])
+            a["grundlast"] = json.loads(a.get("grundlast") or "[]")
         self.kanten = {k["id"]: k for k in db.alle("SELECT * FROM kanten") if k["von"] in self.knoten and k["nach"] in self.knoten}
         self.nachbarn: dict[int, list[tuple[int, dict]]] = {kid: [] for kid in self.knoten}
         for k in self.kanten.values():

@@ -190,7 +190,7 @@ export function zeigeLieferungen(wurzel, [sprung] = []) {
               return h(
                 "tr",
                 { class: l.aktiv ? "" : "inaktiv" },
-                h("td.zeit", l.uhrzeit, l.spaetestens ? h("small", `${t("lieferung.bis")} ${l.spaetestens}`) : null),
+                h("td.zeit", l.uhrzeit, l.streuung ? h("small", `± ${l.streuung} min`) : null, l.spaetestens ? h("small", `${t("lieferung.bis")} ${l.spaetestens}`) : null),
                 h("td", h("strong", l.name), l.lieferant ? h("small", l.lieferant) : null, h("small", { class: `richtung ${l.richtung}` }, t(`richtung.${l.richtung}`))),
                 h("td", h("span", punktName(punkt(l.start_id))), h("small", "→ " + punktName(punkt(l.ziel_id))), rueckwegText(l) ? h("small", rueckwegText(l)) : null),
                 h("td", ladungText(l)),
@@ -319,6 +319,7 @@ export function zeigeLieferungen(wurzel, [sprung] = []) {
       transportart: h("select", h("option", { value: "" }, t("lieferung.transportart_auto")), stamm.transportarten.map((x) => h("option", { value: x.id, selected: x.id === v.transportart_id }, x.name))),
       uhrzeit: h("input", { type: "time", value: v.uhrzeit, required: true }),
       spaetestens: h("input", { type: "time", value: v.spaetestens || "" }),
+      streuung: h("input", { type: "number", min: 0, max: 240, step: 5, value: v.streuung || 0 }),
       start: punktAuswahl(punkte, v.start_id, { filter: startPunkte, leer: t("lieferung.waehlen") }),
       ziel: punktAuswahl(punkte, v.ziel_id, { filter: startPunkte, leer: t("lieferung.waehlen") }),
       feiertage: h("select", ["ausser", "auch", "nur"].map((m) => h("option", { value: m, selected: m === (v.regel.feiertage || "ausser") }, t(`regel.feiertage.${m}`)))),
@@ -378,6 +379,7 @@ export function zeigeLieferungen(wurzel, [sprung] = []) {
         f(t("lieferung.transportart"), el.transportart),
         f(t("lieferung.uhrzeit"), el.uhrzeit),
         f(t("lieferung.spaetestens"), el.spaetestens, t("lieferung.spaetestens_hilfe")),
+        f(t("lieferung.streuung"), el.streuung, t("lieferung.streuung_hilfe")),
         f(t("lieferung.start"), el.start),
         f(t("lieferung.ziel"), el.ziel)
       ),
@@ -432,6 +434,7 @@ export function zeigeLieferungen(wurzel, [sprung] = []) {
         ziel_id: Number(el.ziel.value) || 0,
         uhrzeit: el.uhrzeit.value,
         spaetestens: el.spaetestens.value || null,
+        streuung: Math.max(0, Math.min(240, Number(el.streuung.value) || 0)),
         ladung: [...ladungBox.querySelectorAll(".zeile")].map((z) => ({ anzahl: Number(z.querySelector("input").value) || 0, wagentyp_id: Number(z.querySelector("select").value) })),
         via: [...viaBox.querySelectorAll("select")].map((s) => Number(s.value)).filter(Boolean),
         regel: {

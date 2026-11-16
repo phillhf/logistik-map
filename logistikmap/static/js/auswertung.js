@@ -1,6 +1,7 @@
 // Auswertung: Tag (Engpässe, Auslastung, Fahrten) oder Woche (Heatmap) – Ist-Zustand oder Szenario im Vergleich.
 // Hash: #/auswertung/<datum>[/<szenario>][?woche]
 
+import { bedarfZeigen, streuungZeigen } from "./auswertung_plus.js";
 import { api, dauer, fehlerMelden, fehlerText, h, herunterladen, heute, leeren, punktName, sekunden, stammdaten, szenarioAuswahl, t, uhr, zahl } from "./basis.js";
 import { simulationLaden } from "./ablauf.js";
 
@@ -59,7 +60,7 @@ export async function zeigeAuswertung(wurzel, [datumParam, szenarioParam]) {
   function ansichtKnoepfe() {
     leeren(
       ansichtWahl,
-      ["tag", "woche"].map((a) =>
+      ["tag", "woche", "streuung", "bedarf"].map((a) =>
         h("a", { href: "javascript:void 0", class: a === ansicht ? "aktiv" : "", onclick: () => ((ansicht = a), merkerSetzen(a), ansichtKnoepfe(), laden()) }, t(`auswertung.ansicht.${a}`))
       )
     );
@@ -85,6 +86,8 @@ export async function zeigeAuswertung(wurzel, [datumParam, szenarioParam]) {
       [punkte, stamm, stockwerke] = await Promise.all([api("punkte"), stammdaten(), api("gebaeude").then((g) => g.flatMap((teil) => teil.stockwerke.filter((s) => s.plan?.status === "fertig").map((s) => ({ ...s, teil }))))]);
       exportLeisteAufbauen();
       if (ansicht === "woche") return wocheZeigen();
+      if (ansicht === "streuung") return streuungZeigen(inhalt, { datum, szenario, stamm });
+      if (ansicht === "bedarf") return bedarfZeigen(inhalt, { datum, szenario, stamm });
       [sim, ist] = await Promise.all([simulationLaden(datum, neu, szenario), szenario ? simulationLaden(datum, neu, null) : Promise.resolve(null)]);
     } catch (e) {
       return fehlerMelden(e);

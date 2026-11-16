@@ -2,7 +2,9 @@
 
 from __future__ import annotations
 
+import copy
 import json
+import random
 import math
 import re
 from datetime import date
@@ -52,6 +54,15 @@ class Wagentyp(BaseModel):
     plaetze: float = Field(gt=0, le=100)
 
 
+class Grundlast(BaseModel):
+    """Aufzug ist in diesem Zeitfenster zu prozent % durch Personen belegt."""
+
+    von: str
+    bis: str
+    prozent: float = Field(ge=0, le=100)
+    wochentage: list[int] = [1, 2, 3, 4, 5]
+
+
 class AufzugModell(BaseModel):
     name: str = Field(min_length=1, max_length=100)
     art: str = "aufzug"
@@ -61,6 +72,7 @@ class AufzugModell(BaseModel):
     raeumzeit: float = Field(ge=0, le=600)
     anfahrt: float = Field(ge=0, le=1800)
     transportarten: list[int] = []
+    grundlast: list[Grundlast] = []  # Personenfahrten: Anteil der Zeit belegt je Zeitfenster
 
 
 class Flaeche(BaseModel):
@@ -91,6 +103,7 @@ class Knoten(BaseModel):
     aufzug_id: int | None = None
     kapazitaet: int | None = Field(default=None, ge=1, le=1000)
     minuten_je_einheit: float | None = Field(default=None, ge=0, le=240)  # nur Tore: Entladen je Palette/Wagen
+    minuten_je_einheit_bis: float | None = Field(default=None, ge=0, le=240)  # Streuung: von–bis
 
 
 class Vereinen(BaseModel):
@@ -106,6 +119,7 @@ class KnotenAenderung(BaseModel):
     aufzug_id: int | None = None
     kapazitaet: int | None = Field(default=None, ge=0, le=1000)
     minuten_je_einheit: float | None = Field(default=None, ge=0, le=240)
+    minuten_je_einheit_bis: float | None = Field(default=None, ge=0, le=240)
 
 
 class Kante(BaseModel):
@@ -169,6 +183,7 @@ class Lieferung(BaseModel):
     ziel_id: int
     uhrzeit: str
     spaetestens: str | None = None
+    streuung: int = Field(default=0, ge=0, le=240)  # Ankunft schwankt um ± Minuten
     ladung: list[Ladung] = []
     via: list[int] = []
     regel: dict = {}
@@ -269,6 +284,8 @@ def szenario_anwenden(aenderungen: dict, lieferungen: list[dict], stamm: dict, n
         k = netz.kanten.get(int(kid))
         if k is not None and werte.get("gesperrt"):
             k["gesperrt"] = alle_ta
+        if k is not None and "kapazitaet" in werte:
+            k["kapazitaet"] = werte["kapazitaet"] or None
     for nid, werte in (aend.get("knoten") or {}).items():
         n = netz.knoten.get(int(nid))
         if n is not None and "kapazitaet" in werte:
@@ -296,6 +313,7 @@ def registrieren(app: FastAPI, db: Datenbank, fehler, ansehen, bearbeiten, liefe
         auf = db.alle("SELECT * FROM aufzuege WHERE standort_id = ? ORDER BY art, name", (ort(),))
         for a in auf:
             a["transportarten"] = json.loads(a["transportarten"])
+            a["grundlast"] = json.loads(a.get("grundlast") or "[]")
         ta = db.alle("SELECT * FROM transportarten WHERE standort_id = ? ORDER BY id", (ort(),))
         for t in ta:
             t["aufzug_exklusiv"], t["treppe"] = bool(t["aufzug_exklusiv"]), bool(t["treppe"])
@@ -355,24 +373,30 @@ def registrieren(app: FastAPI, db: Datenbank, fehler, ansehen, bearbeiten, liefe
         db.ausfuehren("DELETE FROM wagentypen WHERE id = ?", (wid,))
         return {"ok": True}
 
-    def aufzug_pruefen(d: AufzugModell) -> None:
+    def aufzug_pruefen(d: AufzugModell) -> str:
         if d.art not in ("aufzug", "treppe"):
             raise fehler(400, "art_ungueltig")
+        for g in d.grundlast:
+            if not UHRZEIT.match(g.von) or not UHRZEIT.match(g.bis):
+                raise fehler(400, "uhrzeit_ungueltig")
+            if any(not 1 <= t <= 7 for t in g.wochentage):
+                raise fehler(400, "regel_ungueltig", feld="wochentage")
+        return json.dumps([g.model_dump() for g in d.grundlast])
 
     @app.post("/api/aufzuege")
     def aufzug_anlegen(d: AufzugModell, _: dict = Depends(bearbeiten)):
-        aufzug_pruefen(d)
+        grundlast = aufzug_pruefen(d)
         return {"id": db.ausfuehren(
-            "INSERT INTO aufzuege (name, art, plaetze, fahrzeit_etage, tuerzeit, raeumzeit, anfahrt, transportarten, standort_id) VALUES (?,?,?,?,?,?,?,?,?)",
-            (d.name.strip(), d.art, d.plaetze, d.fahrzeit_etage, d.tuerzeit, d.raeumzeit, d.anfahrt, json.dumps(d.transportarten), ort()))}
+            "INSERT INTO aufzuege (name, art, plaetze, fahrzeit_etage, tuerzeit, raeumzeit, anfahrt, transportarten, standort_id, grundlast) VALUES (?,?,?,?,?,?,?,?,?,?)",
+            (d.name.strip(), d.art, d.plaetze, d.fahrzeit_etage, d.tuerzeit, d.raeumzeit, d.anfahrt, json.dumps(d.transportarten), ort(), grundlast))}
 
     @app.put("/api/aufzuege/{aid}")
     def aufzug_aendern(aid: int, d: AufzugModell, _: dict = Depends(bearbeiten)):
         holen("aufzuege", aid)
-        aufzug_pruefen(d)
+        grundlast = aufzug_pruefen(d)
         db.ausfuehren(
-            "UPDATE aufzuege SET name=?, art=?, plaetze=?, fahrzeit_etage=?, tuerzeit=?, raeumzeit=?, anfahrt=?, transportarten=? WHERE id=?",
-            (d.name.strip(), d.art, d.plaetze, d.fahrzeit_etage, d.tuerzeit, d.raeumzeit, d.anfahrt, json.dumps(d.transportarten), aid))
+            "UPDATE aufzuege SET name=?, art=?, plaetze=?, fahrzeit_etage=?, tuerzeit=?, raeumzeit=?, anfahrt=?, transportarten=?, grundlast=? WHERE id=?",
+            (d.name.strip(), d.art, d.plaetze, d.fahrzeit_etage, d.tuerzeit, d.raeumzeit, d.anfahrt, json.dumps(d.transportarten), grundlast, aid))
         return {"ok": True}
 
     @app.delete("/api/aufzuege/{aid}")
@@ -614,8 +638,9 @@ def registrieren(app: FastAPI, db: Datenbank, fehler, ansehen, bearbeiten, liefe
             """SELECT e.id, e.name, e.kapazitaet, a.name AS von_name, b.name AS nach_name, s.name AS stockwerk, g.kuerzel, g.name AS gebaeudeteil
                  FROM kanten e JOIN knoten a ON a.id = e.von JOIN knoten b ON b.id = e.nach
                  JOIN stockwerke s ON s.id = a.stockwerk_id JOIN gebaeudeteile g ON g.id = s.gebaeudeteil_id
-                WHERE e.name <> '' OR e.kapazitaet IS NOT NULL
-                ORDER BY g.reihenfolge, s.ebene DESC, e.name"""
+                WHERE (e.name <> '' OR e.kapazitaet IS NOT NULL) AND g.standort_id = ?
+                ORDER BY g.reihenfolge, s.ebene DESC, e.name""",
+            (ort(),),
         )
 
     @app.post("/api/knoten")
@@ -624,8 +649,8 @@ def registrieren(app: FastAPI, db: Datenbank, fehler, ansehen, bearbeiten, liefe
         knoten_pruefen(d.art, d.aufzug_id)
         merken(d.stockwerk_id, request, "punkt_neu" if d.art != "weg" else "weg")
         kid = db.ausfuehren(
-            "INSERT INTO knoten (stockwerk_id, x, y, art, name, aufzug_id, kapazitaet, minuten_je_einheit) VALUES (?,?,?,?,?,?,?,?)",
-            (d.stockwerk_id, d.x, d.y, d.art, d.name.strip(), d.aufzug_id, d.kapazitaet, d.minuten_je_einheit or None))
+            "INSERT INTO knoten (stockwerk_id, x, y, art, name, aufzug_id, kapazitaet, minuten_je_einheit, minuten_je_einheit_bis) VALUES (?,?,?,?,?,?,?,?,?)",
+            (d.stockwerk_id, d.x, d.y, d.art, d.name.strip(), d.aufzug_id, d.kapazitaet, d.minuten_je_einheit or None, d.minuten_je_einheit_bis or None))
         knoten_zuordnen(d.stockwerk_id)
         return {"id": kid}
 
@@ -663,8 +688,9 @@ def registrieren(app: FastAPI, db: Datenbank, fehler, ansehen, bearbeiten, liefe
             felder["ohne_hinweis"] = int(bool(felder["ohne_hinweis"]))
         if felder.get("kapazitaet") == 0:
             felder["kapazitaet"] = None
-        if felder.get("minuten_je_einheit") == 0:
-            felder["minuten_je_einheit"] = None
+        for feld in ("minuten_je_einheit", "minuten_je_einheit_bis"):
+            if felder.get(feld) == 0:
+                felder[feld] = None
         if "name" in felder:
             felder["name"] = felder["name"].strip()
         if felder:
@@ -824,7 +850,7 @@ def registrieren(app: FastAPI, db: Datenbank, fehler, ansehen, bearbeiten, liefe
         return {
             "name": d.name.strip(), "lieferant": d.lieferant.strip(), "richtung": d.richtung,
             "transportart_id": d.transportart_id, "start_id": d.start_id, "ziel_id": d.ziel_id,
-            "uhrzeit": d.uhrzeit, "spaetestens": d.spaetestens or None,
+            "uhrzeit": d.uhrzeit, "spaetestens": d.spaetestens or None, "streuung": d.streuung,
             "ladung": json.dumps([p.model_dump() for p in d.ladung if p.anzahl > 0]),
             "via": json.dumps(d.via), "regel": json.dumps(regel), "rueckweg": json.dumps(d.rueckweg.model_dump()),
             "aktiv": int(d.aktiv), "notiz": d.notiz,
@@ -906,7 +932,8 @@ def registrieren(app: FastAPI, db: Datenbank, fehler, ansehen, bearbeiten, liefe
             raise fehler(404, "nicht_gefunden")
         return json.loads(row["aenderungen"])
 
-    def tag_simulieren(tag: date, aenderungen: dict, pruefen=None) -> dict:
+    def tag_vorbereiten(tag: date, aenderungen: dict, pruefen=None) -> dict:
+        """Lädt alles für einen Tag einmal; tag_rechnen kann damit beliebig oft (mit Zufall) rechnen."""
         pruefen = pruefen or ist_feiertag_fn()
         feiertag, feiertag_name = pruefen(tag)
         alle = [lieferung_lesen(r) for r in db.alle("SELECT * FROM lieferungen WHERE standort_id = ? ORDER BY uhrzeit, id", (ort(),))]
@@ -914,19 +941,26 @@ def registrieren(app: FastAPI, db: Datenbank, fehler, ansehen, bearbeiten, liefe
         netz = Netz(db)
         szenario_anwenden(aenderungen, alle, sd, netz)
         heute = sorted((l for l in alle if l["aktiv"] and gilt_am(l["regel"], tag, feiertag)), key=lambda l: (l["uhrzeit"], l["id"]))
-        sim = Simulation(netz, {t["id"]: t for t in sd["transportarten"]}, {w["id"]: w for w in sd["wagentypen"]}, tag.isoweekday())
         # späte Lieferungen des Vortags, die über Mitternacht laufen können
         vortag = date.fromordinal(tag.toordinal() - 1)
         vortag_feiertag, _ = pruefen(vortag)
-        for l in alle:
-            spaet = l["uhrzeit"] >= VORTAG_AB or ((l["rueckweg"] or {}).get("uhrzeit") or "") >= VORTAG_AB
-            if spaet and l["aktiv"] and gilt_am(l["regel"], vortag, vortag_feiertag):
-                sim.lieferung_einplanen(l, vortag=True)
-        for l in heute:
+        vom_vortag = [l for l in alle if (l["uhrzeit"] >= VORTAG_AB or ((l["rueckweg"] or {}).get("uhrzeit") or "") >= VORTAG_AB)
+                      and l["aktiv"] and gilt_am(l["regel"], vortag, vortag_feiertag)]
+        return {"tag": tag, "feiertag": feiertag_name, "heute": heute, "vortag": vom_vortag, "sd": sd, "netz": netz}
+
+    def tag_rechnen(v: dict, zufall: random.Random | None = None) -> dict:
+        sd, tag = v["sd"], v["tag"]
+        sim = Simulation(v["netz"], {t["id"]: t for t in sd["transportarten"]}, {w["id"]: w for w in sd["wagentypen"]}, tag.isoweekday(), zufall)
+        for l in v["vortag"]:
+            sim.lieferung_einplanen(l, vortag=True)
+        for l in v["heute"]:
             sim.lieferung_einplanen(l)
         ergebnis = sim.laufen()
-        ergebnis.update({"datum": tag.isoformat(), "feiertag": feiertag_name, "wochentag": tag.isoweekday(), "lieferungen": [l["id"] for l in heute]})
+        ergebnis.update({"datum": tag.isoformat(), "feiertag": v["feiertag"], "wochentag": tag.isoweekday(), "lieferungen": [l["id"] for l in v["heute"]]})
         return ergebnis
+
+    def tag_simulieren(tag: date, aenderungen: dict, pruefen=None) -> dict:
+        return tag_rechnen(tag_vorbereiten(tag, aenderungen, pruefen))
 
     def tag_lesen(datum: str | None) -> date:
         try:
@@ -939,6 +973,102 @@ def registrieren(app: FastAPI, db: Datenbank, fehler, ansehen, bearbeiten, liefe
         ergebnis = tag_simulieren(tag_lesen(datum), szenario_laden(szenario))
         ergebnis["szenario"] = szenario
         return ergebnis
+
+    # ---------------------------------------------------------------- Streuung (viele Tage mit Zufall)
+    def quantil(werte: list[float], q: float) -> float:
+        if not werte:
+            return 0.0
+        w = sorted(werte)
+        return w[min(len(w) - 1, int(q * len(w)))]
+
+    def streuung_auswerten(ergebnisse: list[dict], schwelle: float) -> dict:
+        n = len(ergebnisse)
+        ressourcen: dict[tuple, dict] = {}
+        lieferungen: dict[int, dict] = {}
+        tage_ueber = 0
+        for e in ergebnisse:
+            for r in e["ressourcen"]:
+                x = ressourcen.setdefault((r["typ"], r["id"]), {"typ": r["typ"], "id": r["id"], "name": r["name"], "stockwerk_id": r["stockwerk_id"], "warte": [], "spitze": []})
+                x["warte"].append(r["max_wartezeit"])
+                x["spitze"].append(r["spitze"])
+            je_lieferung: dict[int, dict] = {}
+            for f in e["fahrten"]:
+                if f["vortag"]:
+                    continue
+                j = je_lieferung.setdefault(f["lieferung_id"], {"name": f["name"], "verspaetet": False, "warte": 0.0})
+                j["verspaetet"] |= f["verspaetet"]
+                j["warte"] = max(j["warte"], sum(f["warte"].values()))
+            for lid, j in je_lieferung.items():
+                x = lieferungen.setdefault(lid, {"id": lid, "name": j["name"], "verspaetet": 0, "warte": []})
+                x["verspaetet"] += int(j["verspaetet"])
+                x["warte"].append(j["warte"])
+            if e["zusammenfassung"]["max_wartezeit"] > schwelle:
+                tage_ueber += 1
+
+        def ressource(x):
+            warte = x["warte"] + [0.0] * (n - len(x["warte"]))  # an Tagen ohne Nutzung: keine Wartezeit
+            return {"typ": x["typ"], "id": x["id"], "name": x["name"], "stockwerk_id": x["stockwerk_id"],
+                    "anteil_ueber": round(sum(1 for w in warte if w > schwelle) / n, 3),
+                    "median": quantil(warte, 0.5), "p90": quantil(warte, 0.9), "max": max(warte),
+                    "spitze_p90": quantil(x["spitze"], 0.9)}
+
+        def lieferung(x):
+            return {"id": x["id"], "name": x["name"], "anteil_verspaetet": round(x["verspaetet"] / n, 3),
+                    "anteil_ueber": round(sum(1 for w in x["warte"] if w > schwelle) / n, 3),
+                    "median": quantil(x["warte"], 0.5), "p90": quantil(x["warte"], 0.9), "max": max(x["warte"], default=0.0)}
+
+        res = sorted((ressource(x) for x in ressourcen.values()), key=lambda r: (r["anteil_ueber"], r["p90"]), reverse=True)
+        lief = sorted((lieferung(x) for x in lieferungen.values()), key=lambda r: (r["anteil_verspaetet"], r["anteil_ueber"], r["p90"]), reverse=True)
+        return {"laeufe": n, "schwelle": schwelle, "anteil_tage_ueber": round(tage_ueber / n, 3) if n else 0,
+                "max_wartezeit_p90": quantil([e["zusammenfassung"]["max_wartezeit"] for e in ergebnisse], 0.9),
+                "ressourcen": res, "lieferungen": lief}
+
+    def mehrfach(v: dict, laeufe: int) -> list[dict]:
+        return [tag_rechnen(v, random.Random(seed)) for seed in range(laeufe)]
+
+    @app.get("/api/simulation/streuung")
+    def streuung(datum: str | None = None, szenario: int | None = None, laeufe: int = 100, schwelle: float = 30,
+                 _: dict = Depends(ansehen)):
+        """Rechnet den Tag viele Male mit zufälligen Abweichungen (Ankunft, Entladen, Personen im Aufzug)."""
+        laeufe = max(5, min(laeufe, 500))
+        v = tag_vorbereiten(tag_lesen(datum), szenario_laden(szenario))
+        ergebnis = streuung_auswerten(mehrfach(v, laeufe), schwelle * 60)
+        ergebnis.update({"datum": v["tag"].isoformat(), "szenario": szenario})
+        return ergebnis
+
+    # ---------------------------------------------------------------- Mindestbedarf
+    BEDARF_ARTEN = {"transportart": ("transportarten", "fahrzeuge"), "knoten": ("knoten", "knoten"), "kante": ("kanten", "kante")}
+
+    @app.get("/api/simulation/bedarf")
+    def bedarf(art: str, id: int, ziel: float = 15, datum: str | None = None, szenario: int | None = None,
+               laeufe: int = 0, max_anzahl: int = 20, _: dict = Depends(ansehen)):
+        """Kleinste Anzahl (Fahrzeuge/Personen, Tore, gleichzeitig auf einer Engstelle), bei der dort
+        niemand länger als ziel Minuten wartet. Mit laeufe > 0 zählt der 90-%-Wert über so viele Tage."""
+        if art not in BEDARF_ARTEN:
+            raise fehler(400, "art_ungueltig")
+        tabelle, typ = BEDARF_ARTEN[art]
+        holen(tabelle, id)
+        tag = tag_lesen(datum)
+        basis = szenario_laden(szenario)
+        laeufe = max(0, min(laeufe, 200))
+        max_anzahl = max(1, min(max_anzahl, 50))
+        punkte, empfehlung = [], None
+        for n in range(1, max_anzahl + 1):
+            aend = copy.deepcopy(basis)
+            werte = {"anzahl": n, "schichten": []} if art == "transportart" else {"kapazitaet": n}
+            aend.setdefault(tabelle, {}).setdefault(str(id), {}).update(werte)
+            v = tag_vorbereiten(tag, aend)
+            ergebnisse = mehrfach(v, laeufe) if laeufe else [tag_rechnen(v)]
+            warte = [next((r["max_wartezeit"] for r in e["ressourcen"] if r["typ"] == typ and r["id"] == id), 0.0) for e in ergebnisse]
+            spitze = [next((r["spitze"] for r in e["ressourcen"] if r["typ"] == typ and r["id"] == id), 0.0) for e in ergebnisse]
+            wert = quantil(warte, 0.9) if laeufe else warte[0]
+            punkte.append({"anzahl": n, "wartezeit": round(wert, 1), "auslastung": round(quantil(spitze, 0.9), 3),
+                           "verspaetet": round(sum(e["zusammenfassung"]["verspaetet"] for e in ergebnisse) / len(ergebnisse), 1)})
+            if empfehlung is None and wert <= ziel * 60:
+                empfehlung = n
+            if empfehlung is not None and n >= empfehlung + 1:
+                break  # eine Stufe mehr zum Vergleich zeigen, dann aufhören
+        return {"art": art, "id": id, "ziel": ziel, "laeufe": laeufe, "empfehlung": empfehlung, "punkte": punkte}
 
     @app.get("/api/simulation/woche")
     def woche(von: str | None = None, szenario: int | None = None, _: dict = Depends(ansehen)):
@@ -1039,6 +1169,10 @@ def registrieren(app: FastAPI, db: Datenbank, fehler, ansehen, bearbeiten, liefe
         ergebnis = export.lieferungen_zuordnen(zeilen, kontext)
         if not pruefen and not any(z["fehler"] for z in ergebnis):
             for z in ergebnis:
+                if "streuung" not in z["daten"] and z.get("id"):
+                    alt = db.eins("SELECT streuung FROM lieferungen WHERE id = ? AND standort_id = ?", (z["id"], ort()))
+                    if alt:
+                        z["daten"]["streuung"] = alt["streuung"]
                 try:
                     werte = lieferung_pruefen(Lieferung(**z["daten"]))
                 except Exception as ex:  # fachliche Prüfung wie beim Speichern im Dialog

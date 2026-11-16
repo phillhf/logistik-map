@@ -884,7 +884,13 @@ export function starteEditor(ctx) {
     const aufzug = h("select", aufzugOptionen().map(([w, text]) => h("option", { value: w, selected: String(w) === String(k.aufzug_id ?? "") }, text)));
     const kap = h("input", { type: "number", min: 0, value: k.kapazitaet ?? "" });
     const minuten = h("input", { type: "number", min: 0, step: 0.5, placeholder: "2", value: k.minuten_je_einheit ?? "" });
-    const minutenFeld = feld(t("knoten.minuten_je_einheit"), minuten, t("knoten.minuten_je_einheit_hilfe"));
+    const minutenBis = h("input", { type: "number", min: 0, step: 0.5, placeholder: t("knoten.bis_leer"), value: k.minuten_je_einheit_bis ?? "" });
+    const minutenFeld = h(
+      "div.feld",
+      h("span", t("knoten.minuten_je_einheit")),
+      h("div.von-bis", minuten, h("span", t("knoten.bis")), minutenBis),
+      h("small", t("knoten.minuten_je_einheit_hilfe"))
+    );
     const torSichtbar = () => (minutenFeld.hidden = art.value !== "tor");
     art.addEventListener("change", torSichtbar);
     torSichtbar();
@@ -923,7 +929,8 @@ export function starteEditor(ctx) {
       try {
         const aufzug_id = await aufzugWert(aufzug.value, null);
         await speichernUndNeu(`knoten/${k.id}`, { name: name.value, art: art.value, aufzug_id, kapazitaet: kap.value === "" ? 0 : Number(kap.value),
-          minuten_je_einheit: minuten.value === "" ? 0 : Number(minuten.value) });
+          minuten_je_einheit: minuten.value === "" ? 0 : Number(minuten.value),
+          minuten_je_einheit_bis: minutenBis.value === "" ? 0 : Number(minutenBis.value) });
       } catch (err) {
         fehlerMelden(err);
       }

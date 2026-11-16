@@ -12,7 +12,7 @@ import pymupdf
 
 TAGE = ["Mo", "Di", "Mi", "Do", "Fr", "Sa", "So"]
 SPALTEN = [
-    "ID", "Bezeichnung", "Lieferant", "Richtung", "Transportart", "Start", "Ziel", "Uhrzeit", "Spätestens",
+    "ID", "Bezeichnung", "Lieferant", "Richtung", "Transportart", "Start", "Ziel", "Uhrzeit", "Spätestens", "Schwankung (± Min.)",
     "Ladung", "Tage", "Feiertage", "Gültig ab", "Gültig bis", "Rückweg", "Rückweg Uhrzeit", "Rückweg nach", "Aktiv", "Notiz",
 ]
 HINWEISE = [
@@ -21,6 +21,7 @@ HINWEISE = [
     ("Transportart", "Name wie unter Stammdaten, z. B. FTS"),
     ("Start / Ziel / Rückweg nach", "Name des Punkts. Gibt es den Namen mehrfach: „Name (Stockwerk)“ oder „Name (Stockwerk, Kürzel)“"),
     ("Uhrzeit / Spätestens", "HH:MM, z. B. 08:00"),
+    ("Schwankung (± Min.)", "Wie viele Minuten die Ankunft früher oder später sein kann, z. B. 15. Nur für die Auswertung „Streuung“."),
     ("Ladung", "z. B. „12 Wäschewagen, 2 Rollcontainer“"),
     ("Tage", "täglich, Mo-Fr, Mo-Sa, Wochenende oder einzeln: Mo, Mi, Fr"),
     ("Feiertage", "nicht (Standard), auch oder nur"),
@@ -162,14 +163,14 @@ def lieferungen_xlsx(punkte: list[dict], stamm: dict, lieferungen: list[dict]) -
         ws.append([
             l["id"], l["name"], l["lieferant"], {"entsorgung": "Entsorgung", "intern": "Intern"}.get(l["richtung"], "Versorgung"),
             ta.get(l["transportart_id"], ""), punkt_bezeichnung(nach_id.get(l["start_id"]), punkte), punkt_bezeichnung(nach_id.get(l["ziel_id"]), punkte),
-            l["uhrzeit"], l["spaetestens"] or "", ladung_text(l["ladung"], stamm["wagentypen"]), tage_text(l["regel"]),
+            l["uhrzeit"], l["spaetestens"] or "", l.get("streuung") or 0, ladung_text(l["ladung"], stamm["wagentypen"]), tage_text(l["regel"]),
             {"ausser": "nicht", "auch": "auch", "nur": "nur"}[l["regel"].get("feiertage", "ausser")],
             l["regel"].get("von") or "", l["regel"].get("bis") or "",
             {"leer": "leer", "beladen": "beladen", "spaeter": "später", "keiner": "keiner"}.get(r.get("modus", "leer"), "leer"),
             r.get("uhrzeit") or "", punkt_bezeichnung(nach_id.get(r.get("ziel_id")), punkte) if r.get("ziel_id") else "",
             "ja" if l["aktiv"] else "nein", l["notiz"],
         ])
-    for i, breite in enumerate([6, 28, 22, 12, 22, 30, 30, 9, 11, 32, 14, 10, 12, 12, 10, 14, 26, 7, 30], start=1):
+    for i, breite in enumerate([6, 28, 22, 12, 22, 30, 30, 9, 11, 12, 32, 14, 10, 12, 12, 10, 14, 26, 7, 30], start=1):
         ws.column_dimensions[get_column_letter(i)].width = breite
     for zelle in ws[1]:
         zelle.font = Font(bold=True, color="FFFFFF")
@@ -284,6 +285,11 @@ def lieferungen_zuordnen(zeilen: list[dict], kontext: dict) -> list[dict]:
             "rueckweg": {"modus": rueck or "leer", "uhrzeit": _zeit(z.get("Rückweg Uhrzeit")) or None, "ziel_id": rueck_ziel["id"] if rueck_ziel else None},
             "aktiv": aktiv, "notiz": g("Notiz"),
         }
+        if "Schwankung (± Min.)" in z:  # ältere Listen ohne diese Spalte lassen den Wert unverändert
+            try:
+                daten["streuung"] = max(0, min(240, int(float(g("Schwankung (± Min.)") or 0))))
+            except ValueError:
+                fehler.append("streuung_ungueltig")
         ergebnis.append({"zeile": nr, "id": lid, "name": name, "uhrzeit": uhrzeit, "fehler": fehler, "daten": daten})
     return ergebnis
 

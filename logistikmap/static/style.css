@@ -478,3 +478,20 @@ main.seite-start { max-width: 920px; }
 /* Standort-Auswahl im Kopf */
 #standort-wahl { background: rgba(255, 255, 255, 0.12); color: #fff; border: 1px solid rgba(255, 255, 255, 0.35); border-radius: 6px; padding: 5px 8px; font: inherit; font-weight: 600; max-width: 240px; cursor: pointer; }
 #standort-wahl option { color: var(--text); background: #fff; font-weight: 400; }
+
+/* Auswertung: Streuung und Mindestbedarf */
+.anteil { display: flex; align-items: center; gap: 8px; min-width: 150px; }
+.anteil .balken { flex: 1; height: 8px; background: #eceff2; border-radius: 4px; overflow: hidden; }
+.anteil .balken > div { height: 100%; }
+.anteil .balken > .gut { background: #2b8a3e; }
+.anteil .balken > .mittel { background: #f08c00; }
+.anteil .balken > .schlecht { background: var(--rot); }
+.anteil span { font-variant-numeric: tabular-nums; min-width: 3.5em; text-align: right; }
+.bedarf-ergebnis { font-size: 1.05rem; font-weight: 600; padding: 12px 14px; border-radius: 8px; }
+.bedarf-ergebnis.gut { background: #ebfbee; color: #2b8a3e; }
+.bedarf-ergebnis.schlecht { background: #fff5f5; color: #c92a2a; }
+.tabelle tr.empfohlen td { background: #ebfbee; }
+.tabelle td.gut { color: #2b8a3e; }
+.tabelle td.schlecht { color: #c92a2a; }
+.von-bis { display: flex; align-items: center; gap: 6px; }
+.von-bis input { flex: 1; min-width: 0; }

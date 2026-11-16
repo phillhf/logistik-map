@@ -77,7 +77,7 @@ def test_import_dialog(angemeldet, haus):
     page, c = angemeldet, haus["c"]
     wb = load_workbook(io.BytesIO(c.get("export/lieferungen.xlsx").content))
     ws = wb["Lieferungen"]
-    ws.append([None, "Wäsche", "Wäscherei", "Versorgung", "Materialtransportdienst", "Rampe", "Lager", "08:00", "",
+    ws.append([None, "Wäsche", "Wäscherei", "Versorgung", "Materialtransportdienst", "Rampe", "Lager", "08:00", "", 10,
                "4 Wäschewagen", "Mo-Fr", "nicht", "", "", "leer", "", "", "ja", ""])
     puffer = io.BytesIO()
     wb.save(puffer)

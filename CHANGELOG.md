@@ -1,5 +1,26 @@
 # Änderungen
 
+## [0.8.0] - 2026-11-16
+
+Neu: **Streuung, Mindestbedarf und Grundlast der Aufzüge.**
+
+- **Streuung:** Bei jeder Lieferung lässt sich „Schwankung ± Min.“ eintragen (auch in der
+  Excel-Liste), am Tor die Entladezeit je Palette „von – bis“. Auswertung → **Streuung** rechnet
+  den Tag 100-mal (einstellbar) mit zufälligen Abweichungen und zeigt je Stelle, an wie viel
+  Prozent der Tage dort länger als die Schwelle (z. B. 30 Min.) gewartet wird, dazu üblichen Wert,
+  9-von-10-Tage-Wert und schlimmsten Tag, je Lieferung den Anteil verspäteter Tage. Feste
+  Startwerte: gleiche Eingabe, gleiches Ergebnis. Die normale Tagesansicht rechnet weiter genau
+  nach Plan.
+- **Mindestbedarf:** Auswertung → **Mindestbedarf**: Transportart (Fahrzeuge bzw. Mitarbeiter),
+  Tor/Rampe oder Engstelle wählen, Höchstwartezeit eingeben – das System probiert 1, 2, 3 …
+  durch und nennt die kleinste Anzahl, die reicht. Auf Wunsch mit Streuung (30 Tage, 9 von 10
+  müssen passen).
+- **Grundlast der Aufzüge:** In den Stammdaten beim Aufzug Zeitfenster eintragen, z. B.
+  „Mo–Fr 08:00–10:00: 40 %“. Die Simulation lässt entsprechend Personenfahrten mitfahren; sie
+  blockieren die Kabine, zählen aber nicht als Wartezeit der Waren und werden in der Auswertung
+  getrennt gezählt.
+- Engstellen-Liste filtert jetzt nach Krankenhaus (Fehler aus 0.7.0).
+
 ## [0.7.1] - 2026-11-16
 
 - **Strecke für eine Transportart sperren, auf einen Klick für die ganze Strecke:** Beim

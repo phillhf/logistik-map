@@ -27,7 +27,9 @@ Weg gibt. Die Reihenfolge:
 5. **Karte → Ablauf** und **Auswertung**: Tag und Uhrzeit wählen und sehen, wohin die Ware
    geht, wo gewartet wird und welcher Aufzug zum Engpass wird.
 
-6. **Szenarien**: „Was wäre, wenn die Wäsche um 7:30 käme?“ oder „… wenn Aufzug West in
+6. **Streuung und Mindestbedarf** (Auswertung): Wie oft wird es eng, wenn Lieferungen schwanken
+   und Personen die Aufzüge mitbenutzen? Wie viele Tore, Fahrzeuge oder Mitarbeiter reichen?
+7. **Szenarien**: „Was wäre, wenn die Wäsche um 7:30 käme?“ oder „… wenn Aufzug West in
    Wartung ist?“ Das Szenario lässt sich mit dem Ist-Zustand vergleichen und auf Wunsch übernehmen.
 
 **Mehrere Krankenhäuser:** Oben neben „Logistik Map“ wählst du das Krankenhaus. Über
