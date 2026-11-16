@@ -386,7 +386,8 @@
     "datei_unlesbar": "The file cannot be read. Please save it as .xlsx or .csv.",
     "datei_leer": "The file is empty.",
     "spalten_fehlen": "Columns are missing. Required are at least Bezeichnung, Start, Ziel and Uhrzeit – easiest is to export with “Excel” and use that as a template.",
-    "rueckgaengig_fremd": "The last change on this floor was made by {benutzer}. You can only undo your own changes."
+    "rueckgaengig_fremd": "The last change on this floor was made by {benutzer}. You can only undo your own changes.",
+    "beide_benannt": "Two named points cannot be merged. Connect them with “Draw paths”."
   },
   "knoten": {
     "art": {
@@ -444,7 +445,7 @@
       "ausrichten": "Align"
     },
     "hilfe": {
-      "auswahl": "Click an element to edit it. Points can be dragged. Del deletes.",
+      "auswahl": "Click an element to edit it. Points can be moved; dropped onto another point, both are joined. Delete removes.",
       "weg": "Draw every path where goods can move – the system finds the best route itself. Click at every corner; where you cross or click a path, a junction is created. Right-click ends the line, a second right-click ends the tool. Move the map: hold the right mouse button and drag.",
       "punkt": "Click where the point goes (gate, store, ward, lift …). Right-click ends the tool.",
       "rechteck": "Click two opposite corners of the room.",
@@ -502,11 +503,14 @@
       "ausrichten": "align"
     },
     "fremde_aenderung": "{benutzer} has just changed this floor – the map was reloaded.",
-    "anschliessen": "⇢ Connect points ({anzahl})",
-    "anschliessen_hilfe": "Attaches every point on this floor that is not on a path to the nearest path with a short piece.",
+    "anschliessen": "⇢ Close gaps ({anzahl})",
+    "anschliessen_hilfe": "Joins open path ends that stop less than 4 m from a point or another path, and attaches points not yet on a path to the nearest path.",
     "angeschlossen": "Connected to the path: {anzahl}",
     "zu_weit": "More than {meter} m from the nearest path: {namen}. Draw a path there first.",
-    "radierer_punkt": "Delete points (gate, store, ward …) under “Select”: click it, then press Delete."
+    "radierer_punkt": "Delete points (gate, store, ward …) under “Select”: click it, then press Delete.",
+    "luecken_geschlossen": "Gaps closed: {anzahl}",
+    "vereint": "Points joined.",
+    "offenes_ende": "Open end – the path stops here. Drag it onto another point to join them."
   },
   "aufzug": {
     "art": {

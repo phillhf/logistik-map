@@ -93,6 +93,10 @@ class Knoten(BaseModel):
     minuten_je_einheit: float | None = Field(default=None, ge=0, le=240)  # nur Tore: Entladen je Palette/Wagen
 
 
+class Vereinen(BaseModel):
+    mit: int
+
+
 class KnotenAenderung(BaseModel):
     x: float | None = None
     y: float | None = None
@@ -619,6 +623,30 @@ def registrieren(app: FastAPI, db: Datenbank, fehler, ansehen, bearbeiten, liefe
             (d.stockwerk_id, d.x, d.y, d.art, d.name.strip(), d.aufzug_id, d.kapazitaet, d.minuten_je_einheit or None))
         knoten_zuordnen(d.stockwerk_id)
         return {"id": kid}
+
+    @app.post("/api/knoten/{kid}/vereinen")
+    def knoten_vereinen(kid: int, d: Vereinen, request: Request, _: dict = Depends(bearbeiten)):
+        """Zwei Punkte zu einem machen (Punkt auf Punkt gezogen). Ein Streckenpunkt geht im anderen auf."""
+        a, b = holen("knoten", kid), holen("knoten", d.mit)
+        if a["id"] == b["id"] or a["stockwerk_id"] != b["stockwerk_id"]:
+            raise fehler(400, "kante_ungueltig")
+        if a["art"] != "weg" and b["art"] != "weg":
+            raise fehler(409, "beide_benannt")
+        bleibt, weg = (a, b) if a["art"] != "weg" else (b, a)
+        merken(a["stockwerk_id"], request, "punkt_geaendert")
+        with db.transaktion() as con:
+            vorhanden = {frozenset((r["von"], r["nach"])) for r in con.execute("SELECT von, nach FROM kanten WHERE von = ? OR nach = ?", (bleibt["id"], bleibt["id"]))}
+            for e in con.execute("SELECT * FROM kanten WHERE von = ? OR nach = ?", (weg["id"], weg["id"])).fetchall():
+                von = bleibt["id"] if e["von"] == weg["id"] else e["von"]
+                nach = bleibt["id"] if e["nach"] == weg["id"] else e["nach"]
+                paar = frozenset((von, nach))
+                if von == nach or paar in vorhanden:
+                    con.execute("DELETE FROM kanten WHERE id = ?", (e["id"],))
+                else:
+                    con.execute("UPDATE kanten SET von = ?, nach = ? WHERE id = ?", (von, nach, e["id"]))
+                    vorhanden.add(paar)
+            con.execute("DELETE FROM knoten WHERE id = ?", (weg["id"],))
+        return {"id": bleibt["id"]}
 
     @app.put("/api/knoten/{kid}")
     def knoten_aendern(kid: int, d: KnotenAenderung, request: Request, _: dict = Depends(bearbeiten)):

@@ -386,7 +386,8 @@
     "datei_unlesbar": "Die Datei lässt sich nicht lesen. Bitte als .xlsx oder .csv speichern.",
     "datei_leer": "Die Datei ist leer.",
     "spalten_fehlen": "Es fehlen Spalten. Nötig sind mindestens Bezeichnung, Start, Ziel und Uhrzeit – am einfachsten mit „Excel“ exportieren und als Vorlage nutzen.",
-    "rueckgaengig_fremd": "Die letzte Änderung auf diesem Stockwerk stammt von {benutzer}. Rückgängig geht nur für eigene Änderungen."
+    "rueckgaengig_fremd": "Die letzte Änderung auf diesem Stockwerk stammt von {benutzer}. Rückgängig geht nur für eigene Änderungen.",
+    "beide_benannt": "Zwei benannte Punkte lassen sich nicht zusammenlegen. Verbinde sie mit „Strecken zeichnen“."
   },
   "knoten": {
     "art": {
@@ -444,7 +445,7 @@
       "ausrichten": "Ausrichten"
     },
     "hilfe": {
-      "auswahl": "Klicke ein Element an, um es zu bearbeiten. Punkte lassen sich verschieben. Entf löscht.",
+      "auswahl": "Klicke ein Element an, um es zu bearbeiten. Punkte lassen sich verschieben; auf einen anderen Punkt gezogen, werden beide verbunden. Entf löscht.",
       "weg": "Zeichne alle Strecken, auf denen Ware fahren kann – den besten Weg sucht das System selbst. Klick an jeder Ecke; wo du eine Strecke kreuzt oder anklickst, entsteht eine Kreuzung. Rechtsklick beendet die Linie, ein zweiter Rechtsklick das Werkzeug. Karte verschieben: rechte Maustaste gedrückt halten und ziehen.",
       "punkt": "Klicke auf die Stelle für den Punkt (Tor, Lager, Station, Aufzug …). Rechtsklick beendet das Werkzeug.",
       "rechteck": "Klicke zwei gegenüberliegende Ecken des Raums an.",
@@ -502,11 +503,14 @@
       "ausrichten": "Ausrichten"
     },
     "fremde_aenderung": "{benutzer} hat dieses Stockwerk gerade geändert – die Karte wurde neu geladen.",
-    "anschliessen": "⇢ Punkte anschließen ({anzahl})",
-    "anschliessen_hilfe": "Hängt alle Punkte dieses Stockwerks, die noch an keiner Strecke hängen, mit einem kurzen Stück an die nächste Strecke.",
+    "anschliessen": "⇢ Lücken schließen ({anzahl})",
+    "anschliessen_hilfe": "Verbindet offene Streckenenden, die weniger als 4 m neben einem Punkt oder einer anderen Strecke enden, und hängt Punkte, die noch an keiner Strecke hängen, an die nächste Strecke.",
     "angeschlossen": "An die Strecke angeschlossen: {anzahl}",
     "zu_weit": "Mehr als {meter} m von der nächsten Strecke entfernt: {namen}. Dort erst eine Strecke zeichnen.",
-    "radierer_punkt": "Punkte (Tor, Lager, Station …) löschst du unter „Auswählen“: anklicken, dann Entf."
+    "radierer_punkt": "Punkte (Tor, Lager, Station …) löschst du unter „Auswählen“: anklicken, dann Entf.",
+    "luecken_geschlossen": "Lücken geschlossen: {anzahl}",
+    "vereint": "Punkte verbunden.",
+    "offenes_ende": "Offenes Ende – hier geht es nicht weiter. Auf einen anderen Punkt ziehen verbindet beide."
   },
   "aufzug": {
     "art": {

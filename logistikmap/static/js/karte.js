@@ -356,18 +356,24 @@ export function zeigeKarte(wurzel, [stockwerkParam, modusParam, ...rest]) {
       }
     }
 
+    // Offene Enden: Streckenpunkte mit nur einem Anschluss – oft eine Lücke im Netz
+    const grad = new Map();
+    for (const e of ctx.netz.kanten) for (const n of [e.von, e.nach]) grad.set(n, (grad.get(n) || 0) + 1);
     for (const k of ctx.netz.knoten) {
       if (k.art === "weg" && !bearbeiten) continue;
       const gewaehlt = auswahl?.typ === "knoten" && auswahl.id === k.id;
+      const offen = bearbeiten && k.art === "weg" && (grad.get(k.id) || 0) <= 1;
       const marker = L.marker(ll(k.x, k.y), {
         pane: "knoten",
-        icon: knotenIcon(k, gewaehlt),
+        icon: knotenIcon(k, gewaehlt, offen),
         draggable: bearbeiten,
         keyboard: false,
         riseOnHover: true,
       });
       if (k.art !== "weg") {
         marker.bindTooltip(knotenTitel(k), { permanent: true, direction: "right", offset: [10, 0], className: "knoten-label" });
+      } else if (offen) {
+        marker.bindTooltip(t("editor.offenes_ende"), { direction: "top", offset: [0, -8] });
       }
       marker.knoten = k;
       if (bearbeiten) {
@@ -388,10 +394,10 @@ export function zeigeKarte(wurzel, [stockwerkParam, modusParam, ...rest]) {
     return k.name || t(`knoten.art.${k.art}`);
   }
 
-  function knotenIcon(k, gewaehlt) {
+  function knotenIcon(k, gewaehlt, offen = false) {
     const farbe = KNOTEN_FARBEN[k.art] || "#495057";
     if (k.art === "weg") {
-      return L.divIcon({ className: `knoten-icon weg${gewaehlt ? " gewaehlt" : ""}`, iconSize: [12, 12], html: "" });
+      return L.divIcon({ className: `knoten-icon weg${gewaehlt ? " gewaehlt" : ""}${offen ? " offen" : ""}`, iconSize: offen ? [14, 14] : [12, 12], html: "" });
     }
     const el = document.createElement("span");
     el.textContent = KNOTEN_ZEICHEN[k.art] || "";

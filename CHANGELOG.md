@@ -1,5 +1,16 @@
 # Änderungen
 
+## [0.6.4] - 2026-11-16
+
+- **Lücken im Streckennetz sichtbar:** Ein Streckenende, an dem es nicht weitergeht, ist im
+  Editor orange markiert. Zwei Punkte, die nur dicht beieinander liegen, sind nicht verbunden –
+  das fällt so sofort auf.
+- **Punkt auf Punkt ziehen verbindet beide:** Ein Streckenpunkt, der auf einen anderen Punkt
+  gezogen wird, geht in ihm auf; die Strecken hängen danach zusammen.
+- **„Lücken schließen“** (bisher „Punkte anschließen“): verbindet zusätzlich offene Enden, die
+  weniger als 4 m neben einem Punkt oder einer anderen Strecke aufhören.
+- Beim Zeichnen werden vorhandene Punkte aus etwas größerem Abstand gefangen.
+
 ## [0.6.3] - 2026-11-16
 
 - **„Strecken zeichnen“** und **„Strecke löschen“** statt „Flure zeichnen“/„Flur löschen“.

@@ -13,7 +13,7 @@ const FARBEN = [
   ["#495057", "editor.farbe.grau"],
 ];
 const PUNKT_ARTEN = ["start", "ziel", "punkt", "tor", "aufzug", "uebergang"];
-const FANG_KNOTEN = 14; // Pixel
+const FANG_KNOTEN = 20; // Pixel
 const FANG_KANTE = 10;
 const FANG_VORBEI = 40; // Pixel: so dicht muss eine neue Flurlinie an einem losen Punkt vorbeiführen
 const WINKEL_FANG = 8; // Grad: fast waagerecht/senkrecht wird gerade gezogen
@@ -45,7 +45,7 @@ export function starteEditor(ctx) {
       h("span.trenner"),
       h("button", { type: "button", title: t("editor.rueckgaengig_hilfe"), onclick: rueckgaengig }, "↶ " + t("editor.rueckgaengig")),
       (() => {
-        const lose = ctx.stockwerk.meter_pro_punkt ? losePunkte().length : 0;
+        const lose = ctx.stockwerk.meter_pro_punkt ? losePunkte().length + luecken().length : 0;
         return lose
           ? h("button.anschliessen", { type: "button", title: t("editor.anschliessen_hilfe"), onclick: alleAnschliessen }, t("editor.anschliessen", { anzahl: lose }))
           : null;
@@ -189,6 +189,31 @@ export function starteEditor(ctx) {
     return ctx.netz.knoten.filter((k) => k.art !== "weg" && !verbunden.has(k.id));
   }
 
+  const MAX_LUECKE_M = 4;
+
+  /** Offene Streckenenden, die dicht (≤ 4 m) an einem anderen Punkt oder einer anderen Strecke liegen. */
+  function luecken() {
+    if (!ctx.stockwerk.meter_pro_punkt) return [];
+    const max = MAX_LUECKE_M / ctx.stockwerk.meter_pro_punkt;
+    const ergebnis = [];
+    for (const k of ctx.netz.knoten) {
+      if (k.art !== "weg") continue;
+      const an = ctx.netz.kanten.filter((e) => e.von === k.id || e.nach === k.id);
+      if (an.length !== 1) continue;
+      const nachbar = an[0].von === k.id ? an[0].nach : an[0].von;
+      let beste = null;
+      for (const n of ctx.netz.knoten) {
+        if (n.id === k.id || n.id === nachbar) continue;
+        const d = abstand(k, n);
+        if (d <= max && (!beste || d < beste.d)) beste = { d, knoten: n };
+      }
+      const e = naechsterFlur(k, k.id);
+      if (e && e.d <= max && e.kante.von !== nachbar && e.kante.nach !== nachbar && (!beste || e.d < beste.d - 1e-9)) beste = { d: e.d, flur: e };
+      if (beste) ergebnis.push({ k, ...beste });
+    }
+    return ergebnis;
+  }
+
   /** Nächstes Wegstück auf diesem Stockwerk (Abstand in Planeinheiten), ohne die am Punkt selbst. */
   function naechsterFlur(p, ohne) {
     let beste = null;
@@ -237,8 +262,22 @@ export function starteEditor(ctx) {
     const max = MAX_ANSCHLUSS_M / ctx.stockwerk.meter_pro_punkt;
     const zuWeit = [];
     let n = 0;
+    let geschlossen = 0;
     try {
       await gruppe(async () => {
+        // erst Lücken: offenes Ende mit dem nahen Punkt bzw. der nahen Strecke vereinen
+        for (let runde = 0; runde < 200; runde++) {
+          const l = luecken()[0];
+          if (!l) break;
+          let ziel = l.knoten?.id;
+          if (!ziel) {
+            const e = l.flur;
+            ziel = e.tt < 0.02 ? e.a.id : e.tt > 0.98 ? e.b.id : (await api(`kanten/${e.kante.id}/teilen`, { methode: "POST", daten: e.punkt })).id;
+          }
+          await api(`knoten/${l.k.id}/vereinen`, { methode: "POST", daten: { mit: ziel } });
+          geschlossen++;
+          await ctx.netzLaden();
+        }
         for (const k of losePunkte()) {
           if (await punktAnschliessen(k, max)) {
             n++;
@@ -250,6 +289,7 @@ export function starteEditor(ctx) {
       fehlerMelden(e);
     }
     await ctx.netzLaden();
+    if (geschlossen) melden(t("editor.luecken_geschlossen", { anzahl: geschlossen }));
     if (n) melden(t("editor.angeschlossen", { anzahl: n }));
     if (zuWeit.length) melden(t("editor.zu_weit", { namen: zuWeit.join(", "), meter: MAX_ANSCHLUSS_M }), "fehler");
   }
@@ -272,6 +312,15 @@ export function starteEditor(ctx) {
 
   ctx.beiVerschieben = async (k, p) => {
     try {
+      // Auf einen anderen Punkt gezogen: beide werden einer (schließt Lücken im Netz)
+      const ziel = naechsterKnoten(p, FANG_KNOTEN, k.id);
+      if (ziel && (k.art === "weg" || ziel.art === "weg")) {
+        await api(`knoten/${k.id}/vereinen`, { methode: "POST", daten: { mit: ziel.id } });
+        melden(t("editor.vereint"));
+        abwaehlen();
+        await ctx.netzLaden();
+        return;
+      }
       await api(`knoten/${k.id}`, { methode: "PUT", daten: { x: p.x, y: p.y } });
       await ctx.netzLaden();
       if (ctx.auswahl) auswaehlen(ctx.auswahl);

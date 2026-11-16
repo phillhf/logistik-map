@@ -101,3 +101,23 @@ def test_flur_loeschen_raeumt_zwischenpunkte_auf(haus):
     kante = next(k for k in c.get(f"/api/stockwerke/{haus['ug']}/netz").json()["kanten"] if haus["rampe"] in (k["von"], k["nach"]))
     c.delete(f"/api/kanten/{kante['id']}")
     assert haus["rampe"] in {k["id"] for k in c.get(f"/api/stockwerke/{haus['ug']}/netz").json()["knoten"]}
+
+
+def test_punkte_vereinen(haus):
+    """Offenes Streckenende auf einen Punkt gezogen: beide werden einer, die Strecke hängt dran."""
+    c = haus["c"]
+    ende = c.post("/api/knoten", json={"stockwerk_id": haus["ug"], "x": 1000, "y": 900, "art": "weg"}).json()["id"]
+    oben = c.post("/api/knoten", json={"stockwerk_id": haus["ug"], "x": 1000, "y": 1500, "art": "weg"}).json()["id"]
+    c.post("/api/kanten", json={"von": oben, "nach": ende})
+    r = c.post(f"/api/knoten/{ende}/vereinen", json={"mit": haus["flur"]})
+    assert r.status_code == 200 and r.json()["id"] == haus["flur"]
+    netz = c.get(f"/api/stockwerke/{haus['ug']}/netz").json()
+    assert ende not in {k["id"] for k in netz["knoten"]}
+    assert any({k["von"], k["nach"]} == {oben, haus["flur"]} for k in netz["kanten"])
+    # benannter Punkt bleibt erhalten, wenn ein Streckenpunkt auf ihn gezogen wird
+    assert c.post(f"/api/knoten/{oben}/vereinen", json={"mit": haus["rampe"]}).json()["id"] == haus["rampe"]
+    # zwei benannte Punkte: nein
+    assert c.post(f"/api/knoten/{haus['rampe']}/vereinen", json={"mit": haus["a_ug"]}).status_code == 409
+    # Rückgängig stellt den Stand wieder her
+    assert c.post(f"/api/stockwerke/{haus['ug']}/rueckgaengig").status_code == 200
+    assert oben in {k["id"] for k in c.get(f"/api/stockwerke/{haus['ug']}/netz").json()["knoten"]}

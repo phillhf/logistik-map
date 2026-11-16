@@ -273,6 +273,7 @@ main.seite-karte .kartenrahmen { overflow: hidden; }
   border-radius: 8px; font-size: 9px; padding: 0 4px; border: 1px solid #fff;
 }
 .knoten-icon.weg { width: 12px; height: 12px; border-radius: 50%; background: #868e96; border: 2px solid #fff; box-shadow: 0 0 0 1px #868e96; }
+.knoten-icon.weg.offen { width: 14px; height: 14px; background: #f08c00; box-shadow: 0 0 0 2px #fff, 0 0 0 4px #f08c00; }
 .knoten-icon.gewaehlt span, .knoten-icon.weg.gewaehlt { box-shadow: 0 0 0 3px #f08c00; }
 .leaflet-tooltip.knoten-label { background: rgba(255, 255, 255, 0.9); border: 0; box-shadow: 0 1px 2px rgba(0, 0, 0, 0.2); padding: 1px 6px; font-size: 11px; font-weight: 600; }
 .leaflet-tooltip.knoten-label::before { display: none; }
