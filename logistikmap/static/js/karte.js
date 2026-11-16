@@ -13,6 +13,13 @@ import { starteEditor } from "./editor.js";
 
 const METER_PRO_PDF_PUNKT = 0.0254 / 72; // 1 PDF-Punkt auf dem Papier
 
+/** „200“, „1:200“, „1 : 200“, „M 1:1.000“ → 200 bzw. 1000; sonst null. */
+export function verhaeltnisLesen(text) {
+  const teil = String(text ?? "").split(":").pop().replace(/[\s.]/g, "").replace(",", ".");
+  const n = Number(teil);
+  return teil && Number.isFinite(n) && n >= 1 && n <= 100000 ? n : null;
+}
+
 /** DIN-Format der Seite (A0 … A4), wenn sie eines hat. */
 function papierformat(b, hh) {
   const [kurz, lang] = [Math.min(b, hh), Math.max(b, hh)];
@@ -564,8 +571,8 @@ export function zeigeKarte(wurzel, [stockwerkParam, modusParam, ...rest]) {
       titel: t("karte.massstab_festlegen"),
       felder: [
         {
-          name: "verhaeltnis", label: t("karte.massstab_eingeben"), typ: "number", pflicht: true,
-          wert: gefunden[0] ?? jetzt ?? "", attr: { min: 1, step: 1, placeholder: "100" },
+          name: "verhaeltnis", label: t("karte.massstab_eingeben"), pflicht: true,
+          wert: gefunden[0] ?? jetzt ?? "", attr: { inputmode: "numeric", placeholder: "100", autocomplete: "off" },
           hilfe: gefunden.length
             ? t("karte.massstab_gefunden", { werte: gefunden.slice(0, 3).map((n) => `1:${n}`).join(", ") })
             : t("karte.massstab_nicht_gefunden"),
@@ -575,8 +582,10 @@ export function zeigeKarte(wurzel, [stockwerkParam, modusParam, ...rest]) {
         { name: "_messen", typ: "element", label: t("karte.massstab_oder"), element: messKnopf, lesen: () => null },
       ],
       speichern: async (werte) => {
-        if (!(werte.verhaeltnis >= 1)) throw new Error(t("karte.massstab_ungueltig"));
-        await api(`stockwerke/${s.id}/massstab`, { methode: "PUT", daten: { verhaeltnis: werte.verhaeltnis } });
+        const n = verhaeltnisLesen(werte.verhaeltnis);
+        if (!n) throw new Error(t("karte.massstab_ungueltig"));
+        werte.verhaeltnis = n;
+        await api(`stockwerke/${s.id}/massstab`, { methode: "PUT", daten: { verhaeltnis: n } });
       },
     });
     if (messen) return werkzeugStarten(massstabMessen);

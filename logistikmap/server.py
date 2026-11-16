@@ -896,5 +896,17 @@ def erstelle_app(pfade: Pfade, kacheln_starten: bool = True) -> FastAPI:
             return JSONResponse({"detail": detail}, status_code=404)
         return FileResponse(statisch / "index.html")
 
+    @app.middleware("http")
+    async def oberflaeche_nicht_veraltet(request: Request, call_next):
+        """Oberfläche (HTML, JS, CSS, Texte) bei jedem Laden kurz beim Server nachfragen.
+
+        Sonst nimmt der Browser nach einem Update teils noch die alten Skripte.
+        Ein unveränderter Stand kostet dank ETag nur eine kurze Antwort 304.
+        """
+        antwort = await call_next(request)
+        if not request.url.path.startswith("/api/") and "cache-control" not in antwort.headers:
+            antwort.headers["Cache-Control"] = "no-cache"
+        return antwort
+
     app.mount("/", StaticFiles(directory=statisch, html=True), name="static")
     return app

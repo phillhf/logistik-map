@@ -1,5 +1,11 @@
 # Änderungen
 
+## [0.5.2] - 2026-11-16
+
+- Maßstabsfeld nimmt auch „1:200“, „1 : 200“ oder „M 1:200“ an, nicht nur die Zahl.
+- Nach einem Update lädt der Browser die neue Oberfläche sofort. Bisher konnte er noch eine
+  Weile die alten Skripte aus dem Zwischenspeicher nehmen.
+
 ## [0.5.1] - 2026-11-16
 
 - **Maßstab eintragen:** „Maßstab festlegen“ fragt jetzt nach dem Maßstab laut Plan („1 : 100“).
