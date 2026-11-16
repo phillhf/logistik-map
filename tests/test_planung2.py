@@ -142,7 +142,7 @@ def test_export_und_import_rundweg(haus):
     assert [z["fehler"] for z in pruef["zeilen"]][:2] == [[], []]
     assert set(pruef["zeilen"][2]["fehler"]) >= {"transportart_unbekannt", "start_unbekannt", "uhrzeit_ungueltig", "ladung_ungueltig", "tage_ungueltig"}
     # mit Fehlern wird nichts übernommen
-    assert c.post("/api/import/lieferungen?pruefen=false", files=datei).json()["uebernommen"] is True
+    assert c.post("/api/import/lieferungen?pruefen=false", files=datei).json()["uebernommen"] is False
     assert len(c.get("/api/lieferungen").json()) == 1
     # fehlerhafte Zeile entfernen → übernehmen
     ws.delete_rows(4)

@@ -40,21 +40,69 @@ def test_kaputte_sicherung(admin):
     assert r.json()["detail"]["code"] == "sicherung_ungueltig"
 
 
-def test_auto_sicherung_behaelt_anzahl(app, pfade):
-    db = app.state.db
-    db.setze_einstellung("sicherung_anzahl", 2)
-    auto = wartung.AutoSicherung(db, pfade)
-    assert auto.jetzt_falls_faellig() is not None
-    assert auto.jetzt_falls_faellig() is None  # heute schon gesichert
-    for i in range(3):
-        (pfade.sicherungen / f"auto-2000010{i}-000000.zip").write_bytes(b"x")
+def test_auto_sicherung_taeglich_und_woechentlich(app, pfade):
     import os
     import time
 
-    for p in pfade.sicherungen.glob("auto-*.zip"):
-        os.utime(p, (time.time() - 30 * 3600, time.time() - 30 * 3600))
+    db = app.state.db
+    db.setze_einstellung("sicherung_anzahl", 2)
+    (pfade.dokumente / "1.pdf").write_bytes(b"%PDF-1.4 x")
+    auto = wartung.AutoSicherung(db, pfade)
+    erste = auto.jetzt_falls_faellig()
+    assert erste.name.startswith("auto-voll-")  # die erste ist vollständig
+    assert auto.jetzt_falls_faellig() is None  # heute schon gesichert
+
+    def altern(muster, stunden):
+        for f in pfade.sicherungen.glob(muster):
+            os.utime(f, (time.time() - stunden * 3600, time.time() - stunden * 3600))
+
+    altern("auto-voll-*.zip", 30)
+    taeglich = auto.jetzt_falls_faellig()
+    assert taeglich.name.startswith("auto-2")
+    liste = {s["name"]: s for s in wartung.sicherungen_liste(pfade)}
+    assert liste[taeglich.name]["dokumente"] is False and liste[erste.name]["dokumente"] is True
+    # tägliche werden auf die eingestellte Anzahl gekürzt
+    for i in range(3):
+        (pfade.sicherungen / f"auto-2000010{i}-000000.zip").write_bytes(b"x")
+    altern("auto-2*.zip", 30)
     auto.jetzt_falls_faellig()
-    assert len(list(pfade.sicherungen.glob("auto-*.zip"))) == 2
+    assert len([f for f in pfade.sicherungen.glob("auto-2*.zip")]) == 2
+    # nach einer Woche wieder vollständig
+    altern("auto-voll-*.zip", 24 * 7)
+    assert auto.jetzt_falls_faellig().name.startswith("auto-voll-")
+
+
+def test_wiederherstellen_nur_datenbank_behaelt_plaene(admin, app, pfade):
+    admin.post("/api/dokumente", files={"datei": ("p.pdf", pdf_bytes(), "application/pdf")})
+    ziel = pfade.sicherungen / "nur-db.zip"
+    wartung.sicherung_erstellen(app.state.db, pfade, ziel, mit_dokumenten=False)
+    r = admin.post("/api/sicherung/wiederherstellen", files={"datei": ("s.zip", ziel.read_bytes(), "application/zip")}).json()
+    assert r["dokumente"] is False and r["fehlende_dokumente"] == []
+    assert len(list(pfade.dokumente.glob("*.pdf"))) == 1
+
+
+def test_protokoll_aufbewahrung(admin, app, pfade):
+    db = app.state.db
+    admin.post("/api/gebaeudeteile", json={"name": "x"})
+    db.ausfuehren("UPDATE protokoll SET zeit = datetime('now', '-400 days')")
+    admin.post("/api/gebaeudeteile", json={"name": "y"})
+    assert wartung.AutoSicherung(db, pfade).aufraeumen() == 1
+    assert db.eins("SELECT COUNT(*) AS n FROM protokoll")["n"] == 1
+    admin.put("/api/einstellungen", json={"protokoll_tage": 0})
+    db.ausfuehren("UPDATE protokoll SET zeit = datetime('now', '-4000 days')")
+    assert wartung.AutoSicherung(db, pfade).aufraeumen() == 0
+
+
+def test_update_aufgabe_xml(tmp_path):
+    import xml.etree.ElementTree as ET
+
+    text = wartung.aufgabe_xml(tmp_path / "LogistikMap-Setup-9.9.9.exe", tmp_path / "logs" / "update.log")
+    wurzel = ET.fromstring(text.replace('encoding="UTF-16"', ""))
+    ns = {"t": "http://schemas.microsoft.com/windows/2004/02/mit/task"}
+    assert wurzel.find(".//t:StartBoundary", ns).text == "2099-01-01T00:00:00"  # ISO-Format, unabhängig von der Windows-Sprache
+    assert wurzel.find(".//t:UserId", ns).text == "S-1-5-18"  # SYSTEM
+    assert wurzel.find(".//t:Command", ns).text.endswith("LogistikMap-Setup-9.9.9.exe")
+    assert "/VERYSILENT" in wurzel.find(".//t:Arguments", ns).text
 
 
 def test_nur_admin_darf_sichern(admin, app):

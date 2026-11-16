@@ -109,6 +109,9 @@ class EinstellungenAenderung(BaseModel):
     bundesland: str | None = None
     sprache: str | None = None
     sicherung_anzahl: int | None = Field(default=None, ge=1, le=365)
+    sitzung_inaktiv_stunden: float | None = Field(default=None, ge=0.25, le=24 * 14)
+    sitzung_ad_stunden: float | None = Field(default=None, ge=1, le=24 * 14)
+    protokoll_tage: int | None = Field(default=None, ge=0, le=3650)
 
 
 class Sondertag(BaseModel):
@@ -156,6 +159,23 @@ def _benutzername_pruefen(name: str) -> str:
 def _passwort_pruefen(pw: str) -> None:
     if len(pw) < auth.MIN_PASSWORT:
         raise fehler(400, "passwort_zu_kurz", min=auth.MIN_PASSWORT)
+
+
+def verknuepfung_aktualisieren(k: Konfiguration) -> None:
+    """Die Internet-Verknüpfung im Programmordner (Startmenü) zeigt nach dem Umstellen auf HTTPS auf https://."""
+    import sys
+
+    if not getattr(sys, "frozen", False):
+        return
+    url = Path(sys.executable).parent / "Logistik Map.url"
+    if not url.exists():
+        return
+    try:
+        text = url.read_text(encoding="utf-8", errors="replace")
+        neu = re.sub(r"(?m)^URL=.*$", f"URL={'https' if k.https else 'http'}://localhost:{k.port}", text)
+        url.write_text(neu, encoding="utf-8")
+    except OSError:
+        log.warning("Verknüpfung %s konnte nicht angepasst werden", url)
 
 
 # --------------------------------------------------------------------------- App
@@ -455,6 +475,9 @@ def erstelle_app(pfade: Pfade, kacheln_starten: bool = True) -> FastAPI:
             "bundeslaender": BUNDESLAENDER,
             "sprachen": SPRACHEN,
             "sicherung_anzahl": db.einstellung("sicherung_anzahl", 14),
+            "sitzung_inaktiv_stunden": auth.sitzungsdauer(db)[0],
+            "sitzung_ad_stunden": auth.sitzungsdauer(db)[1],
+            "protokoll_tage": db.einstellung("protokoll_tage", 365),
         }
 
     @app.put("/api/einstellungen")
@@ -467,8 +490,10 @@ def erstelle_app(pfade: Pfade, kacheln_starten: bool = True) -> FastAPI:
             if daten.sprache not in SPRACHEN:
                 raise fehler(400, "sprache_unbekannt")
             db.setze_einstellung("sprache", daten.sprache)
-        if daten.sicherung_anzahl is not None:
-            db.setze_einstellung("sicherung_anzahl", daten.sicherung_anzahl)
+        for feld in ("sicherung_anzahl", "sitzung_inaktiv_stunden", "sitzung_ad_stunden", "protokoll_tage"):
+            wert = getattr(daten, feld)
+            if wert is not None:
+                db.setze_einstellung(feld, wert)
         return {"ok": True}
 
     # ---------------------------------------------------------------- Verzeichnis (AD/LDAP)
@@ -519,6 +544,7 @@ def erstelle_app(pfade: Pfade, kacheln_starten: bool = True) -> FastAPI:
                 raise fehler(400, "zertifikat_ungueltig", grund=str(ex)[:200])
         k.zertifikat, k.schluessel = z, s_
         speichere_konfiguration(pfade, k)
+        verknuepfung_aktualisieren(k)
         return {"ok": True}
 
     @app.post("/api/neustart")
@@ -542,7 +568,9 @@ def erstelle_app(pfade: Pfade, kacheln_starten: bool = True) -> FastAPI:
 
     @app.post("/api/sicherungen")
     def sicherung_jetzt(_: dict = Depends(verwalten)):
-        ziel = pfade.sicherungen / f"{wartung.AUTO_PRAEFIX}{date.today():%Y%m%d}-{secrets.token_hex(2)}.zip"
+        from datetime import datetime
+
+        ziel = pfade.sicherungen / f"manuell-{datetime.now():%Y%m%d-%H%M%S}.zip"
         wartung.sicherung_erstellen(db, pfade, ziel)
         return {"name": ziel.name}
 
@@ -565,7 +593,8 @@ def erstelle_app(pfade: Pfade, kacheln_starten: bool = True) -> FastAPI:
                 raise fehler(400, ex.code)
         finally:
             tmp.unlink(missing_ok=True)
-        return {"ok": True, "version": manifest.get("version"), "zeit": manifest.get("zeit")}
+        return {"ok": True, "version": manifest.get("version"), "zeit": manifest.get("zeit"),
+                "dokumente": manifest.get("dokumente", True), "fehlende_dokumente": manifest.get("fehlende_dokumente", [])}
 
     # ---------------------------------------------------------------- Update
     @app.get("/api/update")

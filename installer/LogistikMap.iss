@@ -80,9 +80,11 @@ Source: "{#StageDir}\app\*";     DestDir: "{app}";         Flags: ignoreversion 
 Source: "{#StageDir}\service\*"; DestDir: "{app}\service"; Flags: ignoreversion recursesubdirs
 Source: "{#StageDir}\LICENSE";   DestDir: "{app}";         Flags: ignoreversion
 Source: "{#StageDir}\README.md"; DestDir: "{app}";         Flags: ignoreversion
+Source: "{#StageDir}\README.de.md"; DestDir: "{app}"; Flags: ignoreversion
+Source: "{#StageDir}\THIRD_PARTY_LICENSES.txt"; DestDir: "{app}"; Flags: ignoreversion
 
 [INI]
-Filename: "{app}\Logistik Map.url"; Section: "InternetShortcut"; Key: "URL"; String: "http://localhost:{code:GetPort}"
+Filename: "{app}\Logistik Map.url"; Section: "InternetShortcut"; Key: "URL"; String: "{code:GetScheme}://localhost:{code:GetPort}"
 Filename: "{app}\Logistik Map.url"; Section: "InternetShortcut"; Key: "IconFile"; String: "{app}\LogistikMap.exe"
 Filename: "{app}\Logistik Map.url"; Section: "InternetShortcut"; Key: "IconIndex"; String: "0"
 
@@ -92,7 +94,7 @@ Name: "{group}\Protokolle";                Filename: "{commonappdata}\{#AppName}
 Name: "{group}\Logistik Map deinstallieren"; Filename: "{uninstallexe}"
 
 [Run]
-Filename: "http://localhost:{code:GetPort}"; Description: "Logistik Map jetzt im Browser öffnen"; Flags: postinstall shellexec nowait skipifsilent
+Filename: "{code:GetScheme}://localhost:{code:GetPort}"; Description: "Logistik Map jetzt im Browser öffnen"; Flags: postinstall shellexec nowait skipifsilent
 
 [UninstallRun]
 Filename: "{app}\service\LogistikMap-Dienst.exe"; Parameters: "stop";      Flags: runhidden waituntilterminated; RunOnceId: "StopService"
@@ -138,6 +140,20 @@ begin
   I := 1;
   while (I <= Length(T)) and (T[I] >= '0') and (T[I] <= '9') do I := I + 1;
   if I > 1 then Result := Copy(T, 1, I - 1);
+end;
+
+{ HTTPS, wenn in config.json ein Zertifikat eingetragen ist }
+function GetScheme(Param: String): String;
+var
+  S: AnsiString;
+  T: String;
+  P: Integer;
+begin
+  Result := 'http';
+  if not LoadStringFromFile(ConfigFile, S) then exit;
+  T := String(S);
+  P := Pos('"zertifikat": "', T);
+  if (P > 0) and (Copy(T, P + 15, 1) <> '"') then Result := 'https';
 end;
 
 function IsValidPort(const S: String): Boolean;

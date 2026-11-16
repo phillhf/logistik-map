@@ -51,19 +51,32 @@ def sitzung_beenden(db: Datenbank, token: str) -> None:
     db.ausfuehren("DELETE FROM sitzungen WHERE token_hash = ?", (_token_hash(token),))
 
 
+# Standardwerte, in den Einstellungen änderbar
+STANDARD_INAKTIV_STUNDEN = 12  # ohne Nutzung abgemeldet nach …
+STANDARD_AD_STUNDEN = 12  # AD-Benutzer spätestens nach … neu anmelden (gesperrte Konten wirken so binnen einer Schicht)
+
+
+def sitzungsdauer(db: Datenbank) -> tuple[float, float]:
+    inaktiv = float(db.einstellung("sitzung_inaktiv_stunden", STANDARD_INAKTIV_STUNDEN) or STANDARD_INAKTIV_STUNDEN)
+    ad = float(db.einstellung("sitzung_ad_stunden", STANDARD_AD_STUNDEN) or STANDARD_AD_STUNDEN)
+    return inaktiv, ad
+
+
 def benutzer_zur_sitzung(db: Datenbank, token: str | None) -> dict | None:
     if not token:
         return None
     th = _token_hash(token)
+    inaktiv, ad = sitzungsdauer(db)
     row = db.eins(
-        """SELECT b.id, b.benutzername, b.anzeigename, b.sprache, b.aktiv,
+        """SELECT b.id, b.benutzername, b.anzeigename, b.sprache, b.aktiv, b.quelle,
                   r.schluessel AS rolle, r.name AS rollenname, r.rechte
              FROM sitzungen s
              JOIN benutzer b ON b.id = s.benutzer_id
              JOIN rollen r ON r.id = b.rolle_id
             WHERE s.token_hash = ?
-              AND s.zuletzt >= datetime('now', ?)""",
-        (th, f"-{SITZUNG_TAGE} days"),
+              AND s.zuletzt >= datetime('now', ?)
+              AND s.erstellt >= datetime('now', CASE WHEN b.quelle = 'lokal' THEN ? ELSE ? END)""",
+        (th, f"-{inaktiv * 60:.0f} minutes", f"-{SITZUNG_TAGE} days", f"-{ad * 60:.0f} minutes"),
     )
     if not row or not row["aktiv"]:
         return None
@@ -78,9 +91,14 @@ def alte_sitzungen_loeschen(db: Datenbank) -> None:
 
 
 class Anmeldebremse:
-    """Nach 5 Fehlversuchen für einen Benutzernamen oder eine Adresse 60 Sekunden sperren."""
+    """Sperrt nach zu vielen Fehlversuchen für 60 Sekunden.
+
+    Je Benutzername nach 5 Fehlversuchen. Je Adresse erst nach 30 – hinter Terminalservern
+    oder Citrix teilen sich viele Personen eine Adresse, ein Vertipper soll nicht alle aussperren.
+    """
 
     MAX_VERSUCHE = 5
+    MAX_JE_ADRESSE = 30
     SPERRZEIT = 60.0
 
     def __init__(self) -> None:
@@ -93,7 +111,8 @@ class Anmeldebremse:
             for s in schluessel:
                 liste = [t for t in self._fehler.get(s, []) if jetzt - t < self.SPERRZEIT]
                 self._fehler[s] = liste
-                if len(liste) >= self.MAX_VERSUCHE:
+                grenze = self.MAX_JE_ADRESSE if s.startswith("a:") else self.MAX_VERSUCHE
+                if len(liste) >= grenze:
                     return True
         return False
 

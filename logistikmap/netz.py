@@ -65,10 +65,11 @@ class Weg:
         return [self.abschnitte[0].von] + [a.nach for a in self.abschnitte]
 
 
-def aufzug_fahrzeit(aufzug: dict, etagen: int, exklusiv: bool) -> float:
+def aufzug_fahrzeit(aufzug: dict, etagen: int, exklusiv: bool, mit_anfahrt: bool = True) -> float:
+    """Fahrzeit einer Aufzugfahrt. mit_anfahrt=False, wenn die Kabine gerade schon auf dem Stockwerk steht."""
     if aufzug["art"] == "treppe":
         return etagen * aufzug["fahrzeit_etage"]
-    zeit = aufzug["anfahrt"] + 2 * aufzug["tuerzeit"] + etagen * aufzug["fahrzeit_etage"]
+    zeit = (aufzug["anfahrt"] if mit_anfahrt else 0) + 2 * aufzug["tuerzeit"] + etagen * aufzug["fahrzeit_etage"]
     if exklusiv:
         zeit += aufzug["raeumzeit"]
     return zeit

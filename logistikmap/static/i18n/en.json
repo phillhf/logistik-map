@@ -151,7 +151,11 @@
     "bezeichnung": "Name",
     "sondertag": "Special day",
     "sprache_hilfe": "Default for everybody. Each user can choose their own language in the menu at the top right.",
-    "protokoll_link": "View audit log →"
+    "protokoll_link": "View audit log →",
+    "sitzung_inaktiv": "Sign out after … hours without use",
+    "sitzung_ad": "Active Directory users must sign in again after at most … hours",
+    "protokoll_tage": "Keep audit log (days)",
+    "protokoll_tage_hilfe": "0 = unlimited. Older entries are deleted daily."
   },
   "feiertag": {
     "neujahr": "New Year's Day",
@@ -174,7 +178,15 @@
     "weihnachtstag_1": "Christmas Day",
     "weihnachtstag_2": "Boxing Day"
   },
-  "wochentag": ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"],
+  "wochentag": [
+    "Sun",
+    "Mon",
+    "Tue",
+    "Wed",
+    "Thu",
+    "Fri",
+    "Sat"
+  ],
   "fehler": {
     "allgemein": "An error occurred.",
     "netzwerk": "The server cannot be reached.",
@@ -246,7 +258,8 @@
     "kein_plan": "There is no plan for this floor.",
     "datei_unlesbar": "The file cannot be read. Please save it as .xlsx or .csv.",
     "datei_leer": "The file is empty.",
-    "spalten_fehlen": "Columns are missing. Required are at least Bezeichnung, Start, Ziel and Uhrzeit – easiest is to export with “Excel” and use that as a template."
+    "spalten_fehlen": "Columns are missing. Required are at least Bezeichnung, Start, Ziel and Uhrzeit – easiest is to export with “Excel” and use that as a template.",
+    "rueckgaengig_fremd": "The last change on this floor was made by {benutzer}. You can only undo your own changes."
   },
   "knoten": {
     "art": {
@@ -355,7 +368,8 @@
       "weg_geaendert": "path segment changed",
       "weg_geloescht": "path segment deleted",
       "ausrichten": "align"
-    }
+    },
+    "fremde_aenderung": "{benutzer} has just changed this floor – the map was reloaded."
   },
   "aufzug": {
     "art": {
@@ -646,7 +660,7 @@
   },
   "sicherung": {
     "titel": "Backup",
-    "hilfe": "A backup contains the database and PDF plans. Logistik Map creates one automatically every day (in the data folder under “sicherungen”).",
+    "hilfe": "Logistik Map backs up the database every day and all PDF plans once a week (in the data folder under “sicherungen”). “Download backup” and “Back up now” always contain everything.",
     "herunterladen": "Download backup",
     "jetzt": "Back up now",
     "einspielen": "Restore backup",
@@ -655,7 +669,10 @@
     "keine": "No backups yet.",
     "angelegt": "Backup created.",
     "wirklich": "Restore “{name}”? All data will be replaced by the state of the backup. The current state is backed up first.",
-    "eingespielt": "Backup of {zeit} restored. The plans are being prepared again."
+    "eingespielt": "Backup of {zeit} restored. The plans are being prepared again.",
+    "voll": "complete",
+    "nur_db": "database only",
+    "fehlende_plaene": "These PDF plans are missing and must be uploaded again: {liste}"
   },
   "update": {
     "titel": "Updates",
@@ -803,6 +820,15 @@
     "transportarten_hilfe": "A changed number applies to the whole day in the scenario (instead of the shifts).",
     "hat_schichten": "with shifts",
     "ausser_betrieb": "out of service",
-    "fahrzeit": "s/floor"
+    "fahrzeit": "s/floor",
+    "rampen": "Ramps and loading points",
+    "rampen_hilfe": "How many trolleys can be loaded or unloaded at the same time (empty = unlimited).",
+    "engstellen": "Block path segments",
+    "engstellen_hilfe": "Named path segments and bottlenecks, e.g. a door closed for construction work.",
+    "gesperrt": "blocked",
+    "keine_engstellen": "No named path segments yet. Give path segments a name in the map editor to be able to block them here."
+  },
+  "zeit": {
+    "vortag": "previous day"
   }
 }

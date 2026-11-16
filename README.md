@@ -1,92 +1,60 @@
 # Logistik Map
 
-Logistik Map zeigt Warenflüsse und Transportwege in großen Gebäuden, zum Beispiel im
-Krankenhaus. Grundlage sind die Gebäudepläne als PDF: Stockwerke anlegen, Pläne hochladen,
-Wege und Lieferungen einzeichnen und sehen, wo es eng wird.
+*[Deutsche Fassung](README.de.md)*
 
-## So arbeitest du damit
+Logistik Map shows the flow of goods through large buildings such as hospitals. You upload the
+floor plans as PDF, draw corridors, lifts and delivery points, enter the deliveries of the day –
+and see where goods go, who is waiting where, and which lift becomes the bottleneck at 8 a.m.
 
-1. **Gebäude & Pläne**: Gebäudeteile und Stockwerke anlegen, PDF hochladen, Seite zuweisen.
-2. **Karte → Bearbeiten**: Maßstab festlegen, Flure als Wege zeichnen, Start- und Zielpunkte
-   setzen (Rampe, Lager, Stationen), Aufzüge auf jedem Stockwerk als Punkt setzen. Bei Bedarf
-   Bereiche und Räume einzeichnen.
-3. **Stammdaten**: Transportarten (z. B. FTS, Materialtransportdienst), Wagentypen und die
-   Zeiten der Aufzüge an euer Haus anpassen.
-4. **Lieferungen**: „Um 8:00 kommt die Wäsche an der Rampe an und geht ins Wäschelager“ mit
-   Ladung, Wochentagen, Feiertagsregel und Rückweg.
-5. **Karte → Ablauf** und **Auswertung**: Tag und Uhrzeit wählen und sehen, wohin die Ware
-   geht, wo gewartet wird und welcher Aufzug zum Engpass wird.
+![Timeline on the floor plan](docs/screenshots/ablauf.png)
+![Analysis with bottlenecks](docs/screenshots/auswertung.png)
 
-6. **Szenarien**: „Was wäre, wenn die Wäsche um 7:30 käme?“ oder „… wenn Aufzug West in
-   Wartung ist?“ Das Szenario lässt sich mit dem Ist-Zustand vergleichen und auf Wunsch übernehmen.
+The user interface is available in **German and English** (each user chooses their language).
+Holidays are calculated for all German federal states.
 
-Wie gerechnet wird, steht in [KONZEPT.md](KONZEPT.md).
+## Features
 
-## Lieferungen aus Excel übernehmen
+- **Floor plans from PDF**, also very large CAD exports (A0 and beyond), converted once into a
+  zoomable map. Scale is set by clicking two points with a known distance.
+- **Map editor**: corridors as a path network, start and destination points (ramps, stores,
+  wards), lifts and stairs across floors, connections between building sections, areas and rooms.
+  Undo, snapping, re-aligning everything to a new version of the plan.
+- **Master data**: transport types (e.g. automated guided vehicles that reserve a lift, or staff
+  pushing trolleys) with speed, loading times, fleet size and **shifts**; trolley types with the
+  space they need in a lift; lifts with capacity and travel, door and waiting times.
+- **Deliveries** with time, load, “arrive by”, recurrence rules (weekdays, public holidays,
+  periods, exceptions) and return trips (empty, loaded, later, none). Import and export via Excel.
+- **Simulation** of a day: vehicles, lift cars and bottlenecks with limited capacity, waiting
+  times and late arrivals – including trips that run past midnight.
+- **Timeline** on the map, **analysis** per day or as a weekly heat map, export to Excel and PDF.
+- **Scenarios** (“what if the linen arrives at 7:30?”, “what if the west lift is out of
+  service?”) compared with the current state.
+- **Operations**: Windows installer with service, daily backups, one-click updates from GitHub
+  releases, HTTPS, sign-in via Active Directory, roles and permissions, audit log.
 
-Unter **Lieferungen → Excel** lädst du die aktuelle Liste herunter. Diese Datei ist zugleich die
-Vorlage, das Blatt „Hinweise“ erklärt alle Spalten und Schreibweisen. Zeilen mit ID ändern
-vorhandene Lieferungen, Zeilen ohne ID legen neue an. Beim Import wird jede Zeile geprüft.
-Übernommen wird erst, wenn alle Zeilen in Ordnung sind. CSV (Semikolon oder Komma) geht auch.
+How the simulation works is described in [KONZEPT.md](KONZEPT.md) (German).
 
-## Installation (Windows-Server)
+## Installation (Windows server)
 
-1. `LogistikMap-Setup-x.y.z.exe` aus den Releases herunterladen und als Administrator ausführen.
-2. Port wählen (Standard 8470) und bei Bedarf die Firewall-Freigabe anhaken.
-3. Nach der Installation öffnet sich der Browser. Dort legst du das Administrator-Konto an.
+1. Download `LogistikMap-Setup-x.y.z.exe` from the [releases](https://github.com/phillhf/logistik-map/releases) and run it as administrator.
+2. Choose the port (default 8470) and optionally open it in the Windows firewall.
+3. The browser opens afterwards – create the administrator account there.
 
-Logistik Map läuft dann als Windows-Dienst **LogistikMap** und ist im Netzwerk unter
-`http://<Servername>:<Port>` erreichbar.
+Logistik Map then runs as the Windows service **LogistikMap** and is available on the network at
+`http://<server>:<port>`. Data lives in `C:\ProgramData\Logistik Map` and is kept on updates and
+uninstall.
 
-Die Daten liegen in `C:\ProgramData\Logistik Map` (Datenbank, PDF-Pläne, Kacheln, Protokolle,
-`config.json`). Update und Deinstallation lassen sie unangetastet.
+Useful command-line tools (`C:\Program Files\Logistik Map\LogistikMap.exe …`):
 
-### Sicherung
+| Command | Purpose |
+|---|---|
+| `plan-test plan.pdf` | Check a PDF plan: size, zoom levels, estimated preparation time |
+| `sicherung [target.zip]` | Create a backup |
+| `wiederherstellen backup.zip` | Restore a backup (stop the service first) |
+| `passwort admin` | Reset a password |
+| `config --port 8470 --zertifikat cert.pem --schluessel key.pem` | Port and HTTPS |
 
-Logistik Map sichert täglich automatisch nach `C:\ProgramData\Logistik Map\sicherungen`.
-Unter **Einstellungen → Sicherung** kannst du eine Sicherung herunterladen oder einspielen.
-Für die Datensicherung des Servers reicht es, diesen Ordner mitzusichern.
-
-### Updates
-
-Unter **Einstellungen → Updates** prüft Logistik Map, ob es eine neue Version gibt, und
-installiert sie auf Knopfdruck. Dafür braucht der Server Zugriff auf github.com. Sonst einfach das
-neue Setup herunterladen und ausführen. Daten und Einstellungen bleiben erhalten.
-
-### HTTPS
-
-Ein Zertifikat mit privatem Schlüssel im PEM-Format, etwa von der eigenen IT, unter
-**Einstellungen → HTTPS** eintragen und neu starten. Aus einer PFX-Datei werden die beiden
-Dateien zum Beispiel so erzeugt:
-
-```
-openssl pkcs12 -in logistik.pfx -clcerts -nokeys -out logistik.pem
-openssl pkcs12 -in logistik.pfx -nocerts -nodes -out logistik-key.pem
-```
-
-### Anmeldung über Active Directory
-
-Unter **Einstellungen → Anmeldung über Active Directory** Server (am besten `ldaps://…`),
-Domäne und Suchbasis eintragen und AD-Gruppen den Rollen zuordnen. Mit „Testen“ lässt sich ein
-Konto vorab prüfen. Lokale Benutzer wie der Administrator funktionieren weiter.
-
-### Pläne vorab prüfen
-
-```
-"C:\Program Files\Logistik Map\LogistikMap.exe" plan-test "D:\Pläne\Haus A UG.pdf"
-```
-
-Das zeigt Größe, Zoomstufen und die geschätzte Aufbereitungszeit je Seite.
-
-### Admin-Passwort vergessen
-
-In einer Eingabeaufforderung mit Administratorrechten:
-
-```
-"C:\Program Files\Logistik Map\LogistikMap.exe" passwort admin
-```
-
-## Entwicklung
+## Development
 
 ```
 python -m venv .venv
@@ -95,39 +63,18 @@ python -m venv .venv
 .venv\Scripts\python -m logistikmap --data data serve --port 8470
 ```
 
-Das Setup baut `installer\build.ps1`. Dafür werden Inno Setup 6 und `gh` gebraucht.
-Ein Tag `vX.Y.Z` baut über GitHub Actions das Setup und veröffentlicht es als Release.
+Browser tests (Playwright): `pip install -r requirements-e2e.txt`, then run `pytest tests/e2e`
+with the environment variable `E2E=1`.
 
-### Aufbau
+The code is written in German (identifiers, comments). Texts of the user interface are in
+`logistikmap/static/i18n/<language>.json` – to add a language, copy `en.json`, translate it and
+register it in `SPRACHEN` in `logistikmap/server.py`.
 
-| Pfad | Inhalt |
-|---|---|
-| `logistikmap/server.py` | Webserver und JSON-Schnittstelle |
-| `logistikmap/db.py` | SQLite-Datenbank mit Migrationen |
-| `logistikmap/plaene.py` | PDF → Kartenkacheln (PyMuPDF) |
-| `logistikmap/feiertage.py` | Feiertage je Bundesland |
-| `logistikmap/regeln.py` | Wiederholungsregeln der Lieferungen |
-| `logistikmap/netz.py` | Wegenetz und Wegsuche |
-| `logistikmap/simulation.py` | Ablauf eines Tages mit Wartezeiten |
-| `logistikmap/planung.py` | Schnittstellen für Netz, Stammdaten, Lieferungen, Szenarien, Simulation |
-| `logistikmap/export.py` | Excel-Import/-Export, Karte als PDF |
-| `logistikmap/wartung.py` | Sicherung, Wiederherstellung, Updates |
-| `logistikmap/verzeichnis.py` | Anmeldung über Active Directory (LDAP) |
-| `logistikmap/protokoll.py` | Änderungsprotokoll |
-| `logistikmap/static/` | Oberfläche (ohne Build-Schritt, Leaflet liegt bei) |
-| `logistikmap/static/i18n/` | Texte der Oberfläche je Sprache |
-| `installer/` | Inno-Setup-Skript, Windows-Dienst (WinSW), Build-Skript |
+Releases are built by GitHub Actions when a tag `vX.Y.Z` is pushed (`installer/build.ps1`,
+Inno Setup, WinSW).
 
-### Weitere Sprache hinzufügen
+## License
 
-Deutsch und Englisch sind enthalten. Für eine weitere Sprache:
-
-1. `logistikmap/static/i18n/de.json` kopieren, z. B. nach `fr.json`, und übersetzen.
-2. In `logistikmap/server.py` die Sprache in `SPRACHEN` eintragen.
-
-`tests/test_oberflaeche.py` prüft, ob alle Schlüssel und Platzhalter vorhanden sind.
-
-## Lizenz
-
-[GNU Affero General Public License v3.0](LICENSE). Leaflet steht unter der BSD-2-Clause-Lizenz
-(`logistikmap/static/vendor/leaflet/LICENSE`), PyMuPDF unter der AGPL-3.0.
+[GNU Affero General Public License v3.0](LICENSE). Licenses of all bundled components (among them
+PyMuPDF under AGPL-3.0, ldap3 under LGPL-3.0, Leaflet, WinSW) are installed as
+`THIRD_PARTY_LICENSES.txt` in the program folder.

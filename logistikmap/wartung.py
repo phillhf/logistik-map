@@ -49,16 +49,20 @@ class WartungsFehler(Exception):
 
 
 # --------------------------------------------------------------------------- Sicherung
-def sicherung_erstellen(db, pfade: Pfade, ziel: Path) -> Path:
+def sicherung_erstellen(db, pfade: Pfade, ziel: Path, mit_dokumenten: bool = True) -> Path:
+    """Sicherung als ZIP. Ohne Dokumente enthält sie nur die Datenbank (klein, für die tägliche Sicherung)."""
     with tempfile.TemporaryDirectory() as tmp:
         kopie = Path(tmp) / "logistikmap.db"
         db.sichern_nach(kopie)
         tmp_zip = ziel.with_suffix(".tmp")
         with zipfile.ZipFile(tmp_zip, "w", zipfile.ZIP_DEFLATED) as z:
-            z.writestr("manifest.json", json.dumps({"app": "logistik-map", "version": __version__, "zeit": datetime.now().isoformat(timespec="seconds")}))
+            z.writestr("manifest.json", json.dumps({
+                "app": "logistik-map", "version": __version__, "zeit": datetime.now().isoformat(timespec="seconds"), "dokumente": mit_dokumenten,
+            }))
             z.write(kopie, "logistikmap.db")
-            for pdf in sorted(pfade.dokumente.glob("*.pdf")):
-                z.write(pdf, f"dokumente/{pdf.name}", compress_type=zipfile.ZIP_STORED)
+            if mit_dokumenten:
+                for pdf in sorted(pfade.dokumente.glob("*.pdf")):
+                    z.write(pdf, f"dokumente/{pdf.name}", compress_type=zipfile.ZIP_STORED)
         tmp_zip.replace(ziel)
     return ziel
 
@@ -99,28 +103,49 @@ def wiederherstellen(db, pfade: Pfade, kacheldienst, datei: Path) -> dict:
         sicherung_erstellen(db, pfade, pfade.sicherungen / f"vor-wiederherstellung-{datetime.now():%Y%m%d-%H%M%S}.zip")
         kacheldienst.stoppen()
         db.ersetzen_durch(neue_db)
-        for pdf in pfade.dokumente.glob("*"):
-            pdf.unlink()
-        quelle = Path(tmp) / "dokumente"
-        if quelle.exists():
-            for pdf in quelle.glob("*.pdf"):
-                shutil.copy2(pdf, pfade.dokumente / pdf.name)
+        if manifest.get("dokumente", True):
+            for pdf in pfade.dokumente.glob("*"):
+                pdf.unlink()
+            quelle = Path(tmp) / "dokumente"
+            if quelle.exists():
+                for pdf in quelle.glob("*.pdf"):
+                    shutil.copy2(pdf, pfade.dokumente / pdf.name)
+        # Sicherung nur mit Datenbank: die vorhandenen PDF-Pläne bleiben, fehlende werden gemeldet
+    fehlend = [d["dateiname"] for d in db.alle("SELECT id, dateiname FROM dokumente") if not (pfade.dokumente / f"{d['id']}.pdf").exists()]
     shutil.rmtree(pfade.kacheln, ignore_errors=True)
     pfade.kacheln.mkdir(parents=True, exist_ok=True)
     db.ausfuehren("UPDATE plaene SET status = 'wartet', fortschritt = 0")
     kacheldienst.starten()
-    return manifest
+    return {**manifest, "fehlende_dokumente": fehlend}
+
+
+VOLL_PRAEFIX = "auto-voll-"
+
+
+def _hat_dokumente(datei: Path) -> bool:
+    try:
+        with zipfile.ZipFile(datei) as z:
+            return bool(json.loads(z.read("manifest.json")).get("dokumente", True))
+    except (zipfile.BadZipFile, KeyError, ValueError, OSError):
+        return False
 
 
 def sicherungen_liste(pfade: Pfade) -> list[dict]:
     return [
-        {"name": p.name, "groesse": p.stat().st_size, "zeit": datetime.fromtimestamp(p.stat().st_mtime).isoformat(timespec="seconds")}
+        {"name": p.name, "groesse": p.stat().st_size, "zeit": datetime.fromtimestamp(p.stat().st_mtime).isoformat(timespec="seconds"), "dokumente": _hat_dokumente(p)}
         for p in sorted(pfade.sicherungen.glob("*.zip"), key=lambda p: p.stat().st_mtime, reverse=True)
     ]
 
 
 class AutoSicherung:
-    """Legt täglich eine Sicherung an und behält die letzten `anzahl`."""
+    """Wartungsdienst im Hintergrund.
+
+    * täglich eine Sicherung nur der Datenbank (klein), die letzten `sicherung_anzahl` bleiben
+    * wöchentlich eine vollständige Sicherung mit PDF-Plänen, die letzten 4 bleiben
+    * Änderungsprotokoll nach `protokoll_tage` Tagen löschen (0 = nie)
+    """
+
+    VOLL_BEHALTEN = 4
 
     def __init__(self, db, pfade: Pfade):
         self.db = db
@@ -135,18 +160,47 @@ class AutoSicherung:
     def stoppen(self) -> None:
         self._stopp.set()
 
+    def _taeglich(self) -> list[Path]:
+        return sorted(p for p in self.pfade.sicherungen.glob(f"{AUTO_PRAEFIX}*.zip") if not p.name.startswith(VOLL_PRAEFIX))
+
+    def _voll(self) -> list[Path]:
+        return sorted(self.pfade.sicherungen.glob(f"{VOLL_PRAEFIX}*.zip"))
+
     def jetzt_falls_faellig(self) -> Path | None:
-        auto = sorted(self.pfade.sicherungen.glob(f"{AUTO_PRAEFIX}*.zip"))
-        if auto and time.time() - auto[-1].stat().st_mtime < 23 * 3600:
+        jetzt = time.time()
+        voll = self._voll()
+        if not voll or jetzt - voll[-1].stat().st_mtime > 6.5 * 86400:
+            ziel = self.pfade.sicherungen / f"{VOLL_PRAEFIX}{datetime.now():%Y%m%d-%H%M%S}.zip"
+            sicherung_erstellen(self.db, self.pfade, ziel, mit_dokumenten=True)
+            for alt in self._voll()[: -self.VOLL_BEHALTEN]:
+                alt.unlink(missing_ok=True)
+            log.info("Vollständige Sicherung: %s", ziel.name)
+            return ziel
+        taeglich = self._taeglich()
+        if taeglich and jetzt - taeglich[-1].stat().st_mtime < 23 * 3600:
             return None
+        if jetzt - voll[-1].stat().st_mtime < 23 * 3600:
+            return None  # die Vollsicherung von heute reicht
         ziel = self.pfade.sicherungen / f"{AUTO_PRAEFIX}{datetime.now():%Y%m%d-%H%M%S}.zip"
-        sicherung_erstellen(self.db, self.pfade, ziel)
+        sicherung_erstellen(self.db, self.pfade, ziel, mit_dokumenten=False)
         anzahl = int(self.db.einstellung("sicherung_anzahl", 14) or 14)
-        auto = sorted(self.pfade.sicherungen.glob(f"{AUTO_PRAEFIX}*.zip"))
-        for alt in auto[:-anzahl]:
+        for alt in self._taeglich()[:-anzahl]:
             alt.unlink(missing_ok=True)
         log.info("Automatische Sicherung: %s", ziel.name)
         return ziel
+
+    def aufraeumen(self) -> int:
+        """Altes Änderungsprotokoll und abgelaufene Sitzungen löschen. Gibt die Zahl gelöschter Protokolleinträge zurück."""
+        tage = int(self.db.einstellung("protokoll_tage", 365) or 0)
+        geloescht = 0
+        if tage > 0:
+            vorher = self.db.eins("SELECT COUNT(*) AS n FROM protokoll")["n"]
+            self.db.ausfuehren("DELETE FROM protokoll WHERE zeit < datetime('now', ?)", (f"-{tage} days",))
+            geloescht = vorher - self.db.eins("SELECT COUNT(*) AS n FROM protokoll")["n"]
+        from . import auth
+
+        auth.alte_sitzungen_loeschen(self.db)
+        return geloescht
 
     def _schleife(self) -> None:
         if self._stopp.wait(60):  # nicht direkt beim Start
@@ -156,6 +210,10 @@ class AutoSicherung:
                 self.jetzt_falls_faellig()
             except Exception:
                 log.exception("Automatische Sicherung fehlgeschlagen")
+            try:
+                self.aufraeumen()
+            except Exception:
+                log.exception("Aufräumen fehlgeschlagen")
             if self._stopp.wait(3600):
                 return
 
@@ -226,13 +284,36 @@ def update_installieren(pfade: Pfade, info: dict) -> str:
     if h.hexdigest() != erwartet:
         setup.unlink(missing_ok=True)
         raise WartungsFehler("update_pruefsumme")
-    befehl = f'"{setup}" /VERYSILENT /SUPPRESSMSGBOXES /NORESTART /LOG="{pfade.logs / "update.log"}"'
+    xml = pfade.updates / "aufgabe.xml"
+    # UTF-16 mit BOM, wie schtasks es erwartet; Datumsangaben im XML sind unabhängig von der Windows-Sprache
+    xml.write_text(aufgabe_xml(setup, pfade.logs / "update.log"), encoding="utf-16")
     schtasks = Path(os.environ.get("SystemRoot", r"C:\Windows")) / "System32" / "schtasks.exe"
-    subprocess.run([str(schtasks), "/Create", "/F", "/TN", UPDATE_AUFGABE, "/SC", "ONCE", "/ST", "00:00", "/SD", "01/01/2099",
-                    "/RU", "SYSTEM", "/RL", "HIGHEST", "/TR", befehl], check=True, capture_output=True)
+    subprocess.run([str(schtasks), "/Create", "/F", "/TN", UPDATE_AUFGABE, "/XML", str(xml)], check=True, capture_output=True)
     subprocess.run([str(schtasks), "/Run", "/TN", UPDATE_AUFGABE], check=True, capture_output=True)
     log.info("Update auf %s gestartet", info.get("neueste"))
     return info.get("neueste", "")
+
+
+def aufgabe_xml(setup: Path, logdatei: Path) -> str:
+    """Einmalige geplante Aufgabe, die das Setup als SYSTEM startet (nur manuell per /Run ausgelöst)."""
+    from xml.sax.saxutils import escape
+
+    argumente = f'/VERYSILENT /SUPPRESSMSGBOXES /NORESTART /LOG="{logdatei}"'
+    return f"""<?xml version="1.0" encoding="UTF-16"?>
+<Task version="1.2" xmlns="http://schemas.microsoft.com/windows/2004/02/mit/task">
+  <RegistrationInfo><Description>Logistik Map: Update installieren</Description></RegistrationInfo>
+  <Triggers><TimeTrigger><StartBoundary>2099-01-01T00:00:00</StartBoundary><Enabled>false</Enabled></TimeTrigger></Triggers>
+  <Principals><Principal id="Author"><UserId>S-1-5-18</UserId><RunLevel>HighestAvailable</RunLevel></Principal></Principals>
+  <Settings>
+    <MultipleInstancesPolicy>IgnoreNew</MultipleInstancesPolicy>
+    <DisallowStartIfOnBatteries>false</DisallowStartIfOnBatteries>
+    <StopIfGoingOnBatteries>false</StopIfGoingOnBatteries>
+    <ExecutionTimeLimit>PT1H</ExecutionTimeLimit>
+    <Enabled>true</Enabled>
+  </Settings>
+  <Actions Context="Author"><Exec><Command>{escape(str(setup))}</Command><Arguments>{escape(argumente)}</Arguments></Exec></Actions>
+</Task>
+"""
 
 
 def neustart_planen(verzoegerung: float = 1.0) -> None:

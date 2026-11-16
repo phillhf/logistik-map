@@ -22,6 +22,7 @@ from .simulation import Simulation
 UHRZEIT = re.compile(r"^([01]\d|2[0-3]):[0-5]\d$")
 FARBE = re.compile(r"^(#[0-9a-fA-F]{6})?$")
 RUECKWEG_MODI = ("leer", "beladen", "spaeter", "keiner")
+VORTAG_AB = "16:00"  # Lieferungen ab dieser Uhrzeit können in den nächsten Tag hineinlaufen
 
 
 # --------------------------------------------------------------------------- Modelle
@@ -372,6 +373,23 @@ def registrieren(app: FastAPI, db: Datenbank, fehler, ansehen, bearbeiten, liefe
     VERLAUF_MAX = 50
 
     def merken(stockwerk_id: int, request: Request | None, text: str) -> None:
+        """Schnappschuss des Stockwerks vor einer Änderung.
+
+        Schickt die Oberfläche den Kopf X-Rueckgaengig-Gruppe, bilden alle Änderungen mit derselben
+        Gruppe einen einzigen Rückgängig-Schritt (z. B. Flur teilen + Punkt + Wegstück bei einem Klick).
+        """
+        benutzer = ""
+        gruppe = None
+        if request is not None:
+            from . import auth
+
+            b = auth.benutzer_zur_sitzung(db, request.cookies.get(auth.SITZUNG_COOKIE))
+            benutzer = b["benutzername"] if b else ""
+            gruppe = (request.headers.get("X-Rueckgaengig-Gruppe") or "")[:64] or None
+        if gruppe:
+            letzter = db.eins("SELECT gruppe, benutzer FROM netz_verlauf WHERE stockwerk_id = ? ORDER BY id DESC LIMIT 1", (stockwerk_id,))
+            if letzter and letzter["gruppe"] == gruppe and letzter["benutzer"] == benutzer:
+                return  # gehört zum selben Schritt, der Zustand davor ist schon gemerkt
         knoten = db.alle("SELECT * FROM knoten WHERE stockwerk_id = ?", (stockwerk_id,))
         ids = [k["id"] for k in knoten]
         kanten = []
@@ -379,15 +397,14 @@ def registrieren(app: FastAPI, db: Datenbank, fehler, ansehen, bearbeiten, liefe
             platz = ",".join("?" * len(ids))
             kanten = db.alle(f"SELECT * FROM kanten WHERE von IN ({platz}) OR nach IN ({platz})", (*ids, *ids))
         flaechen = db.alle("SELECT * FROM flaechen WHERE stockwerk_id = ?", (stockwerk_id,))
-        sw = db.eins("SELECT meter_pro_punkt FROM stockwerke WHERE id = ?", (stockwerk_id,))
-        benutzer = ""
-        if request is not None:
-            from . import auth
-
-            b = auth.benutzer_zur_sitzung(db, request.cookies.get(auth.SITZUNG_COOKIE))
-            benutzer = b["benutzername"] if b else ""
-        daten = json.dumps({"knoten": knoten, "kanten": kanten, "flaechen": flaechen, "meter_pro_punkt": sw["meter_pro_punkt"] if sw else None})
-        db.ausfuehren("INSERT INTO netz_verlauf (stockwerk_id, benutzer, beschreibung, daten) VALUES (?, ?, ?, ?)", (stockwerk_id, benutzer, text, daten))
+        inhalt = {"knoten": knoten, "kanten": kanten, "flaechen": flaechen}
+        if text == "ausrichten":  # nur Ausrichten ändert den Maßstab mit
+            sw = db.eins("SELECT meter_pro_punkt FROM stockwerke WHERE id = ?", (stockwerk_id,))
+            inhalt["meter_pro_punkt"] = sw["meter_pro_punkt"] if sw else None
+        db.ausfuehren(
+            "INSERT INTO netz_verlauf (stockwerk_id, benutzer, beschreibung, daten, gruppe) VALUES (?, ?, ?, ?, ?)",
+            (stockwerk_id, benutzer, text, json.dumps(inhalt), gruppe),
+        )
         db.ausfuehren(
             "DELETE FROM netz_verlauf WHERE stockwerk_id = ? AND id NOT IN (SELECT id FROM netz_verlauf WHERE stockwerk_id = ? ORDER BY id DESC LIMIT ?)",
             (stockwerk_id, stockwerk_id, VERLAUF_MAX),
@@ -400,11 +417,20 @@ def registrieren(app: FastAPI, db: Datenbank, fehler, ansehen, bearbeiten, liefe
     def verlauf(sid: int, _: dict = Depends(ansehen)):
         return db.alle("SELECT id, zeit, benutzer, beschreibung FROM netz_verlauf WHERE stockwerk_id = ? ORDER BY id DESC LIMIT 20", (sid,))
 
+    @app.get("/api/stockwerke/{sid}/stand")
+    def stand(sid: int, _: dict = Depends(ansehen)):
+        """Letzte Änderung am Stockwerk – die Oberfläche merkt so, wenn jemand anderes gleichzeitig zeichnet."""
+        row = db.eins("SELECT id, zeit, benutzer, beschreibung FROM netz_verlauf WHERE stockwerk_id = ? ORDER BY id DESC LIMIT 1", (sid,))
+        return row or {"id": 0}
+
     @app.post("/api/stockwerke/{sid}/rueckgaengig")
-    def rueckgaengig(sid: int, _: dict = Depends(bearbeiten)):
+    def rueckgaengig(sid: int, ich: dict = Depends(bearbeiten)):
         eintrag = db.eins("SELECT * FROM netz_verlauf WHERE stockwerk_id = ? ORDER BY id DESC LIMIT 1", (sid,))
         if eintrag is None:
             raise fehler(400, "nichts_rueckgaengig")
+        if eintrag["benutzer"] and eintrag["benutzer"] != ich["benutzername"]:
+            # sonst würde die Arbeit einer anderen Person zurückgenommen
+            raise fehler(409, "rueckgaengig_fremd", benutzer=eintrag["benutzer"])
         d = json.loads(eintrag["daten"])
         import sqlite3
 
@@ -420,7 +446,8 @@ def registrieren(app: FastAPI, db: Datenbank, fehler, ansehen, bearbeiten, liefe
                 for k in d["kanten"]:
                     if con.execute("SELECT COUNT(*) FROM knoten WHERE id IN (?, ?)", (k["von"], k["nach"])).fetchone()[0] == 2:
                         con.execute(f"INSERT OR REPLACE INTO kanten ({', '.join(k)}) VALUES ({', '.join('?' * len(k))})", tuple(k.values()))
-                con.execute("UPDATE stockwerke SET meter_pro_punkt = ? WHERE id = ?", (d.get("meter_pro_punkt"), sid))
+                if "meter_pro_punkt" in d:
+                    con.execute("UPDATE stockwerke SET meter_pro_punkt = ? WHERE id = ?", (d["meter_pro_punkt"], sid))
                 con.execute("DELETE FROM netz_verlauf WHERE id = ?", (eintrag["id"],))
         except sqlite3.IntegrityError:
             raise fehler(409, "rueckgaengig_nicht_moeglich")
@@ -559,13 +586,24 @@ def registrieren(app: FastAPI, db: Datenbank, fehler, ansehen, bearbeiten, liefe
     def punkte(_: dict | None = Depends(ansehen)):
         """Alle benannten Knoten (Start, Ziel, Aufzug …) für Auswahllisten."""
         return db.alle(
-            """SELECT k.id, k.name, k.art, k.stockwerk_id, k.aufzug_id, s.name AS stockwerk, s.ebene,
+            """SELECT k.id, k.name, k.art, k.stockwerk_id, k.aufzug_id, k.kapazitaet, s.name AS stockwerk, s.ebene,
                       g.id AS gebaeudeteil_id, g.name AS gebaeudeteil, g.kuerzel, f.name AS flaeche, f.nummer
                  FROM knoten k JOIN stockwerke s ON s.id = k.stockwerk_id
                  JOIN gebaeudeteile g ON g.id = s.gebaeudeteil_id
                  LEFT JOIN flaechen f ON f.id = k.flaeche_id
                 WHERE k.art <> 'weg' OR k.name <> ''
                 ORDER BY g.reihenfolge, g.name, s.ebene DESC, k.name"""
+        )
+
+    @app.get("/api/engstellen")
+    def engstellen(_: dict = Depends(ansehen)):
+        """Benannte Wegstücke und Wegstücke mit Kapazität (für Szenarien: sperren)."""
+        return db.alle(
+            """SELECT e.id, e.name, e.kapazitaet, a.name AS von_name, b.name AS nach_name, s.name AS stockwerk, g.kuerzel, g.name AS gebaeudeteil
+                 FROM kanten e JOIN knoten a ON a.id = e.von JOIN knoten b ON b.id = e.nach
+                 JOIN stockwerke s ON s.id = a.stockwerk_id JOIN gebaeudeteile g ON g.id = s.gebaeudeteil_id
+                WHERE e.name <> '' OR e.kapazitaet IS NOT NULL
+                ORDER BY g.reihenfolge, s.ebene DESC, e.name"""
         )
 
     @app.post("/api/knoten")
@@ -583,8 +621,8 @@ def registrieren(app: FastAPI, db: Datenbank, fehler, ansehen, bearbeiten, liefe
     def knoten_aendern(kid: int, d: KnotenAenderung, request: Request, _: dict = Depends(bearbeiten)):
         k = holen("knoten", kid)
         felder = d.model_dump(exclude_unset=True)
-        merken(k["stockwerk_id"], request, "punkt_verschoben" if set(felder) <= {"x", "y"} else "punkt_geaendert")
         knoten_pruefen(felder.get("art"), felder.get("aufzug_id"))
+        merken(k["stockwerk_id"], request, "punkt_verschoben" if set(felder) <= {"x", "y"} else "punkt_geaendert")
         if felder.get("kapazitaet") == 0:
             felder["kapazitaet"] = None
         if "name" in felder:
@@ -634,9 +672,9 @@ def registrieren(app: FastAPI, db: Datenbank, fehler, ansehen, bearbeiten, liefe
         k = holen("kanten", kid)
         felder = d.model_dump(exclude_unset=True)
         von, nach = holen("knoten", k["von"]), holen("knoten", k["nach"])
-        merken(von["stockwerk_id"], request, "weg_geaendert")
         laenge = felder.get("laenge_m", k["laenge_m"]) or None
         kante_pruefen(von, nach, laenge, felder.get("gesperrt"))
+        merken(von["stockwerk_id"], request, "weg_geaendert")
         if "laenge_m" in felder:
             felder["laenge_m"] = laenge
         if felder.get("kapazitaet") == 0:
@@ -796,6 +834,13 @@ def registrieren(app: FastAPI, db: Datenbank, fehler, ansehen, bearbeiten, liefe
         szenario_anwenden(aenderungen, alle, sd, netz)
         heute = sorted((l for l in alle if l["aktiv"] and gilt_am(l["regel"], tag, feiertag)), key=lambda l: (l["uhrzeit"], l["id"]))
         sim = Simulation(netz, {t["id"]: t for t in sd["transportarten"]}, {w["id"]: w for w in sd["wagentypen"]}, tag.isoweekday())
+        # späte Lieferungen des Vortags, die über Mitternacht laufen können
+        vortag = date.fromordinal(tag.toordinal() - 1)
+        vortag_feiertag, _ = pruefen(vortag)
+        for l in alle:
+            spaet = l["uhrzeit"] >= VORTAG_AB or ((l["rueckweg"] or {}).get("uhrzeit") or "") >= VORTAG_AB
+            if spaet and l["aktiv"] and gilt_am(l["regel"], vortag, vortag_feiertag):
+                sim.lieferung_einplanen(l, vortag=True)
         for l in heute:
             sim.lieferung_einplanen(l)
         ergebnis = sim.laufen()
@@ -926,7 +971,8 @@ def registrieren(app: FastAPI, db: Datenbank, fehler, ansehen, bearbeiten, liefe
                 else:
                     z["id"] = db.ausfuehren(f"INSERT INTO lieferungen ({', '.join(werte)}) VALUES ({', '.join('?' * len(werte))})", tuple(werte.values()))
                     z["aktion"] = "neu"
-        return {"zeilen": [{k: v for k, v in z.items() if k != "daten"} for z in ergebnis], "uebernommen": not pruefen}
+        uebernommen = (not pruefen) and all(not z["fehler"] for z in ergebnis)
+        return {"zeilen": [{k: v for k, v in z.items() if k != "daten"} for z in ergebnis], "uebernommen": uebernommen}
 
     @app.get("/api/export/auswertung.xlsx")
     def auswertung_export(datum: str | None = None, szenario: int | None = None, _: dict = Depends(ansehen)):

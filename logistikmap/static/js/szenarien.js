@@ -33,7 +33,7 @@ export function zeigeSzenarien(wurzel, [idParam]) {
         "div.szenarioliste",
         liste.map((s) => {
           const a = s.aenderungen;
-          const anzahl = ["lieferungen", "transportarten", "aufzuege"].reduce((n, k) => n + Object.keys(a[k] || {}).length, 0);
+          const anzahl = ["lieferungen", "transportarten", "aufzuege", "kanten", "knoten"].reduce((n, k) => n + Object.keys(a[k] || {}).length, 0);
           return h(
             "div.szenario",
             h("div", h("strong", s.name), s.beschreibung ? h("p.gedimmt", s.beschreibung) : null, h("small", t("szenario.aenderungen", { anzahl }))),
@@ -87,9 +87,15 @@ export function zeigeSzenarien(wurzel, [idParam]) {
 }
 
 async function editor(wurzel, id, darfAendern) {
-  let szenario, lieferungen, stamm;
+  let szenario, lieferungen, stamm, punkte, engstellen;
   try {
-    [szenario, lieferungen, stamm] = await Promise.all([api("szenarien").then((l) => l.find((s) => s.id === id)), api("lieferungen"), stammdaten(true)]);
+    [szenario, lieferungen, stamm, punkte, engstellen] = await Promise.all([
+      api("szenarien").then((l) => l.find((s) => s.id === id)),
+      api("lieferungen"),
+      stammdaten(true),
+      api("punkte"),
+      api("engstellen"),
+    ]);
   } catch (e) {
     return fehlerMelden(e);
   }
@@ -98,6 +104,8 @@ async function editor(wurzel, id, darfAendern) {
     return;
   }
   const a = szenario.aenderungen;
+  // Lade- und Entladepunkte: Start-/Zielpunkte und alles mit Kapazität
+  const rampen = punkte.filter((p) => ["start", "ziel", "punkt"].includes(p.art) || p.kapazitaet);
   const name = h("input", { value: szenario.name, maxlength: 150, disabled: !darfAendern });
   const beschreibung = h("textarea", { rows: 2, disabled: !darfAendern }, szenario.beschreibung);
   const eingaben = []; // {art, id, feld, el, ist}
@@ -204,6 +212,51 @@ async function editor(wurzel, id, darfAendern) {
             )
           )
         )
+      ),
+      h(
+        "div.spalten.gleich",
+        h(
+          "section.karte-box",
+          h("h2", t("szenario.rampen")),
+          h("p.hinweis", t("szenario.rampen_hilfe")),
+          rampen.length
+            ? h(
+                "table.tabelle.kompakt.szenariotabelle",
+                h("thead", h("tr", h("th", t("stamm.name")), h("th", t("knoten.kapazitaet")))),
+                h(
+                  "tbody",
+                  rampen.map((p) =>
+                    h(
+                      "tr",
+                      h("td", p.name, h("small", `${p.kuerzel || p.gebaeudeteil} · ${p.stockwerk}`)),
+                      h("td", feld("knoten", p, "kapazitaet", h("input", { type: "number", min: 0, value: p.kapazitaet ?? "", placeholder: "∞", style: { width: "80px" } }), p.kapazitaet ?? 0))
+                    )
+                  )
+                )
+              )
+            : h("p.leer", t("allgemein.keine_eintraege"))
+        ),
+        h(
+          "section.karte-box",
+          h("h2", t("szenario.engstellen")),
+          h("p.hinweis", t("szenario.engstellen_hilfe")),
+          engstellen.length
+            ? h(
+                "table.tabelle.kompakt.szenariotabelle",
+                h("thead", h("tr", h("th", t("kante.name")), h("th", t("szenario.gesperrt")))),
+                h(
+                  "tbody",
+                  engstellen.map((k) =>
+                    h(
+                      "tr",
+                      h("td", k.name || `${k.von_name || "·"} – ${k.nach_name || "·"}`, h("small", `${k.kuerzel || k.gebaeudeteil} · ${k.stockwerk}${k.kapazitaet ? ` · ${t("kante.max_gleichzeitig", { anzahl: k.kapazitaet })}` : ""}`)),
+                      h("td", feld("kanten", k, "gesperrt", h("input", { type: "checkbox" }), false))
+                    )
+                  )
+                )
+              )
+            : h("p.leer", t("szenario.keine_engstellen"))
+        )
       )
     )
   );
@@ -212,7 +265,7 @@ async function editor(wurzel, id, darfAendern) {
     const aenderungen = {};
     for (const e of eingaben) {
       const wert = lesen(e.el);
-      if (wert === e.ist || String(wert) === String(e.ist ?? "") || (e.feld === "ausser_betrieb" && !wert)) continue;
+      if (wert === e.ist || String(wert) === String(e.ist ?? "") || ((e.feld === "ausser_betrieb" || e.feld === "gesperrt") && !wert)) continue;
       aenderungen[e.art] ??= {};
       aenderungen[e.art][e.id] ??= {};
       aenderungen[e.art][e.id][e.feld] = wert;

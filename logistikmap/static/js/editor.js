@@ -1,6 +1,6 @@
 // Editor auf der Karte: Bereiche, Räume, Punkte und Wegenetz einzeichnen und bearbeiten.
 
-import { api, bestaetigen, fehlerMelden, formularDialog, h, leeren, melden, punktAuswahl, stammdaten, t, zahl } from "./basis.js";
+import { api, bestaetigen, fehlerMelden, formularDialog, gruppe, h, leeren, melden, punktAuswahl, stammdaten, t, zahl, zustand } from "./basis.js";
 import { abstand, ll, xy } from "./karte.js";
 
 const FARBEN = [
@@ -149,10 +149,28 @@ export function starteEditor(ctx) {
       eckenEbene.clearLayers();
       await ctx.netzLaden();
       ctx.punkte = await api("punkte");
+      stand = (await api(`stockwerke/${sid}/stand`)).id;
     } catch (e) {
       fehlerMelden(e);
     }
   }
+
+  // ---------------------------------------------------------------- Gleichzeitiges Bearbeiten
+  // Alle 10 Sekunden nachsehen, ob jemand anderes dieses Stockwerk geändert hat, und dann neu laden.
+  let stand = null;
+  async function standPruefen() {
+    try {
+      const s = await api(`stockwerke/${sid}/stand`);
+      if (stand !== null && s.id !== stand && s.benutzer && s.benutzer !== zustand.benutzer.benutzername) {
+        melden(t("editor.fremde_aenderung", { benutzer: s.benutzer }));
+        await ctx.netzLaden();
+        if (ctx.auswahl) panelZeigen();
+      }
+      stand = s.id;
+    } catch {}
+  }
+  const standTimer = setInterval(standPruefen, 10000);
+  standPruefen();
 
   // ---------------------------------------------------------------- Ecken einer Fläche bearbeiten
   function eckenZeigen() {
@@ -304,8 +322,12 @@ export function starteEditor(ctx) {
       try {
         const von = letzter ? ctx.knotenNachId(letzter) : null;
         const p = geradeZiehen(von, xy(latlng));
-        const id = await knotenAn(p);
-        if (letzter && letzter !== id) await api("kanten", { methode: "POST", daten: { von: letzter, nach: id } });
+        // ein Klick = ein Rückgängig-Schritt (Flur teilen, Punkt, Wegstück)
+        const id = await gruppe(async () => {
+          const neu = await knotenAn(p);
+          if (letzter && letzter !== neu) await api("kanten", { methode: "POST", daten: { von: letzter, nach: neu } });
+          return neu;
+        });
         letzter = id;
         await ctx.netzLaden();
       } catch (e) {
@@ -410,7 +432,7 @@ export function starteEditor(ctx) {
         { name: "kapazitaet", label: t("knoten.kapazitaet"), typ: "number", attr: { min: 1 }, hilfe: t("knoten.kapazitaet_hilfe") },
         { name: "verbinden", label: t("editor.mit_weg_verbinden"), typ: "haken", wert: true },
       ],
-      speichern: async (w) => {
+      speichern: (w) => gruppe(async () => {
         if (w.art === "aufzug" && !w.aufzug) throw new Error(t("editor.aufzug_waehlen"));
         const aufzug_id = await aufzugWert(w.aufzug, w.art === "aufzug" ? null : null);
         const neu = await api("knoten", {
@@ -419,7 +441,7 @@ export function starteEditor(ctx) {
         });
         if (w.verbinden) await anschliessen(neu.id, p);
         return neu;
-      },
+      }),
     });
     if (ergebnis) {
       await ctx.netzLaden();
@@ -728,10 +750,21 @@ export function starteEditor(ctx) {
     }
   }
 
+  // eigene Änderungen: Stand nach jedem Neuladen des Netzes übernehmen
+  const netzLadenAlt = ctx.netzLaden;
+  ctx.netzLaden = async () => {
+    await netzLadenAlt();
+    try {
+      stand = (await api(`stockwerke/${sid}/stand`)).id;
+    } catch {}
+  };
+
   ctx.zeichnen({ netz: true });
   wechseln("auswahl");
 
   return () => {
+    clearInterval(standTimer);
+    ctx.netzLaden = netzLadenAlt;
     werkzeug?.beenden();
     karte.off("click", kartenKlick);
     document.removeEventListener("keydown", taste);

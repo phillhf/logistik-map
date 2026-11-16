@@ -20,6 +20,8 @@ $ErrorActionPreference = "Stop"
 $ProgressPreference = "SilentlyContinue"
 
 $WinSwVersion = "v2.12.0"
+# SHA-256 von WinSW-x64.exe v2.12.0 (fest hinterlegt: das Setup läuft später mit Administratorrechten)
+$WinSwSha256 = "05b82d46ad331cc16bdc00de5c6332c1ef818df8ceefcd49c726553209b3a0da"
 
 $root     = Split-Path -Parent $PSScriptRoot
 $buildDir = Join-Path $PSScriptRoot "build"
@@ -79,6 +81,10 @@ VSVersionInfo(
     --add-data "$root\logistikmap\static;static" `
     --collect-submodules uvicorn `
     --exclude-module tkinter --exclude-module pytest --exclude-module PIL `
+    --exclude-module numpy --exclude-module onnxruntime --exclude-module pymupdf_layout --exclude-module pymupdf4llm `
+    --exclude-module networkx --exclude-module yaml --exclude-module tabulate --exclude-module psutil `
+    --exclude-module httptools --exclude-module watchfiles --exclude-module websockets `
+    --exclude-module setuptools --exclude-module packaging `
     --distpath "$stage" --workpath "$buildDir\pyinstaller" --specpath "$buildDir" `
     "$PSScriptRoot\start.py"
 Check "PyInstaller"
@@ -99,9 +105,25 @@ if (-not (Test-Path $winsw)) {
     gh release download $WinSwVersion --repo winsw/winsw --pattern "WinSW-x64.exe" --output $winsw --clobber
     Check "WinSW-Download"
 }
+$ist = (Get-FileHash $winsw -Algorithm SHA256).Hash.ToLower()
+if ($ist -ne $WinSwSha256) {
+    Remove-Item $winsw -Force
+    throw "WinSW: Prüfsumme stimmt nicht ($ist statt $WinSwSha256)"
+}
 Copy-Item $winsw "$stage\service\LogistikMap-Dienst.exe"
 Copy-Item "$PSScriptRoot\LogistikMap-Dienst.xml" "$stage\service\"
-Copy-Item "$root\LICENSE", "$root\README.md" $stage
+Copy-Item "$root\LICENSE", "$root\README.md", "$root\README.de.md" $stage
+
+# -- Lizenzen der mitgelieferten Bestandteile -----------------------------------
+Step "Lizenzen sammeln"
+$winswLizenz = Join-Path $cache "WinSW-LICENSE-$WinSwVersion.txt"
+if (-not (Test-Path $winswLizenz)) {
+    $b64 = (gh api "repos/winsw/winsw/contents/LICENSE.txt?ref=$WinSwVersion" --jq .content) -join ''
+    Check "WinSW-Lizenz"
+    [Text.Encoding]::UTF8.GetString([Convert]::FromBase64String(($b64 -replace '\s', ''))) | Set-Content $winswLizenz -Encoding utf8
+}
+& $python "$PSScriptRoot\lizenzen.py" "$stage\THIRD_PARTY_LICENSES.txt" --toc "$buildDir\pyinstaller\LogistikMap\PYZ-00.toc" --paket "$stage\app\_internal" "$winswLizenz=WinSW $WinSwVersion (Windows-Dienst)"
+Check "Lizenzen"
 
 # -- Inno Setup ----------------------------------------------------------------
 Step "Setup bauen (Inno Setup)"

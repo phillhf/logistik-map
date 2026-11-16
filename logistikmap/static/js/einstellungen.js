@@ -64,11 +64,27 @@ export function zeigeEinstellungen(wurzel) {
         allgemein,
         h("label.feld", h("span", t("einstellungen.bundesland")), auswahl("bundesland", e.bundeslaender, e.bundesland)),
         h("label.feld", h("span", t("einstellungen.sprache")), auswahl("sprache", e.sprachen, e.sprache), h("small", t("einstellungen.sprache_hilfe"))),
+        verwalten ? zahlFeld("sitzung_inaktiv_stunden", t("einstellungen.sitzung_inaktiv"), e.sitzung_inaktiv_stunden, { min: 0.25, step: 0.25 }) : null,
+        verwalten ? zahlFeld("sitzung_ad_stunden", t("einstellungen.sitzung_ad"), e.sitzung_ad_stunden, { min: 1, step: 1 }) : null,
+        verwalten ? zahlFeld("protokoll_tage", t("einstellungen.protokoll_tage"), e.protokoll_tage, { min: 0, step: 1 }, t("einstellungen.protokoll_tage_hilfe")) : null,
         verwalten ? h("p", h("a", { href: "#/protokoll" }, t("einstellungen.protokoll_link"))) : null
       );
     } catch (err) {
       fehlerMelden(err);
     }
+  }
+
+  function zahlFeld(name, label, wert, attr, hilfe) {
+    const eingabe = h("input", { type: "number", value: wert, style: { width: "110px" }, ...attr });
+    eingabe.addEventListener("change", async () => {
+      try {
+        await api("einstellungen", { methode: "PUT", daten: { [name]: Number(eingabe.value) } });
+        melden(t("allgemein.gespeichert"));
+      } catch (err) {
+        fehlerMelden(err);
+      }
+    });
+    return h("label.feld", h("span", label), eingabe, hilfe ? h("small", hilfe) : null);
   }
 
   async function feiertageLaden() {
@@ -173,7 +189,11 @@ export function zeigeEinstellungen(wurzel) {
                 s.slice(0, 20).map((x) =>
                   h(
                     "li",
-                    h("div", h("strong", new Date(x.zeit).toLocaleString()), h("small", `${x.name} · ${groesse(x.groesse)}`)),
+                    h(
+                      "div",
+                      h("strong", new Date(x.zeit).toLocaleString(), " ", h(`span.marke-klein${x.dokumente ? "" : ".grau"}`, x.dokumente ? t("sicherung.voll") : t("sicherung.nur_db"))),
+                      h("small", `${x.name} · ${groesse(x.groesse)}`)
+                    ),
                     h("button.knopf-flach", { type: "button", onclick: () => herunterladen(`sicherungen/${encodeURIComponent(x.name)}`, x.name).catch(fehlerMelden) }, "⤓")
                   )
                 )
@@ -202,6 +222,7 @@ export function zeigeEinstellungen(wurzel) {
       try {
         const r = await hochladen("sicherung/wiederherstellen", "datei", datei, () => {});
         melden(t("sicherung.eingespielt", { zeit: new Date(r.zeit).toLocaleString() }));
+        if (r.fehlende_dokumente?.length) melden(t("sicherung.fehlende_plaene", { liste: r.fehlende_dokumente.join(", ") }), "fehler");
         setTimeout(() => location.reload(), 1500);
       } catch (e) {
         fehlerMelden(e);

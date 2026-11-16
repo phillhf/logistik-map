@@ -60,8 +60,21 @@ export function wennAbgemeldet(fn) {
   beiAbmeldung = fn;
 }
 
+// Rückgängig-Gruppe: alle Änderungen innerhalb von gruppe(fn) bilden einen einzigen Rückgängig-Schritt
+let aktiveGruppe = null;
+export async function gruppe(fn) {
+  const vorher = aktiveGruppe;
+  aktiveGruppe = vorher || `g${Date.now().toString(36)}${Math.random().toString(36).slice(2, 8)}`;
+  try {
+    return await fn();
+  } finally {
+    aktiveGruppe = vorher;
+  }
+}
+
 export async function api(pfad, { methode = "GET", daten, roh = false } = {}) {
   const optionen = { method: methode, headers: {}, credentials: "same-origin" };
+  if (aktiveGruppe && methode !== "GET") optionen.headers["X-Rueckgaengig-Gruppe"] = aktiveGruppe;
   if (daten !== undefined) {
     optionen.headers["Content-Type"] = "application/json";
     optionen.body = JSON.stringify(daten);
@@ -273,7 +286,8 @@ export function uhr(sekunden, mitSekunden = false) {
   const hh = String(Math.floor(s / 3600)).padStart(2, "0");
   const mm = String(Math.floor((s % 3600) / 60)).padStart(2, "0");
   const ss = String(s % 60).padStart(2, "0");
-  return `${tag ? `+${tag} ` : ""}${hh}:${mm}${mitSekunden ? `:${ss}` : ""}`;
+  const praefix = tag < 0 ? `${t("zeit.vortag")} ` : tag > 0 ? `+${tag} ` : "";
+  return `${praefix}${hh}:${mm}${mitSekunden ? `:${ss}` : ""}`;
 }
 
 export function sekunden(hhmm) {

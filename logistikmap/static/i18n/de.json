@@ -151,7 +151,11 @@
     "bezeichnung": "Bezeichnung",
     "sondertag": "Sondertag",
     "sprache_hilfe": "Standard für alle. Jeder kann über das Menü oben rechts eine eigene Sprache wählen.",
-    "protokoll_link": "Änderungsprotokoll ansehen →"
+    "protokoll_link": "Änderungsprotokoll ansehen →",
+    "sitzung_inaktiv": "Abmelden nach … Stunden ohne Nutzung",
+    "sitzung_ad": "Benutzer aus dem Active Directory spätestens nach … Stunden neu anmelden",
+    "protokoll_tage": "Änderungsprotokoll aufbewahren (Tage)",
+    "protokoll_tage_hilfe": "0 = unbegrenzt. Ältere Einträge werden täglich gelöscht."
   },
   "feiertag": {
     "neujahr": "Neujahr",
@@ -254,7 +258,8 @@
     "kein_plan": "Für dieses Stockwerk gibt es keinen Plan.",
     "datei_unlesbar": "Die Datei lässt sich nicht lesen. Bitte als .xlsx oder .csv speichern.",
     "datei_leer": "Die Datei ist leer.",
-    "spalten_fehlen": "Es fehlen Spalten. Nötig sind mindestens Bezeichnung, Start, Ziel und Uhrzeit – am einfachsten mit „Excel“ exportieren und als Vorlage nutzen."
+    "spalten_fehlen": "Es fehlen Spalten. Nötig sind mindestens Bezeichnung, Start, Ziel und Uhrzeit – am einfachsten mit „Excel“ exportieren und als Vorlage nutzen.",
+    "rueckgaengig_fremd": "Die letzte Änderung auf diesem Stockwerk stammt von {benutzer}. Rückgängig geht nur für eigene Änderungen."
   },
   "knoten": {
     "art": {
@@ -363,7 +368,8 @@
       "weg_geaendert": "Wegstück geändert",
       "weg_geloescht": "Wegstück gelöscht",
       "ausrichten": "Ausrichten"
-    }
+    },
+    "fremde_aenderung": "{benutzer} hat dieses Stockwerk gerade geändert – die Karte wurde neu geladen."
   },
   "aufzug": {
     "art": {
@@ -654,7 +660,7 @@
   },
   "sicherung": {
     "titel": "Sicherung",
-    "hilfe": "Eine Sicherung enthält Datenbank und PDF-Pläne. Logistik Map legt täglich automatisch eine an (im Datenordner unter „sicherungen“).",
+    "hilfe": "Logistik Map sichert täglich die Datenbank und einmal pro Woche zusätzlich alle PDF-Pläne (im Datenordner unter „sicherungen“). „Sicherung herunterladen“ und „Jetzt sichern“ enthalten immer alles.",
     "herunterladen": "Sicherung herunterladen",
     "jetzt": "Jetzt sichern",
     "einspielen": "Sicherung einspielen",
@@ -663,7 +669,10 @@
     "keine": "Noch keine Sicherungen.",
     "angelegt": "Sicherung angelegt.",
     "wirklich": "„{name}“ einspielen? Alle Daten werden durch den Stand der Sicherung ersetzt. Der jetzige Stand wird vorher gesichert.",
-    "eingespielt": "Sicherung vom {zeit} eingespielt. Die Pläne werden neu aufbereitet."
+    "eingespielt": "Sicherung vom {zeit} eingespielt. Die Pläne werden neu aufbereitet.",
+    "voll": "vollständig",
+    "nur_db": "nur Datenbank",
+    "fehlende_plaene": "Diese PDF-Pläne fehlen und müssen neu hochgeladen werden: {liste}"
   },
   "update": {
     "titel": "Updates",
@@ -811,6 +820,15 @@
     "transportarten_hilfe": "Eine geänderte Anzahl gilt im Szenario den ganzen Tag (statt der Schichten).",
     "hat_schichten": "mit Schichten",
     "ausser_betrieb": "außer Betrieb",
-    "fahrzeit": "s/Etage"
+    "fahrzeit": "s/Etage",
+    "rampen": "Rampen und Lade-/Entladepunkte",
+    "rampen_hilfe": "Wie viele Wagen gleichzeitig be- oder entladen werden können (leer = unbegrenzt).",
+    "engstellen": "Wegstücke sperren",
+    "engstellen_hilfe": "Benannte Wegstücke und Engstellen, z. B. eine Tür, die wegen Bauarbeiten geschlossen ist.",
+    "gesperrt": "gesperrt",
+    "keine_engstellen": "Noch keine benannten Wegstücke. Gib Wegstücken im Karteneditor eine Bezeichnung, um sie hier sperren zu können."
+  },
+  "zeit": {
+    "vortag": "Vortag"
   }
 }

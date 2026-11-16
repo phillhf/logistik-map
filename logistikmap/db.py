@@ -207,6 +207,10 @@ MIGRATIONEN: list[str] = [
         erstellt     TEXT NOT NULL DEFAULT (datetime('now'))
     )
     """,
+    # 4 – Rückgängig-Schritte zusammenfassen
+    """
+    ALTER TABLE netz_verlauf ADD COLUMN gruppe TEXT
+    """,
 ]
 
 STANDARD_ROLLEN = [

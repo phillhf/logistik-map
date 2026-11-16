@@ -200,6 +200,7 @@ export function zeigeKarte(wurzel, [stockwerkParam, modusParam, ...rest]) {
       doubleClickZoom: modus !== "bearbeiten",
     });
     ctx.karte = karte;
+    window.__logistikKarte = ctx; // für die Oberflächentests (Planpunkte → Bildschirm)
     L.tileLayer(`/api/plaene/${plan.id}/kacheln/{z}/{x}/{y}.png`, {
       tileSize: 256,
       minZoom: 0,

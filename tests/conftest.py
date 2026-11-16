@@ -1,9 +1,14 @@
+import os
+
 import pymupdf
 import pytest
 from fastapi.testclient import TestClient
 
 from logistikmap.config import Pfade
 from logistikmap.server import erstelle_app
+
+# Oberflächentests im Browser nur auf Wunsch (E2E=1), sie brauchen Playwright und einen Browser
+collect_ignore = [] if os.environ.get("E2E") else ["e2e"]
 
 ADMIN = {"benutzername": "admin", "anzeigename": "Admin", "passwort": "geheim123"}
 

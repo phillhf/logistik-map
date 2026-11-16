@@ -75,7 +75,8 @@ Die Simulation spielt einen Tag ereignisgenau durch (Sekunden seit Mitternacht):
   „Später zurück“ ist eine eigene Fahrt zur angegebenen Uhrzeit.
 - Gehzeit = Länge (aus Plan und Maßstab) / Geschwindigkeit.
 - Aufzug = eine Kabine. Fahrzeit = Wartezeit auf die Kabine + 2 × Türzeit + Stockwerke × Fahrzeit
-  je Stockwerk, bei FTS zusätzlich die Räumzeit. Wer gleichzeitig mit gleichem Start- und
+  je Stockwerk, bei FTS zusätzlich die Räumzeit. Steht die Kabine seit höchstens einer Minute
+  auf dem Stockwerk, entfällt die Wartezeit auf sie. Wer gleichzeitig mit gleichem Start- und
   Zielstockwerk wartet, fährt mit, solange die Plätze reichen. FTS fahren immer allein.
 - Treppen kosten nur Zeit und haben keine Kapazität. Sie dürfen nur Transportarten nutzen, die
   Treppen können.
@@ -83,6 +84,9 @@ Die Simulation spielt einen Tag ereignisgenau durch (Sekunden seit Mitternacht):
   solange sie durchfahren werden, Punkte während des Ladens bzw. Entladens.
 - Als Engpass gilt alles, wo jemand mindestens eine Minute wartet oder die Auslastung in einem
   5-Minuten-Abschnitt 90 % erreicht.
+
+- Lieferungen des Vortags ab 16 Uhr werden mitgerechnet, soweit sie nach Mitternacht noch
+  unterwegs sind. In den Kennzahlen des Tages zählen sie nicht mit.
 
 Das ist bewusst grob. Personenverkehr im Aufzug steckt nur in der mittleren Wartezeit, und
 Begegnungsverkehr im Flur gibt es nur, wenn eine Kapazität gesetzt ist.

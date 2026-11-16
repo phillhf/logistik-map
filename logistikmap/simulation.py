@@ -141,6 +141,11 @@ class Aufzug:
     unterwegs: bool = False
     abfahrt_geplant: bool = False
     zu_gross: int = 0
+    kabine_ebene: int | None = None  # wo die Kabine zuletzt angekommen ist
+    kabine_seit: float = -1e9
+
+    # Steht die Kabine seit höchstens so vielen Sekunden auf dem Stockwerk, entfällt die Wartezeit auf sie.
+    DIREKT_WEITER = 60.0
 
     @property
     def plaetze(self) -> float | None:
@@ -170,7 +175,9 @@ class Aufzug:
                     frei -= anf["plaetze"]
                     self.schlange.remove(anf)
         etagen = abs(erste["nach"] - erste["von"])
-        dauer = aufzug_fahrzeit(self.daten, etagen, erste["exklusiv"])
+        kabine_da = self.kabine_ebene == erste["von"] and self.uhr.jetzt - self.kabine_seit <= self.DIREKT_WEITER
+        dauer = aufzug_fahrzeit(self.daten, etagen, erste["exklusiv"], mit_anfahrt=not kabine_da)
+        self.kabine_ebene = erste["nach"]
         start = self.uhr.jetzt
         self.unterwegs = True
         self.fahrten.append((start, start + dauer, sum(a["plaetze"] for a in gruppe), len(gruppe), erste["exklusiv"]))
@@ -182,6 +189,7 @@ class Aufzug:
 
     def _angekommen(self) -> None:
         self.unterwegs = False
+        self.kabine_seit = self.uhr.jetzt
         self.verlauf.append((self.uhr.jetzt, 0, len(self.schlange)))
         if self.schlange:
             self._abfahren()
@@ -201,6 +209,7 @@ class Fahrt:
     rueck: str  # leer | beladen | keiner
     rueck_ziel_id: int | None
     art: str = "hin"  # hin | spaeter (eigene Rückfahrt zu fester Uhrzeit)
+    vortag: bool = False  # Lieferung des Vortags, die über Mitternacht läuft
     start: float | None = None
     ankunft: float | None = None
     fertig: float | None = None
@@ -300,7 +309,9 @@ class Simulation:
         return self._wege[schluessel]
 
     # -- Fahrten anlegen ----------------------------------------------------------
-    def lieferung_einplanen(self, l: dict) -> None:
+    def lieferung_einplanen(self, l: dict, vortag: bool = False) -> None:
+        """Plant alle Fahrten einer Lieferung ein. vortag=True: Lieferung vom Vortag (Zeiten −24 h)."""
+        versatz = -86400 if vortag else 0
         ta = self.transportarten.get(l["transportart_id"])
         if ta is None:
             self.fehler.append({"lieferung_id": l["id"], "name": l["name"], "code": "transportart_fehlt"})
@@ -333,12 +344,13 @@ class Simulation:
                 lieferung=l,
                 nr=nr,
                 von_n=len(gruppen),
-                geplant=zeit_in_sekunden(l["uhrzeit"]),
+                geplant=zeit_in_sekunden(l["uhrzeit"]) + versatz,
                 wagen=gruppe,
                 start_id=l["start_id"],
                 ziel_id=l["ziel_id"],
                 rueck="leer" if modus == "spaeter" else modus,
                 rueck_ziel_id=rueck_ziel,
+                vortag=vortag,
             )
             self.fahrten.append(f)
             self.uhr.plane(f.geplant, _Prozess(self.uhr, self._ablauf(f, ta)).weiter)
@@ -348,13 +360,14 @@ class Simulation:
                     lieferung=l,
                     nr=nr,
                     von_n=len(gruppen),
-                    geplant=zeit_in_sekunden(rueck["uhrzeit"]),
+                    geplant=zeit_in_sekunden(rueck["uhrzeit"]) + versatz,
                     wagen=gruppe,
                     start_id=l["ziel_id"],
                     ziel_id=rueck_ziel,
                     rueck="keiner",
                     rueck_ziel_id=None,
                     art="spaeter",
+                    vortag=vortag,
                 )
                 self.fahrten.append(r)
                 self.uhr.plane(r.geplant, _Prozess(self.uhr, self._ablauf(r, ta)).weiter)
@@ -465,14 +478,16 @@ class Simulation:
             key=lambda r: (r["max_wartezeit"], r["spitze"]),
             reverse=True,
         )
-        fahrten = [self._fahrt_dict(f) for f in self.fahrten]
+        # Fahrten vom Vortag nur, soweit sie nach Mitternacht noch unterwegs sind
+        alle = [self._fahrt_dict(f) for f in self.fahrten if not f.vortag or (f.ende or 0) > 0 or f.ende is None]
+        fahrten = [f for f in alle if not f["vortag"]]
         return {
-            "fahrten": fahrten,
+            "fahrten": alle,
             "ressourcen": ressourcen,
             "engpaesse": [{"typ": r["typ"], "id": r["id"]} for r in engpaesse],
             "fehler": self.fehler,
             "zusammenfassung": {
-                "lieferungen": len({f.lieferung["id"] for f in self.fahrten}),
+                "lieferungen": len({f.lieferung["id"] for f in self.fahrten if not f.vortag}),
                 "fahrten": len(fahrten),
                 "verspaetet": sum(1 for f in fahrten if f["verspaetet"]),
                 "nicht_fertig": sum(1 for f in fahrten if f["ende"] is None),
@@ -484,7 +499,7 @@ class Simulation:
 
     def _fahrt_dict(self, f: Fahrt) -> dict:
         l = f.lieferung
-        spaetestens = zeit_in_sekunden(l["spaetestens"]) if l.get("spaetestens") and f.art == "hin" else None
+        spaetestens = zeit_in_sekunden(l["spaetestens"]) - (86400 if f.vortag else 0) if l.get("spaetestens") and f.art == "hin" else None
         verspaetet = spaetestens is not None and (f.ankunft is None or f.ankunft > spaetestens)
         return {
             "id": f.id,
@@ -493,6 +508,7 @@ class Simulation:
             "lieferant": l["lieferant"],
             "richtung": ("entsorgung" if l["richtung"] == "versorgung" else "versorgung") if f.art == "spaeter" else l["richtung"],
             "art": f.art,
+            "vortag": f.vortag,
             "transportart_id": l["transportart_id"],
             "nr": f.nr,
             "von_n": f.von_n,
@@ -515,6 +531,7 @@ class Simulation:
         """Mittlere Auslastung je 5 Minuten: Summe(Dauer × Menge) / (Raster × Kapazität)."""
         werte: dict[int, float] = {}
         for t0, t1, menge in intervalle:
+            t0 = max(t0, 0.0)  # Zeit vor Mitternacht (Vortag) gehört nicht zu diesem Tag
             if t1 <= t0:
                 continue
             b = int(t0 // RASTER)

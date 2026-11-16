@@ -1,5 +1,36 @@
 # Änderungen
 
+## [0.4.0] - 2026-11-16
+
+Korrekturen und Härtung nach der Durchsicht von 0.3.0.
+
+- **Update-Funktion**: Die geplante Aufgabe wird jetzt als XML angelegt. Mit dem bisherigen
+  Datumsformat wäre sie auf deutschem Windows gescheitert.
+- **Rückgängig**: Ein Klick im Editor (Flur teilen, Punkt, Wegstück) ist ein einziger Schritt.
+  Abgelehnte Änderungen hinterlassen keine leeren Schritte mehr. Der Maßstab wird nur noch beim
+  Ausrichten mit zurückgenommen. Änderungen anderer Personen lassen sich nicht mehr aus Versehen
+  zurücknehmen.
+- **Gleichzeitiges Bearbeiten**: Ändert jemand anderes dasselbe Stockwerk, lädt der Editor neu
+  und sagt, von wem die Änderung kommt.
+- **Anmeldung**: Eine Adresse wird erst nach 30 Fehlversuchen gesperrt (Terminalserver,
+  Citrix), ein Benutzername weiter nach 5. Sitzungen enden nach 12 Stunden ohne Nutzung,
+  AD-Benutzer müssen sich spätestens nach 12 Stunden neu anmelden. Beides ist einstellbar.
+- **Sicherung**: Täglich wird nur die Datenbank gesichert, wöchentlich zusätzlich alle
+  PDF-Pläne. Manuelle Sicherungen werden nicht mehr automatisch gelöscht. Beim Einspielen einer
+  Sicherung ohne Pläne bleiben die vorhandenen Pläne erhalten.
+- **Änderungsprotokoll** mit einstellbarer Aufbewahrungsfrist (Standard 365 Tage).
+- **HTTPS**: Die Verknüpfung im Startmenü zeigt nach dem Umstellen auf `https://`.
+- **Simulation**: Steht die Aufzugkabine schon auf dem Stockwerk, entfällt die Wartezeit auf
+  sie. Späte Lieferungen des Vortags laufen über Mitternacht weiter.
+- **Szenarien**: Wegstücke sperren und Kapazitäten von Rampen ändern.
+- **Excel-Import** meldet „übernommen“ nur noch, wenn wirklich übernommen wurde.
+- **Setup**: Es enthält `THIRD_PARTY_LICENSES.txt` mit den Lizenzen aller mitgelieferten
+  Bestandteile. WinSW wird beim Bauen gegen eine feste Prüfsumme geprüft. Unnötige Bibliotheken
+  sind herausgenommen, das Setup ist 8 MB kleiner.
+- **Oberflächentests im Browser** (Playwright) für Editor, Ausrichten, Import, Sicherung,
+  Ablauf und Auswertung, auf GitHub als eigener Testlauf.
+- README auf Englisch mit Screenshots, die deutsche Fassung liegt in `README.de.md`.
+
 ## [0.3.0] - 2026-11-15
 
 Fit für den Echtbetrieb und für Planungsfragen.
