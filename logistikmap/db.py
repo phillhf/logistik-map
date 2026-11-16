@@ -216,6 +216,10 @@ MIGRATIONEN: list[str] = [
     ALTER TABLE knoten ADD COLUMN minuten_je_einheit REAL;
     INSERT INTO wagentypen (name, plaetze) SELECT 'Bett', 2 WHERE NOT EXISTS (SELECT 1 FROM wagentypen WHERE name = 'Bett')
     """,
+    # 6 – „Nein“ bei „Lücken prüfen“: diese Stelle nicht mehr melden
+    """
+    ALTER TABLE knoten ADD COLUMN ohne_hinweis INTEGER NOT NULL DEFAULT 0
+    """,
 ]
 
 STANDARD_ROLLEN = [

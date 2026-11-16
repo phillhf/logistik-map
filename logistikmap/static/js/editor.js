@@ -45,7 +45,7 @@ export function starteEditor(ctx) {
       h("span.trenner"),
       h("button", { type: "button", title: t("editor.rueckgaengig_hilfe"), onclick: rueckgaengig }, "↶ " + t("editor.rueckgaengig")),
       (() => {
-        const lose = ctx.stockwerk.meter_pro_punkt ? losePunkte().length + luecken().length : 0;
+        const lose = ctx.stockwerk.meter_pro_punkt ? vorschlaege(new Set()).length : 0;
         return lose
           ? h("button.anschliessen", { type: "button", title: t("editor.anschliessen_hilfe"), onclick: () => wechseln("pruefen") }, t("editor.anschliessen", { anzahl: lose }))
           : null;
@@ -186,7 +186,7 @@ export function starteEditor(ctx) {
   /** Benannte Punkte (Tor, Lager, Station, Aufzug …) dieses Stockwerks, die an keinem Weg hängen. */
   function losePunkte() {
     const verbunden = new Set(ctx.netz.kanten.flatMap((e) => [e.von, e.nach]));
-    return ctx.netz.knoten.filter((k) => k.art !== "weg" && !verbunden.has(k.id));
+    return ctx.netz.knoten.filter((k) => k.art !== "weg" && !verbunden.has(k.id) && !k.ohne_hinweis);
   }
 
   const MAX_LUECKE_M = 4;
@@ -197,7 +197,7 @@ export function starteEditor(ctx) {
     const max = MAX_LUECKE_M / ctx.stockwerk.meter_pro_punkt;
     const ergebnis = [];
     for (const k of ctx.netz.knoten) {
-      if (k.art !== "weg") continue;
+      if (k.art !== "weg" || k.ohne_hinweis) continue;
       const an = ctx.netz.kanten.filter((e) => e.von === k.id || e.nach === k.id);
       if (an.length !== 1) continue;
       const nachbar = an[0].von === k.id ? an[0].nach : an[0].von;
@@ -255,13 +255,15 @@ export function starteEditor(ctx) {
     return liste;
   }
 
-  /** Geht die Vorschläge einzeln durch: Karte springt hin, Verbindung gestrichelt, Nutzer entscheidet. */
+  /** Geht die Vorschläge einzeln durch: Karte springt hin, rechts die Frage „Verbinden? Ja / Nein“.
+   *  Nein wird am Punkt gespeichert – die Stelle wird danach nicht mehr gemeldet. */
   function lueckenPruefen() {
-    const ausgelassen = new Set();
     const ebene = L.layerGroup().addTo(karte);
+    const fehlgeschlagen = new Set();
     let aktuell = null;
     let gesamt = null;
     let nr = 0;
+    abwaehlen();
 
     function zielPunkt(v) {
       return v.knoten ? { x: v.knoten.x, y: v.knoten.y } : v.flur.punkt;
@@ -269,34 +271,44 @@ export function starteEditor(ctx) {
 
     function zeigen() {
       ebene.clearLayers();
-      const liste = vorschlaege(ausgelassen);
+      const liste = vorschlaege(fehlgeschlagen);
       aktuell = liste[0] || null;
       if (gesamt === null) gesamt = liste.length;
       nr++;
       if (!aktuell) {
-        const rest = losePunkte().filter((k) => !ausgelassen.has(k.id)).map((k) => ctx.knotenTitel(k));
+        const rest = losePunkte().filter((k) => !fehlgeschlagen.has(k.id)).map((k) => ctx.knotenTitel(k));
         melden(rest.length ? t("editor.zu_weit", { namen: rest.join(", "), meter: MAX_ANSCHLUSS_M }) : t("editor.pruefen_fertig"), rest.length ? "fehler" : "ok");
         wechseln("auswahl");
         return;
       }
       const k = aktuell.k, z = zielPunkt(aktuell);
-      L.polyline([ll(k.x, k.y), ll(z.x, z.y)], { color: "#f08c00", weight: 5, dashArray: "4 6", interactive: false }).addTo(ebene);
-      L.circleMarker(ll(k.x, k.y), { radius: 16, color: "#f08c00", weight: 3, fill: false, interactive: false }).addTo(ebene);
-      // Ausschnitt mit Umgebung (ca. 40 m), damit man sieht, wo man ist
+      // nur ein Vorschlag: dünn gepunktet mit Fragezeichen, damit es nicht wie eine fertige Strecke aussieht
+      L.polyline([ll(k.x, k.y), ll(z.x, z.y)], { color: "#c92a2a", weight: 2, dashArray: "2 6", interactive: false }).addTo(ebene);
+      L.circleMarker(ll(k.x, k.y), { radius: 18, color: "#c92a2a", weight: 2, fill: false, interactive: false }).addTo(ebene);
+      L.marker(ll((k.x + z.x) / 2, (k.y + z.y) / 2), { interactive: false, icon: L.divIcon({ className: "vorschlag-frage", iconSize: [22, 22], html: "?" }) }).addTo(ebene);
       const rand = 20 / ctx.stockwerk.meter_pro_punkt;
       karte.fitBounds(L.latLngBounds([ll(Math.min(k.x, z.x) - rand, Math.min(k.y, z.y) - rand), ll(Math.max(k.x, z.x) + rand, Math.max(k.y, z.y) + rand)]), { animate: true });
       const meter = zahl(abstand(k, z) * ctx.stockwerk.meter_pro_punkt, 1);
-      const text = aktuell.art === "luecke"
-        ? t("editor.pruefen_luecke", { meter, nr: Math.min(nr, gesamt), von: gesamt })
-        : t("editor.pruefen_punkt", { name: ctx.knotenTitel(k), meter, nr: Math.min(nr, gesamt), von: gesamt });
-      ctx.hinweis(text, [
-        [t("editor.pruefen_verbinden"), verbinden],
-        [t("editor.pruefen_ueberspringen"), () => { ausgelassen.add(k.id); zeigen(); }],
-        [t("karte.werkzeug_beenden"), () => wechseln("auswahl")],
-      ]);
+      const zaehler = t("editor.pruefen_zaehler", { nr: Math.min(nr, gesamt), von: gesamt });
+      const frage = aktuell.art === "luecke" ? t("editor.pruefen_luecke", { meter }) : t("editor.pruefen_punkt", { name: ctx.knotenTitel(k), meter });
+      leeren(
+        panel,
+        h("div.panel-kopf", h("h3", t("editor.pruefen_titel")), h("button.knopf-flach", { type: "button", onclick: () => wechseln("auswahl"), "aria-label": t("allgemein.schliessen") }, "×")),
+        h("p.gedimmt", zaehler),
+        h("p.pruefen-frage", frage),
+        h(
+          "div.pruefen-knoepfe",
+          h("button.knopf", { type: "button", onclick: ja }, t("editor.pruefen_ja")),
+          h("button.knopf-flach", { type: "button", onclick: nein }, t("editor.pruefen_nein"))
+        ),
+        h("p.hinweis", t("editor.pruefen_nein_hilfe")),
+        h("button.knopf-flach", { type: "button", onclick: () => wechseln("auswahl") }, t("editor.pruefen_beenden"))
+      );
+      panel.hidden = false;
+      ctx.hinweisWeg();
     }
 
-    async function verbinden() {
+    async function ja() {
       const v = aktuell;
       if (!v) return;
       try {
@@ -315,22 +327,29 @@ export function starteEditor(ctx) {
         await ctx.netzLaden();
       } catch (e) {
         fehlerMelden(e);
-        ausgelassen.add(v.k.id);
+        fehlgeschlagen.add(v.k.id);
       }
       zeigen();
     }
 
-    const taste = (e) => {
-      if (e.key === "Enter") verbinden();
-      if (e.key === " " && aktuell) { e.preventDefault(); ausgelassen.add(aktuell.k.id); zeigen(); }
-    };
-    document.addEventListener("keydown", taste);
+    async function nein() {
+      const v = aktuell;
+      if (!v) return;
+      try {
+        await api(`knoten/${v.k.id}`, { methode: "PUT", daten: { ohne_hinweis: true } });
+        await ctx.netzLaden();
+      } catch (e) {
+        fehlerMelden(e);
+        fehlgeschlagen.add(v.k.id);
+      }
+      zeigen();
+    }
+
     setTimeout(zeigen, 0);
     return {
       beenden() {
-        document.removeEventListener("keydown", taste);
         ebene.remove();
-        ctx.hinweisWeg();
+        panel.hidden = true;
       },
     };
   }

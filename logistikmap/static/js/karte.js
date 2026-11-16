@@ -362,7 +362,7 @@ export function zeigeKarte(wurzel, [stockwerkParam, modusParam, ...rest]) {
     for (const k of ctx.netz.knoten) {
       if (k.art === "weg" && !bearbeiten) continue;
       const gewaehlt = auswahl?.typ === "knoten" && auswahl.id === k.id;
-      const offen = bearbeiten && k.art === "weg" && (grad.get(k.id) || 0) <= 1;
+      const offen = bearbeiten && k.art === "weg" && !k.ohne_hinweis && (grad.get(k.id) || 0) <= 1;
       const marker = L.marker(ll(k.x, k.y), {
         pane: "knoten",
         icon: knotenIcon(k, gewaehlt, offen),

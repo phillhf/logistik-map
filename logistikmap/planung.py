@@ -98,6 +98,7 @@ class Vereinen(BaseModel):
 
 
 class KnotenAenderung(BaseModel):
+    ohne_hinweis: bool | None = None  # „Nein“ bei „Lücken prüfen“
     x: float | None = None
     y: float | None = None
     art: str | None = None
@@ -654,6 +655,8 @@ def registrieren(app: FastAPI, db: Datenbank, fehler, ansehen, bearbeiten, liefe
         felder = d.model_dump(exclude_unset=True)
         knoten_pruefen(felder.get("art"), felder.get("aufzug_id"))
         merken(k["stockwerk_id"], request, "punkt_verschoben" if set(felder) <= {"x", "y"} else "punkt_geaendert")
+        if "ohne_hinweis" in felder:
+            felder["ohne_hinweis"] = int(bool(felder["ohne_hinweis"]))
         if felder.get("kapazitaet") == 0:
             felder["kapazitaet"] = None
         if felder.get("minuten_je_einheit") == 0:

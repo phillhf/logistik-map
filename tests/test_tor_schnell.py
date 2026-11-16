@@ -121,3 +121,11 @@ def test_punkte_vereinen(haus):
     # Rückgängig stellt den Stand wieder her
     assert c.post(f"/api/stockwerke/{haus['ug']}/rueckgaengig").status_code == 200
     assert oben in {k["id"] for k in c.get(f"/api/stockwerke/{haus['ug']}/netz").json()["knoten"]}
+
+
+def test_nein_bei_luecke_wird_gemerkt(haus):
+    c = haus["c"]
+    ende = c.post("/api/knoten", json={"stockwerk_id": haus["ug"], "x": 1000, "y": 900, "art": "weg"}).json()["id"]
+    assert c.put(f"/api/knoten/{ende}", json={"ohne_hinweis": True}).status_code == 200
+    k = next(k for k in c.get(f"/api/stockwerke/{haus['ug']}/netz").json()["knoten"] if k["id"] == ende)
+    assert k["ohne_hinweis"] == 1

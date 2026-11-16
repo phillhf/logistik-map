@@ -504,16 +504,20 @@
     },
     "fremde_aenderung": "{benutzer} has just changed this floor – the map was reloaded.",
     "anschliessen": "⇢ Check gaps ({anzahl})",
-    "anschliessen_hilfe": "Goes through open path ends and unconnected points one by one. You decide each time whether to connect.",
+    "anschliessen_hilfe": "Goes through open path ends and unconnected points one by one. You answer yes or no each time.",
     "zu_weit": "More than {meter} m from the nearest path: {namen}. Draw a path there first.",
     "radierer_punkt": "Delete points (gate, store, ward …) under “Select”: click it, then press Delete.",
     "vereint": "Points joined.",
     "offenes_ende": "Open end – the path stops here. Drag it onto another point to join them.",
-    "pruefen_luecke": "Suggestion {nr} of {von}: a path ends {meter} m next to another one. Connect? (Enter = connect, Space = skip)",
-    "pruefen_punkt": "Suggestion {nr} of {von}: “{name}” is not on any path. Connect it to the nearest path ({meter} m)? (Enter = connect, Space = skip)",
-    "pruefen_verbinden": "✓ Connect",
-    "pruefen_ueberspringen": "Skip",
-    "pruefen_fertig": "All suggestions reviewed."
+    "pruefen_luecke": "A path ends {meter} m next to another one here. Connect them?",
+    "pruefen_punkt": "“{name}” is not on any path. Connect it to the nearest path ({meter} m)?",
+    "pruefen_fertig": "All suggestions reviewed.",
+    "pruefen_titel": "Check gap",
+    "pruefen_zaehler": "Spot {nr} of {von}",
+    "pruefen_ja": "Yes, connect",
+    "pruefen_nein": "No",
+    "pruefen_nein_hilfe": "With “No” nothing changes and this spot is not reported again.",
+    "pruefen_beenden": "End check"
   },
   "aufzug": {
     "art": {

@@ -1,5 +1,14 @@
 # Änderungen
 
+## [0.6.6] - 2026-11-16
+
+- **„Lücken prüfen“ fragt deutlich:** Rechts neben der Karte steht die Frage („Hier endet eine
+  Strecke 2,1 m neben einer anderen. Sollen beide verbunden werden?“) mit den Knöpfen
+  **Ja, verbinden** und **Nein**. Der Vorschlag ist auf der Karte nur dünn gepunktet mit einem
+  Fragezeichen eingezeichnet, damit er nicht wie eine fertige Strecke aussieht.
+- **Nein gilt dauerhaft:** Die Stelle wird gespeichert, nicht mehr vorgeschlagen und nicht mehr
+  orange markiert.
+
 ## [0.6.5] - 2026-11-16
 
 - **„Lücken prüfen“ statt automatisch verbinden:** Der Knopf geht die Vorschläge einzeln
