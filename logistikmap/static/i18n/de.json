@@ -503,14 +503,17 @@
       "ausrichten": "Ausrichten"
     },
     "fremde_aenderung": "{benutzer} hat dieses Stockwerk gerade geändert – die Karte wurde neu geladen.",
-    "anschliessen": "⇢ Lücken schließen ({anzahl})",
-    "anschliessen_hilfe": "Verbindet offene Streckenenden, die weniger als 4 m neben einem Punkt oder einer anderen Strecke enden, und hängt Punkte, die noch an keiner Strecke hängen, an die nächste Strecke.",
-    "angeschlossen": "An die Strecke angeschlossen: {anzahl}",
+    "anschliessen": "⇢ Lücken prüfen ({anzahl})",
+    "anschliessen_hilfe": "Geht offene Streckenenden und Punkte ohne Anschluss einzeln durch. Du entscheidest jedes Mal, ob verbunden wird.",
     "zu_weit": "Mehr als {meter} m von der nächsten Strecke entfernt: {namen}. Dort erst eine Strecke zeichnen.",
     "radierer_punkt": "Punkte (Tor, Lager, Station …) löschst du unter „Auswählen“: anklicken, dann Entf.",
-    "luecken_geschlossen": "Lücken geschlossen: {anzahl}",
     "vereint": "Punkte verbunden.",
-    "offenes_ende": "Offenes Ende – hier geht es nicht weiter. Auf einen anderen Punkt ziehen verbindet beide."
+    "offenes_ende": "Offenes Ende – hier geht es nicht weiter. Auf einen anderen Punkt ziehen verbindet beide.",
+    "pruefen_luecke": "Vorschlag {nr} von {von}: Hier endet eine Strecke {meter} m neben einer anderen. Verbinden? (Enter = Verbinden, Leertaste = Überspringen)",
+    "pruefen_punkt": "Vorschlag {nr} von {von}: „{name}“ hängt an keiner Strecke. Mit der nächsten Strecke verbinden ({meter} m)? (Enter = Verbinden, Leertaste = Überspringen)",
+    "pruefen_verbinden": "✓ Verbinden",
+    "pruefen_ueberspringen": "Überspringen",
+    "pruefen_fertig": "Alle Vorschläge durchgesehen."
   },
   "aufzug": {
     "art": {

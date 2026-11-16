@@ -1,5 +1,14 @@
 # Änderungen
 
+## [0.6.5] - 2026-11-16
+
+- **„Lücken prüfen“ statt automatisch verbinden:** Der Knopf geht die Vorschläge einzeln
+  durch. Die Karte springt zur Stelle, die vorgeschlagene Verbindung ist gestrichelt
+  eingezeichnet, und du entscheidest jedes Mal: „Verbinden“ (Enter) oder „Überspringen“
+  (Leertaste).
+- Beim Zeichnen werden Punkte neben der Linie nicht mehr still angeschlossen. Kreuzungen mit
+  vorhandenen Strecken entstehen weiterhin.
+
 ## [0.6.4] - 2026-11-16
 
 - **Lücken im Streckennetz sichtbar:** Ein Streckenende, an dem es nicht weitergeht, ist im

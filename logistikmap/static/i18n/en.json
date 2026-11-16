@@ -503,14 +503,17 @@
       "ausrichten": "align"
     },
     "fremde_aenderung": "{benutzer} has just changed this floor – the map was reloaded.",
-    "anschliessen": "⇢ Close gaps ({anzahl})",
-    "anschliessen_hilfe": "Joins open path ends that stop less than 4 m from a point or another path, and attaches points not yet on a path to the nearest path.",
-    "angeschlossen": "Connected to the path: {anzahl}",
+    "anschliessen": "⇢ Check gaps ({anzahl})",
+    "anschliessen_hilfe": "Goes through open path ends and unconnected points one by one. You decide each time whether to connect.",
     "zu_weit": "More than {meter} m from the nearest path: {namen}. Draw a path there first.",
     "radierer_punkt": "Delete points (gate, store, ward …) under “Select”: click it, then press Delete.",
-    "luecken_geschlossen": "Gaps closed: {anzahl}",
     "vereint": "Points joined.",
-    "offenes_ende": "Open end – the path stops here. Drag it onto another point to join them."
+    "offenes_ende": "Open end – the path stops here. Drag it onto another point to join them.",
+    "pruefen_luecke": "Suggestion {nr} of {von}: a path ends {meter} m next to another one. Connect? (Enter = connect, Space = skip)",
+    "pruefen_punkt": "Suggestion {nr} of {von}: “{name}” is not on any path. Connect it to the nearest path ({meter} m)? (Enter = connect, Space = skip)",
+    "pruefen_verbinden": "✓ Connect",
+    "pruefen_ueberspringen": "Skip",
+    "pruefen_fertig": "All suggestions reviewed."
   },
   "aufzug": {
     "art": {

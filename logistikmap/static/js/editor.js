@@ -15,7 +15,6 @@ const FARBEN = [
 const PUNKT_ARTEN = ["start", "ziel", "punkt", "tor", "aufzug", "uebergang"];
 const FANG_KNOTEN = 20; // Pixel
 const FANG_KANTE = 10;
-const FANG_VORBEI = 40; // Pixel: so dicht muss eine neue Flurlinie an einem losen Punkt vorbeiführen
 const WINKEL_FANG = 8; // Grad: fast waagerecht/senkrecht wird gerade gezogen
 
 export function starteEditor(ctx) {
@@ -33,13 +32,14 @@ export function starteEditor(ctx) {
     ["raum", "editor.werkzeug.raum", () => flaechenWerkzeug("raum", false)],
     ["bereich", "editor.werkzeug.bereich", () => flaechenWerkzeug("bereich", false)],
     ["ausrichten", "editor.werkzeug.ausrichten", ausrichtenWerkzeug],
+    ["pruefen", null, lueckenPruefen], // über den Knopf „Lücken prüfen“, nicht in der Leiste
   ];
   const eckenEbene = L.layerGroup().addTo(karte);
 
   function leisteZeichnen() {
     leeren(
       werkzeugleiste,
-      WERKZEUGE.map(([name, text]) =>
+      WERKZEUGE.filter(([, text]) => text).map(([name, text]) =>
         h("button", { type: "button", class: name === werkzeugName ? "aktiv" : "", onclick: () => wechseln(name === werkzeugName ? "auswahl" : name) }, t(text))
       ),
       h("span.trenner"),
@@ -47,7 +47,7 @@ export function starteEditor(ctx) {
       (() => {
         const lose = ctx.stockwerk.meter_pro_punkt ? losePunkte().length + luecken().length : 0;
         return lose
-          ? h("button.anschliessen", { type: "button", title: t("editor.anschliessen_hilfe"), onclick: alleAnschliessen }, t("editor.anschliessen", { anzahl: lose }))
+          ? h("button.anschliessen", { type: "button", title: t("editor.anschliessen_hilfe"), onclick: () => wechseln("pruefen") }, t("editor.anschliessen", { anzahl: lose }))
           : null;
       })(),
       ctx.stockwerk.meter_pro_punkt ? null : h("span.warnung", t("editor.massstab_zuerst"))
@@ -243,55 +243,96 @@ export function starteEditor(ctx) {
     return true;
   }
 
-  /** Beim Flurzeichnen: lose Punkte, an denen die neue Linie dicht vorbeiführt, gleich mitnehmen. */
-  async function loseNebenStrecke(a, b) {
-    let angeschlossen = 0;
+  /** Vorschläge: offene Enden (≤ 4 m) und lose Punkte (≤ 25 m), jeweils mit dem Ziel der Verbindung. */
+  function vorschlaege(ausgelassen) {
+    const liste = luecken().filter((l) => !ausgelassen.has(l.k.id)).map((l) => ({ art: "luecke", k: l.k, knoten: l.knoten, flur: l.flur }));
+    const max = MAX_ANSCHLUSS_M / ctx.stockwerk.meter_pro_punkt;
     for (const k of losePunkte()) {
-      const dx = b.x - a.x, dy = b.y - a.y;
-      const tt = Math.max(0, Math.min(1, ((k.x - a.x) * dx + (k.y - a.y) * dy) / (dx * dx + dy * dy || 1)));
-      if (ctx.pixel(k, { x: a.x + tt * dx, y: a.y + tt * dy }) > FANG_VORBEI) continue;
-      if (await punktAnschliessen(k, Infinity)) {
-        angeschlossen++;
-        await ctx.netzLaden();
-      }
+      if (ausgelassen.has(k.id)) continue;
+      const e = naechsterFlur(k, k.id);
+      if (e && e.d <= max) liste.push({ art: "punkt", k, flur: e });
     }
-    return angeschlossen;
+    return liste;
   }
 
-  async function alleAnschliessen() {
-    const max = MAX_ANSCHLUSS_M / ctx.stockwerk.meter_pro_punkt;
-    const zuWeit = [];
-    let n = 0;
-    let geschlossen = 0;
-    try {
-      await gruppe(async () => {
-        // erst Lücken: offenes Ende mit dem nahen Punkt bzw. der nahen Strecke vereinen
-        for (let runde = 0; runde < 200; runde++) {
-          const l = luecken()[0];
-          if (!l) break;
-          let ziel = l.knoten?.id;
-          if (!ziel) {
-            const e = l.flur;
-            ziel = e.tt < 0.02 ? e.a.id : e.tt > 0.98 ? e.b.id : (await api(`kanten/${e.kante.id}/teilen`, { methode: "POST", daten: e.punkt })).id;
-          }
-          await api(`knoten/${l.k.id}/vereinen`, { methode: "POST", daten: { mit: ziel } });
-          geschlossen++;
-          await ctx.netzLaden();
-        }
-        for (const k of losePunkte()) {
-          if (await punktAnschliessen(k, max)) {
-            n++;
-            await ctx.netzLaden();
-          } else zuWeit.push(ctx.knotenTitel(k));
-        }
-      });
-    } catch (e) {
-      fehlerMelden(e);
+  /** Geht die Vorschläge einzeln durch: Karte springt hin, Verbindung gestrichelt, Nutzer entscheidet. */
+  function lueckenPruefen() {
+    const ausgelassen = new Set();
+    const ebene = L.layerGroup().addTo(karte);
+    let aktuell = null;
+    let gesamt = null;
+    let nr = 0;
+
+    function zielPunkt(v) {
+      return v.knoten ? { x: v.knoten.x, y: v.knoten.y } : v.flur.punkt;
     }
-    await ctx.netzLaden();
-    if (geschlossen) melden(t("editor.luecken_geschlossen", { anzahl: geschlossen }));
-    if (n) melden(t("editor.angeschlossen", { anzahl: n }));
-    if (zuWeit.length) melden(t("editor.zu_weit", { namen: zuWeit.join(", "), meter: MAX_ANSCHLUSS_M }), "fehler");
+
+    function zeigen() {
+      ebene.clearLayers();
+      const liste = vorschlaege(ausgelassen);
+      aktuell = liste[0] || null;
+      if (gesamt === null) gesamt = liste.length;
+      nr++;
+      if (!aktuell) {
+        const rest = losePunkte().filter((k) => !ausgelassen.has(k.id)).map((k) => ctx.knotenTitel(k));
+        melden(rest.length ? t("editor.zu_weit", { namen: rest.join(", "), meter: MAX_ANSCHLUSS_M }) : t("editor.pruefen_fertig"), rest.length ? "fehler" : "ok");
+        wechseln("auswahl");
+        return;
+      }
+      const k = aktuell.k, z = zielPunkt(aktuell);
+      L.polyline([ll(k.x, k.y), ll(z.x, z.y)], { color: "#f08c00", weight: 5, dashArray: "4 6", interactive: false }).addTo(ebene);
+      L.circleMarker(ll(k.x, k.y), { radius: 16, color: "#f08c00", weight: 3, fill: false, interactive: false }).addTo(ebene);
+      // Ausschnitt mit Umgebung (ca. 40 m), damit man sieht, wo man ist
+      const rand = 20 / ctx.stockwerk.meter_pro_punkt;
+      karte.fitBounds(L.latLngBounds([ll(Math.min(k.x, z.x) - rand, Math.min(k.y, z.y) - rand), ll(Math.max(k.x, z.x) + rand, Math.max(k.y, z.y) + rand)]), { animate: true });
+      const meter = zahl(abstand(k, z) * ctx.stockwerk.meter_pro_punkt, 1);
+      const text = aktuell.art === "luecke"
+        ? t("editor.pruefen_luecke", { meter, nr: Math.min(nr, gesamt), von: gesamt })
+        : t("editor.pruefen_punkt", { name: ctx.knotenTitel(k), meter, nr: Math.min(nr, gesamt), von: gesamt });
+      ctx.hinweis(text, [
+        [t("editor.pruefen_verbinden"), verbinden],
+        [t("editor.pruefen_ueberspringen"), () => { ausgelassen.add(k.id); zeigen(); }],
+        [t("karte.werkzeug_beenden"), () => wechseln("auswahl")],
+      ]);
+    }
+
+    async function verbinden() {
+      const v = aktuell;
+      if (!v) return;
+      try {
+        await gruppe(async () => {
+          if (v.art === "punkt") {
+            await punktAnschliessen(v.k, Infinity);
+          } else {
+            let ziel = v.knoten?.id;
+            if (!ziel) {
+              const e = v.flur;
+              ziel = e.tt < 0.02 ? e.a.id : e.tt > 0.98 ? e.b.id : (await api(`kanten/${e.kante.id}/teilen`, { methode: "POST", daten: e.punkt })).id;
+            }
+            await api(`knoten/${v.k.id}/vereinen`, { methode: "POST", daten: { mit: ziel } });
+          }
+        });
+        await ctx.netzLaden();
+      } catch (e) {
+        fehlerMelden(e);
+        ausgelassen.add(v.k.id);
+      }
+      zeigen();
+    }
+
+    const taste = (e) => {
+      if (e.key === "Enter") verbinden();
+      if (e.key === " " && aktuell) { e.preventDefault(); ausgelassen.add(aktuell.k.id); zeigen(); }
+    };
+    document.addEventListener("keydown", taste);
+    setTimeout(zeigen, 0);
+    return {
+      beenden() {
+        document.removeEventListener("keydown", taste);
+        ebene.remove();
+        ctx.hinweisWeg();
+      },
+    };
   }
 
   async function knotenAn(p) {
@@ -536,7 +577,6 @@ export function starteEditor(ctx) {
         const von = letzter ? ctx.knotenNachId(letzter) : null;
         const p = geradeZiehen(von, xy(latlng));
         // ein Klick = ein Rückgängig-Schritt (Flur teilen, Punkt, Wegstück)
-        let mitgenommen = 0;
         const id = await gruppe(async () => {
           const neu = await knotenAn(p);
           if (letzter && letzter !== neu) {
@@ -549,13 +589,10 @@ export function starteEditor(ctx) {
               vorher = id;
             }
             if (vorher !== neu) await api("kanten", { methode: "POST", daten: { von: vorher, nach: neu } });
-            await ctx.netzLaden();
-            const a = ctx.knotenNachId(letzter), b = ctx.knotenNachId(neu);
-            if (a && b) mitgenommen = await loseNebenStrecke(a, b);
           }
           return neu;
         });
-        if (mitgenommen) melden(t("editor.angeschlossen", { anzahl: mitgenommen }));
+
         letzter = id;
         await ctx.netzLaden();
       } catch (e) {
