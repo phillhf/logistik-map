@@ -13,7 +13,7 @@ def test_weg_zeichnen_teilt_flur_und_rueckgaengig(angemeldet, haus):
     vorher = c.get(f"stockwerke/{ug}/netz").json()
     page.goto(f"{haus['basis']}/#/karte/{ug}/bearbeiten")
     karte_bereit(page)
-    page.get_by_role("button", name="Weg zeichnen").click()
+    page.get_by_role("button", name="Flure zeichnen").click()
     # Klick mitten auf den Flur → Flur wird geteilt, neuer Wegpunkt
     page.mouse.click(*bildschirm(page, 800, 500))
     page.wait_for_timeout(500)
