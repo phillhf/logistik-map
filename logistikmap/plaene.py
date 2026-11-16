@@ -16,6 +16,7 @@ import logging
 import math
 import os
 import queue
+import re
 import shutil
 import threading
 import time
@@ -54,6 +55,37 @@ def pdf_seiten(pfad: Path) -> list[dict]:
         return [{"nr": i + 1, "breite": round(p.rect.width, 2), "hoehe": round(p.rect.height, 2)} for i, p in enumerate(doc)]
     finally:
         doc.close()
+
+
+_MASSSTAB_TEXT = re.compile(r"(?<![\d.,:])1\s*:\s*(\d{1,3}(?:[. ]\d{3})?|\d{2,5})(?![\d,:])")
+MASSSTAB_BEREICH = (10, 5000)
+
+
+def massstab_suchen(pdf: Path, seite: int) -> list[int]:
+    """Maßstabsangaben wie „M 1:100“ aus dem Text der Seite, häufigste zuerst.
+
+    Findet nur echten Text. Ist der Schriftzug als Linien gezeichnet oder der Plan
+    eingescannt, bleibt die Liste leer.
+    """
+    try:
+        doc = pymupdf.open(pdf)
+    except Exception:
+        return []
+    try:
+        if seite < 1 or seite > doc.page_count:
+            return []
+        text = doc[seite - 1].get_text("text")
+    finally:
+        doc.close()
+    zaehler: dict[int, int] = {}
+    for m in _MASSSTAB_TEXT.finditer(text):
+        try:
+            n = int(re.sub(r"[. ]", "", m.group(1)))
+        except ValueError:
+            continue
+        if MASSSTAB_BEREICH[0] <= n <= MASSSTAB_BEREICH[1]:
+            zaehler[n] = zaehler.get(n, 0) + 1
+    return sorted(zaehler, key=lambda n: (-zaehler[n], n))
 
 
 def max_zoom_fuer(breite: float, hoehe: float) -> int:

@@ -28,7 +28,7 @@ from .protokoll import protokoll_einrichten
 from .config import Pfade, static_ordner
 from .db import RECHTE, Datenbank
 from .feiertage import BUNDESLAENDER, feiertage
-from .plaene import KachelDienst, PdfFehler, leere_kachel, max_zoom_fuer, pdf_seiten, vorschau
+from .plaene import KachelDienst, PdfFehler, leere_kachel, massstab_suchen, max_zoom_fuer, pdf_seiten, vorschau
 
 log = logging.getLogger(__name__)
 
@@ -144,6 +144,10 @@ class PlanZuweisung(BaseModel):
 
 class Massstab(BaseModel):
     meter_pro_punkt: float | None = Field(default=None, gt=0)
+    verhaeltnis: float | None = Field(default=None, ge=1, le=100000)  # „1 : N“ laut Plan, statt meter_pro_punkt
+
+
+METER_PRO_PDF_PUNKT = 0.0254 / 72  # 1 PDF-Punkt auf dem Papier
 
 
 _BENUTZERNAME = re.compile(r"^[A-Za-z0-9._@-]{1,64}$")
@@ -794,8 +798,17 @@ def erstelle_app(pfade: Pfade, kacheln_starten: bool = True) -> FastAPI:
     @app.put("/api/stockwerke/{sid}/massstab")
     def massstab_setzen(sid: int, daten: Massstab, _: dict = Depends(bearbeiten)):
         stockwerk_holen(sid)
-        db.ausfuehren("UPDATE stockwerke SET meter_pro_punkt = ? WHERE id = ?", (daten.meter_pro_punkt, sid))
-        return {"ok": True}
+        wert = daten.verhaeltnis * METER_PRO_PDF_PUNKT if daten.verhaeltnis else daten.meter_pro_punkt
+        db.ausfuehren("UPDATE stockwerke SET meter_pro_punkt = ? WHERE id = ?", (wert, sid))
+        return {"ok": True, "meter_pro_punkt": wert}
+
+    @app.get("/api/stockwerke/{sid}/massstab-vorschlag")
+    def massstab_vorschlag(sid: int, _: dict = Depends(bearbeiten)):
+        """Maßstabsangaben, die im Text des Plans stehen (z. B. „M 1:100“)."""
+        plan = plan_info(stockwerk_holen(sid)["plan_id"])
+        if plan is None:
+            return {"gefunden": []}
+        return {"gefunden": massstab_suchen(pfade.dokumente / f"{plan['dokument_id']}.pdf", plan["seite"])}
 
     # ---------------------------------------------------------------- Dokumente (PDF)
     @app.get("/api/dokumente")

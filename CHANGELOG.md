@@ -1,5 +1,12 @@
 # Änderungen
 
+## [0.5.1] - 2026-11-16
+
+- **Maßstab eintragen:** „Maßstab festlegen“ fragt jetzt nach dem Maßstab laut Plan („1 : 100“).
+  Steht er als Text in der PDF, wird er vorgeschlagen. Das Anklicken zweier Punkte mit bekanntem
+  Abstand bleibt als zweiter Weg. Der Dialog zeigt das Seitenformat der PDF, denn die Angabe
+  stimmt nur bei Originalgröße.
+
 ## [0.5.0] - 2026-11-16
 
 Neue Seite **Erste Schritte**: führt nach der Installation durch die Einrichtung.
