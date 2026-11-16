@@ -1,5 +1,12 @@
 # Änderungen
 
+## [0.5.3] - 2026-11-16
+
+- **Maßstab-Feld fest oben auf der Karte:** „Maßstab 1 : [___] Speichern“ steht in jedem Modus
+  in der Kopfzeile, solange man Bearbeitungsrechte hat. Steht der Maßstab als Text im Plan, ist er
+  schon eingetragen. Der Dialog von 0.5.1 entfällt. „Maßstab abmessen“ (zwei Punkte anklicken)
+  gibt es weiter im Modus „Bearbeiten“.
+
 ## [0.5.2] - 2026-11-16
 
 - Maßstabsfeld nimmt auch „1:200“, „1 : 200“ oder „M 1:200“ an, nicht nur die Zahl.

@@ -86,7 +86,7 @@
       },
       "massstab": {
         "titel": "Set the scale",
-        "text": "Enter the scale stated in each plan's title block (e.g. 1:100), or click two points with a known distance. Without a scale no travel times can be calculated.",
+        "text": "Enter the number from the plan's title block (e.g. 200) next to “Scale 1 :” at the top of the map and press Save. If the plan states none, use “Measure scale” in Edit mode. Without a scale no travel times can be calculated.",
         "knopf": "Set scale"
       },
       "karte": {
@@ -180,12 +180,10 @@
     "massstab_frage": "How many metres are between the two points?",
     "massstab_meter": "Distance in metres",
     "massstab_gespeichert": "Scale saved.",
-    "massstab_eingeben": "Scale stated on the plan: 1 :",
-    "massstab_gefunden": "The plan says: {werte}",
-    "massstab_nicht_gefunden": "Usually in the title block, e.g. “1:100”. It could not be read automatically, enter the number after the colon.",
-    "massstab_original": "This is only correct if the PDF was saved at original size (this page: {format}{breite} × {hoehe} mm). Afterwards check the scale with “Measure distance” on a dimensioned wall.",
-    "massstab_oder": "Or if the plan states no scale:",
-    "massstab_messen": "Click two points with a known distance",
+    "massstab_feld": "Scale",
+    "massstab_abmessen": "Measure scale",
+    "massstab_fehlt_kurz": "Enter the number from the title block, e.g. 200, then Save",
+    "massstab_gefunden_kurz": "Read from the plan: 1:{wert}. Press Save to apply.",
     "massstab_ungueltig": "Enter the number after “1 :”, e.g. 100.",
     "massstab_gespeichert_pruefen": "Scale 1:{wert} saved. Check it with “Measure distance” on a dimensioned wall.",
     "messen": "Measure distance",

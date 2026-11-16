@@ -170,6 +170,7 @@ main.seite-karte { max-width: none; padding: 0; display: grid; grid-template-col
 
 .kartenrahmen { position: relative; display: flex; flex-direction: column; min-width: 0; }
 .kartenkopf { display: flex; align-items: center; gap: 14px; padding: 8px 14px; background: var(--flaeche); border-bottom: 1px solid var(--linie); min-height: 48px; }
+.kartenkopf h2 { white-space: nowrap; }
 .kartenkopf .abstand { flex: 1; }
 .massstab-info { font-size: 0.85rem; color: var(--gedimmt); }
 .massstab-info.fehlt { color: #b07300; }
@@ -431,3 +432,12 @@ main.seite-start { max-width: 920px; }
 .optional .symbol { width: 20px; text-align: center; color: var(--gedimmt); }
 .optional li.erledigt .symbol { color: var(--gruen); font-weight: 700; }
 @media (max-width: 700px) { .schritt-zahlen { margin-left: 0; width: 100%; } .probleme li { flex-direction: column; gap: 2px; } }
+
+/* Maßstab-Feld in der Kartenkopfzeile */
+.massstab-feld { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; font-size: 0.9rem; }
+.massstab-feld label { display: flex; align-items: center; gap: 6px; white-space: nowrap; }
+.massstab-feld input { width: 6em; padding: 4px 8px; }
+.massstab-feld .knopf { padding: 4px 12px; }
+.massstab-feld.fehlt input { border-color: #b07300; box-shadow: 0 0 0 2px rgba(176, 115, 0, 0.25); }
+.massstab-hinweis { color: var(--gedimmt); flex-basis: 100%; }
+.massstab-feld.fehlt .massstab-hinweis { color: #b07300; }

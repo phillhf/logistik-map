@@ -20,15 +20,6 @@ export function verhaeltnisLesen(text) {
   return teil && Number.isFinite(n) && n >= 1 && n <= 100000 ? n : null;
 }
 
-/** DIN-Format der Seite (A0 … A4), wenn sie eines hat. */
-function papierformat(b, hh) {
-  const [kurz, lang] = [Math.min(b, hh), Math.max(b, hh)];
-  for (let n = 0; n <= 4; n++) {
-    const fk = Math.round(841 / 2 ** (n / 2)), fl = Math.round(1189 / 2 ** (n / 2));
-    if (Math.abs(kurz - fk) <= fk * 0.02 && Math.abs(lang - fl) <= fl * 0.02) return `A${n}`;
-  }
-  return "";
-}
 
 const ZOOM_VERSATZ = 4;
 const CRS = L.extend({}, L.CRS.Simple, { transformation: new L.Transformation(2 ** -ZOOM_VERSATZ, 0, 2 ** -ZOOM_VERSATZ, 0) });
@@ -179,7 +170,7 @@ export function zeigeKarte(wurzel, [stockwerkParam, modusParam, ...rest]) {
       ctx.rest = [];
       history.replaceState(null, "", ctx.stockwerkLink(ctx.stockwerk.id, "bearbeiten"));
       modusAufraeumen = starteEditor(ctx);
-      massstabDialog();
+      kopfzeile.querySelector(".massstab-feld input")?.focus();
     } else if (modus === "bearbeiten") modusAufraeumen = starteEditor(ctx);
     else if (modus === "ablauf") modusAufraeumen = await starteAblauf(ctx);
     else if (modus === "weg") await wegZeigen(Number(rest[0]));
@@ -188,9 +179,11 @@ export function zeigeKarte(wurzel, [stockwerkParam, modusParam, ...rest]) {
   function kopfAufbauen() {
     const s = ctx.stockwerk;
     const fertig = s.plan?.status === "fertig";
-    const massstab = s.meter_pro_punkt
-      ? h("span.massstab-info", `1 : ${zahl(s.meter_pro_punkt / METER_PRO_PDF_PUNKT, 0)}`)
-      : h("span.massstab-info.fehlt", t("karte.massstab_fehlt"));
+    const massstab = darf("bearbeiten")
+      ? massstabFeld()
+      : s.meter_pro_punkt
+        ? h("span.massstab-info", `1 : ${zahl(s.meter_pro_punkt / METER_PRO_PDF_PUNKT, 0)}`)
+        : h("span.massstab-info.fehlt", t("karte.massstab_fehlt"));
     const modi = [
       ["ansehen", t("karte.modus.ansehen"), ctx.stockwerkLink(s.id)],
       darf("bearbeiten") ? ["bearbeiten", t("karte.modus.bearbeiten"), ctx.stockwerkLink(s.id, "bearbeiten")] : null,
@@ -204,7 +197,7 @@ export function zeigeKarte(wurzel, [stockwerkParam, modusParam, ...rest]) {
       fertig ? h("div.umschalter", modi.map(([m, text, link]) => h("a", { href: link, class: m === modus || (modus === "weg" && m === "ansehen") ? "aktiv" : "" }, text))) : null,
       fertig && s.meter_pro_punkt && modus !== "ablauf" ? h("button.knopf-flach", { type: "button", onclick: () => werkzeugStarten(messen) }, t("karte.messen")) : null,
       fertig && darf("bearbeiten") && modus === "bearbeiten"
-        ? h("button.knopf-flach", { type: "button", onclick: massstabDialog }, t("karte.massstab_festlegen"))
+        ? h("button.knopf-flach", { type: "button", onclick: () => werkzeugStarten(massstabMessen) }, t("karte.massstab_abmessen"))
         : null
     );
   }
@@ -548,52 +541,43 @@ export function zeigeKarte(wurzel, [stockwerkParam, modusParam, ...rest]) {
     });
   }
 
-  /** Maßstab eintragen („1 : 100“ wie auf dem Plan) oder auf dem Plan messen. */
-  async function massstabDialog() {
+  /** Festes Feld in der Kopfzeile: „Maßstab 1 : [200] Speichern“. */
+  function massstabFeld() {
     const s = ctx.stockwerk;
-    let gefunden = [];
-    try {
-      gefunden = (await api(`stockwerke/${s.id}/massstab-vorschlag`)).gefunden;
-    } catch {
-      /* Vorschlag ist nur eine Hilfe */
+    const jetzt = s.meter_pro_punkt ? Math.round(s.meter_pro_punkt / METER_PRO_PDF_PUNKT) : "";
+    const eingabe = h("input", { type: "text", inputmode: "numeric", autocomplete: "off", value: jetzt, placeholder: "100",
+      "aria-label": t("karte.massstab_feld") });
+    const knopf = h("button.knopf", { type: "submit" }, t("allgemein.speichern"));
+    const info = h("small.massstab-hinweis");
+    const form = h(`form.massstab-feld${jetzt ? "" : ".fehlt"}`, h("label", t("karte.massstab_feld"), " 1 :", eingabe), knopf, info);
+    if (!jetzt) {
+      info.textContent = t("karte.massstab_fehlt_kurz");
+      api(`stockwerke/${s.id}/massstab-vorschlag`).then((r) => {
+        if (r.gefunden.length && !eingabe.value) {
+          eingabe.value = r.gefunden[0];
+          info.textContent = t("karte.massstab_gefunden_kurz", { wert: r.gefunden[0] });
+        }
+      }).catch(() => {});
     }
-    const jetzt = s.meter_pro_punkt ? Math.round(s.meter_pro_punkt / METER_PRO_PDF_PUNKT) : null;
-    const plan = s.plan || {};
-    const mm = (pt) => Math.round((pt / 72) * 25.4);
-    const format = papierformat(mm(plan.breite || 0), mm(plan.hoehe || 0));
-    let messen = false;
-    const messKnopf = h(
-      "button.knopf-flach",
-      { type: "button", onclick: (e) => { messen = true; e.target.closest("dialog").close(); } },
-      t("karte.massstab_messen")
-    );
-    const ok = await formularDialog({
-      titel: t("karte.massstab_festlegen"),
-      felder: [
-        {
-          name: "verhaeltnis", label: t("karte.massstab_eingeben"), pflicht: true,
-          wert: gefunden[0] ?? jetzt ?? "", attr: { inputmode: "numeric", placeholder: "100", autocomplete: "off" },
-          hilfe: gefunden.length
-            ? t("karte.massstab_gefunden", { werte: gefunden.slice(0, 3).map((n) => `1:${n}`).join(", ") })
-            : t("karte.massstab_nicht_gefunden"),
-        },
-        { name: "_hinweis", typ: "element", element: h("p.hinweis", t("karte.massstab_original", {
-          format: format ? `${format}, ` : "", breite: mm(plan.breite || 0), hoehe: mm(plan.hoehe || 0) })), lesen: () => null },
-        { name: "_messen", typ: "element", label: t("karte.massstab_oder"), element: messKnopf, lesen: () => null },
-      ],
-      speichern: async (werte) => {
-        const n = verhaeltnisLesen(werte.verhaeltnis);
-        if (!n) throw new Error(t("karte.massstab_ungueltig"));
-        werte.verhaeltnis = n;
+    form.addEventListener("submit", async (e) => {
+      e.preventDefault();
+      const n = verhaeltnisLesen(eingabe.value);
+      if (!n) {
+        info.textContent = t("karte.massstab_ungueltig");
+        eingabe.focus();
+        return;
+      }
+      try {
         await api(`stockwerke/${s.id}/massstab`, { methode: "PUT", daten: { verhaeltnis: n } });
-      },
-    });
-    if (messen) return werkzeugStarten(massstabMessen);
-    if (ok) {
-      melden(t("karte.massstab_gespeichert_pruefen", { wert: ok.verhaeltnis }));
+      } catch (err) {
+        fehlerMelden(err);
+        return;
+      }
+      melden(t("karte.massstab_gespeichert_pruefen", { wert: n }));
       aufraeumen();
       stockwerkLaden();
-    }
+    });
+    return form;
   }
 
   function massstabMessen() {

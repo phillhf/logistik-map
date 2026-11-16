@@ -86,7 +86,7 @@
       },
       "massstab": {
         "titel": "Maßstab festlegen",
-        "text": "Trag auf jedem Plan den Maßstab ein, der im Plankopf steht (z. B. 1:100), oder klick zwei Punkte mit bekanntem Abstand an. Ohne Maßstab lassen sich keine Wegzeiten berechnen.",
+        "text": "Trag oben auf der Karte neben „Maßstab 1 :“ die Zahl aus dem Plankopf ein (z. B. 200) und drück Speichern. Steht keiner auf dem Plan, nimm im Modus „Bearbeiten“ „Maßstab abmessen“. Ohne Maßstab lassen sich keine Wegzeiten berechnen.",
         "knopf": "Maßstab festlegen"
       },
       "karte": {
@@ -180,12 +180,10 @@
     "massstab_frage": "Wie viele Meter liegen zwischen den beiden Punkten?",
     "massstab_meter": "Abstand in Metern",
     "massstab_gespeichert": "Maßstab gespeichert.",
-    "massstab_eingeben": "Maßstab laut Plan: 1 :",
-    "massstab_gefunden": "Auf dem Plan steht: {werte}",
-    "massstab_nicht_gefunden": "Steht meist im Plankopf, z. B. „M 1:100“. Die Software konnte ihn nicht lesen, trag die Zahl hinter dem Doppelpunkt ein.",
-    "massstab_original": "Das stimmt nur, wenn die PDF in Originalgröße gespeichert ist (diese Seite: {format}{breite} × {hoehe} mm). Prüf den Maßstab danach mit „Strecke messen“ an einer bemaßten Wand.",
-    "massstab_oder": "Oder ohne Angabe auf dem Plan:",
-    "massstab_messen": "Zwei Punkte mit bekanntem Abstand anklicken",
+    "massstab_feld": "Maßstab",
+    "massstab_abmessen": "Maßstab abmessen",
+    "massstab_fehlt_kurz": "Zahl aus dem Plankopf eintragen, z. B. 200, dann Speichern",
+    "massstab_gefunden_kurz": "Auf dem Plan gelesen: 1:{wert}. Zum Übernehmen Speichern drücken.",
     "massstab_ungueltig": "Bitte die Zahl hinter „1 :“ eintragen, z. B. 100.",
     "massstab_gespeichert_pruefen": "Maßstab 1:{wert} gespeichert. Prüf ihn mit „Strecke messen“ an einer bemaßten Wand.",
     "messen": "Strecke messen",
