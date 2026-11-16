@@ -93,7 +93,7 @@
         "titel": "Karte zeichnen",
         "text": "Zeichne auf jedem Stockwerk, auf dem Waren unterwegs sind:",
         "liste": [
-          "Alle Flure, auf denen Ware fahren kann („Flure zeichnen“). Das ist kein fester Weg: Den besten Weg sucht das System selbst. Klick an jeder Ecke und Abzweigung, Kreuzungen entstehen von selbst.",
+          "Alle Strecken, auf denen Ware fahren kann („Strecken zeichnen“), meist entlang der Flure. Das ist kein fester Weg: Den besten Weg sucht das System selbst. Klick an jeder Ecke und Abzweigung, Kreuzungen entstehen von selbst.",
           "Start- und Zielpunkte („Punkt setzen“): Rampe, Lager, Küche, Stationen …",
           "LKW-Tore an der Rampe als Punkt der Art „Tor / Rampe (LKW)“, bei „Gleichzeitig höchstens“ die Anzahl der Tore.",
           "Aufzüge und Treppen als Punkt: auf jedem Stockwerk, auf dem sie halten, und dort jeweils denselben Aufzug wählen.",
@@ -435,9 +435,9 @@
   "editor": {
     "werkzeug": {
       "auswahl": "Auswählen",
-      "weg": "Flure zeichnen",
+      "weg": "Strecken zeichnen",
       "punkt": "Punkt setzen",
-      "radierer": "Flur löschen",
+      "radierer": "Strecke löschen",
       "raum_rechteck": "Raum ▭",
       "raum": "Raum (Vieleck)",
       "bereich": "Bereich",
@@ -445,20 +445,20 @@
     },
     "hilfe": {
       "auswahl": "Klicke ein Element an, um es zu bearbeiten. Punkte lassen sich verschieben. Entf löscht.",
-      "weg": "Zeichne alle Flure, auf denen Ware fahren kann – den besten Weg sucht das System selbst. Klick an jeder Ecke; wo du einen Flur kreuzt oder anklickst, entsteht eine Kreuzung. Punkte direkt neben der Linie werden angeschlossen. Doppelklick oder Esc beendet die Linie. Karte verschieben: rechte Maustaste gedrückt halten.",
-      "punkt": "Klicke auf die Stelle für den Punkt (Rampe, Lager, Station, Aufzug …).",
+      "weg": "Zeichne alle Strecken, auf denen Ware fahren kann – den besten Weg sucht das System selbst. Klick an jeder Ecke; wo du eine Strecke kreuzt oder anklickst, entsteht eine Kreuzung. Rechtsklick beendet die Linie, ein zweiter Rechtsklick das Werkzeug. Karte verschieben: rechte Maustaste gedrückt halten und ziehen.",
+      "punkt": "Klicke auf die Stelle für den Punkt (Tor, Lager, Station, Aufzug …). Rechtsklick beendet das Werkzeug.",
       "rechteck": "Klicke zwei gegenüberliegende Ecken des Raums an.",
       "vieleck": "Klicke die Ecken an. Klick auf den ersten Punkt oder Doppelklick schließt die Fläche. Rücktaste nimmt den letzten Punkt zurück.",
       "ausrichten_alt": "Neuer Planstand? Klicke einen eingezeichneten Punkt oder eine Ecke an ({anzahl} Paare, mindestens 2, besser 3 weit auseinander).",
       "ausrichten_neu": "Jetzt die Stelle anklicken, an der dieser Punkt auf dem neuen Plan liegt.",
-      "radierer": "Klick auf einen Flur löscht das Stück bis zur nächsten Kreuzung oder zum nächsten Punkt. „Rückgängig“ holt es zurück."
+      "radierer": "Klick auf eine Strecke löscht das Stück bis zur nächsten Kreuzung oder zum nächsten Punkt. „Rückgängig“ holt es zurück. Rechtsklick beendet das Werkzeug."
     },
     "massstab_zuerst": "Erst den Maßstab festlegen, sonst lassen sich Wege nicht berechnen.",
     "punkt_neu": "Neuer Punkt",
     "raum_neu": "Neuer Raum",
     "bereich_neu": "Neuer Bereich",
     "mit_weg_verbinden": "Mit dem nächsten Weg verbinden",
-    "kein_weg_in_der_naehe": "Kein Flur in der Nähe – bitte mit „Flure zeichnen“ anschließen.",
+    "kein_weg_in_der_naehe": "Keine Strecke in der Nähe – bitte mit „Strecken zeichnen“ anschließen.",
     "kein_aufzug": "– kein –",
     "aufzug_neu": "+ neuer Aufzug",
     "treppe_neu": "+ neue Treppe",
@@ -503,9 +503,9 @@
     },
     "fremde_aenderung": "{benutzer} hat dieses Stockwerk gerade geändert – die Karte wurde neu geladen.",
     "anschliessen": "⇢ Punkte anschließen ({anzahl})",
-    "anschliessen_hilfe": "Hängt alle Punkte dieses Stockwerks, die noch an keinem Weg hängen, mit einem kurzen Stück an den nächsten Flur.",
-    "angeschlossen": "Angeschlossen an den Flur: {anzahl}",
-    "zu_weit": "Mehr als {meter} m vom nächsten Flur entfernt: {namen}. Dort erst einen Flur zeichnen.",
+    "anschliessen_hilfe": "Hängt alle Punkte dieses Stockwerks, die noch an keiner Strecke hängen, mit einem kurzen Stück an die nächste Strecke.",
+    "angeschlossen": "An die Strecke angeschlossen: {anzahl}",
+    "zu_weit": "Mehr als {meter} m von der nächsten Strecke entfernt: {namen}. Dort erst eine Strecke zeichnen.",
     "radierer_punkt": "Punkte (Tor, Lager, Station …) löschst du unter „Auswählen“: anklicken, dann Entf."
   },
   "aufzug": {

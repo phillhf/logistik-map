@@ -15,7 +15,7 @@ Weg gibt. Die Reihenfolge:
 
 1. **Gebäude & Pläne**: Gebäudeteile und Stockwerke anlegen, PDF hochladen, Seite zuweisen.
 2. **Karte → Bearbeiten**: Maßstab eintragen (z. B. 1:200, steht er als Text im Plan, wird er
-   vorgeschlagen), alle befahrbaren Flure zeichnen (den besten Weg sucht das System selbst), Start- und Zielpunkte setzen (Lager, Stationen,
+   vorgeschlagen), alle befahrbaren Strecken zeichnen (den besten Weg sucht das System selbst), Start- und Zielpunkte setzen (Lager, Stationen,
    Aufbereitung), LKW-Tore an der Rampe mit ihrer Anzahl, Aufzüge auf jedem Stockwerk als Punkt.
    Bei Bedarf Bereiche und Räume einzeichnen.
 3. **Stammdaten**: Transportarten (z. B. FTS, Materialtransportdienst), Wagentypen und die

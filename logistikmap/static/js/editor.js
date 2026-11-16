@@ -40,7 +40,7 @@ export function starteEditor(ctx) {
     leeren(
       werkzeugleiste,
       WERKZEUGE.map(([name, text]) =>
-        h("button", { type: "button", class: name === werkzeugName ? "aktiv" : "", onclick: () => wechseln(name) }, t(text))
+        h("button", { type: "button", class: name === werkzeugName ? "aktiv" : "", onclick: () => wechseln(name === werkzeugName ? "auswahl" : name) }, t(text))
       ),
       h("span.trenner"),
       h("button", { type: "button", title: t("editor.rueckgaengig_hilfe"), onclick: rueckgaengig }, "↶ " + t("editor.rueckgaengig")),
@@ -453,6 +453,13 @@ export function starteEditor(ctx) {
     if (werkzeugName === "auswahl" && ctx.auswahl) abwaehlen();
   };
   karte.on("click", kartenKlick);
+  // Rechtsklick (ohne Ziehen): Werkzeug entscheidet, sonst zurück zu „Auswählen“
+  const kartenRechtsklick = () => {
+    if (werkzeugName === "auswahl") return;
+    if (werkzeug?.rechtsklick) werkzeug.rechtsklick();
+    else wechseln("auswahl");
+  };
+  karte.on("contextmenu", kartenRechtsklick);
 
   const taste = async (e) => {
     if (e.target.closest?.("input, textarea, select, dialog")) return;
@@ -525,6 +532,7 @@ export function starteEditor(ctx) {
     karte.on("click", mapKlick).on("mousemove", bewegen).on("dblclick", ende);
     document.addEventListener("keydown", tasteWeg);
     return {
+      rechtsklick: ende,
       objektKlick(typ, objekt, ereignis) {
         if (typ === "knoten") {
           L.DomEvent.stopPropagation(ereignis);
@@ -690,6 +698,11 @@ export function starteEditor(ctx) {
     const doppel = () => {
       if (!rechteck && punkte.length >= 3) fertig();
     };
+    const rechtsF = () => {
+      if (!rechteck && punkte.length >= 3) fertig();
+      else if (punkte.length) zuruecksetzen();
+      else wechseln("auswahl");
+    };
     const tasteF = (e) => {
       if (e.key === "Escape") punkte.length ? zuruecksetzen() : wechseln("auswahl");
       if (e.key === "Backspace" && punkte.length) {
@@ -701,6 +714,7 @@ export function starteEditor(ctx) {
     karte.on("click", klick).on("mousemove", bewegen).on("dblclick", doppel);
     document.addEventListener("keydown", tasteF);
     return {
+      rechtsklick: rechtsF,
       objektKlick(typ, objekt, ereignis) {
         // Klicks auf Knoten setzen einen Eckpunkt an deren Position
         if (typ === "knoten") {
@@ -967,6 +981,7 @@ export function starteEditor(ctx) {
     ctx.netzLaden = netzLadenAlt;
     werkzeug?.beenden();
     karte.off("click", kartenKlick);
+    karte.off("contextmenu", kartenRechtsklick);
     document.removeEventListener("keydown", taste);
     werkzeugleiste.hidden = true;
     panel.hidden = true;

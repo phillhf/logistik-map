@@ -1,5 +1,13 @@
 # Änderungen
 
+## [0.6.3] - 2026-11-16
+
+- **„Strecken zeichnen“** und **„Strecke löschen“** statt „Flure zeichnen“/„Flur löschen“.
+- **Aufhören mit Rechtsklick:** Ein Rechtsklick (ohne Ziehen) beendet die aktuelle Linie, ein
+  zweiter Rechtsklick das Werkzeug. Beim Raum-Vieleck schließt der Rechtsklick die Fläche. Bei den
+  übrigen Werkzeugen geht es mit Rechtsklick zurück zu „Auswählen“.
+- Ein zweiter Klick auf den Knopf des aktiven Werkzeugs schaltet ebenfalls zurück zu „Auswählen“.
+
 ## [0.6.2] - 2026-11-16
 
 - **„Flure zeichnen“** statt „Weg zeichnen“, mit dem Hinweis, dass die Linien nur sagen, wo
