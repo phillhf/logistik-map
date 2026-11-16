@@ -85,3 +85,19 @@ def test_interner_bettentransport(haus):
     assert typen.count("entladen") == 2  # an der Aufbereitung und zurück auf Station
     assert c.post("/api/lieferungen", json={"start_id": haus["rampe"], "ziel_id": haus["lager"], "uhrzeit": "08:00",
                                             "richtung": "quer"}).status_code == 400
+
+
+def test_flur_loeschen_raeumt_zwischenpunkte_auf(haus):
+    c = haus["c"]
+    a = c.post("/api/knoten", json={"stockwerk_id": haus["ug"], "x": 0, "y": 500, "art": "weg"}).json()["id"]
+    b = c.post("/api/knoten", json={"stockwerk_id": haus["ug"], "x": 500, "y": 500, "art": "weg"}).json()["id"]
+    kid = c.post("/api/kanten", json={"von": a, "nach": b}).json()["id"]
+    c.post("/api/kanten", json={"von": b, "nach": haus["flur"]})
+    c.delete(f"/api/kanten/{kid}")
+    ids = {k["id"] for k in c.get(f"/api/stockwerke/{haus['ug']}/netz").json()["knoten"]}
+    assert a not in ids  # loses Ende weg
+    assert b in ids  # hängt noch am Flur
+    # benannte Punkte bleiben auch ohne Weg stehen
+    kante = next(k for k in c.get(f"/api/stockwerke/{haus['ug']}/netz").json()["kanten"] if haus["rampe"] in (k["von"], k["nach"]))
+    c.delete(f"/api/kanten/{kante['id']}")
+    assert haus["rampe"] in {k["id"] for k in c.get(f"/api/stockwerke/{haus['ug']}/netz").json()["knoten"]}

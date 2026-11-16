@@ -1,5 +1,17 @@
 # Änderungen
 
+## [0.6.2] - 2026-11-16
+
+- **„Flure zeichnen“** statt „Weg zeichnen“, mit dem Hinweis, dass die Linien nur sagen, wo
+  man fahren kann. Den besten Weg sucht das System selbst.
+- **Kreuzungen entstehen von selbst:** Zieht eine neue Linie quer über einen vorhandenen Flur,
+  werden beide an der Kreuzung verbunden. Vorher war das nur so, wenn man genau auf den Flur
+  klickte.
+- **Neues Werkzeug „Flur löschen“:** Ein Klick löscht das Flurstück bis zur nächsten Kreuzung
+  bzw. zum nächsten Punkt. Übrig gebliebene Zwischenpunkte werden mit weggeräumt, benannte Punkte
+  bleiben. „Rückgängig“ holt alles zurück.
+- Der Hinweis zum aktiven Werkzeug steht jetzt unten auf der Karte und fängt keine Klicks mehr ab.
+
 ## [0.6.1] - 2026-11-16
 
 - **Karte mit gedrückter rechter (oder mittlerer) Maustaste verschieben**, auch mitten beim

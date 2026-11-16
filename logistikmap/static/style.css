@@ -178,6 +178,8 @@ main.seite-karte { max-width: none; padding: 0; display: grid; grid-template-col
 .karte:focus-visible { outline: 2px solid var(--blau); outline-offset: -2px; }
 .leaflet-container:focus:not(:focus-visible) { outline: none; }
 .karte.fadenkreuz, .karte.fadenkreuz .leaflet-interactive { cursor: crosshair; }
+.karte.radierer .leaflet-kanten-pane .leaflet-interactive { cursor: pointer; }
+.karte.radierer .leaflet-kanten-pane path.leaflet-interactive:hover { stroke: #c92a2a; stroke-width: 7; }
 .kartenleer { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 12px; color: var(--gedimmt); }
 .kartenleer progress { width: 260px; }
 .kartenhinweis {
@@ -185,6 +187,8 @@ main.seite-karte { max-width: none; padding: 0; display: grid; grid-template-col
   background: var(--text); color: #fff; border-radius: var(--radius); padding: 6px 6px 6px 14px;
   display: flex; align-items: center; gap: 10px; box-shadow: var(--schatten); max-width: calc(100% - 32px);
 }
+.kartenhinweis { pointer-events: none; opacity: 0.93; font-size: 0.85rem; width: max-content; max-width: min(620px, calc(100% - 32px)); }
+.kartenhinweis button, .kartenhinweis a { pointer-events: auto; }
 .kartenhinweis .knopf-flach { color: #fff; }
 .kartenhinweis .knopf-flach:hover { background: rgba(255, 255, 255, 0.15); }
 .massstabsleiste { background: rgba(255, 255, 255, 0.85); padding: 4px 8px; border-radius: 4px; font-size: 0.8rem; }
@@ -255,7 +259,7 @@ label.inline { display: inline-flex; align-items: center; gap: 6px; color: var(-
 main.seite-karte .kartenrahmen { overflow: hidden; }
 .kartenbereich { position: relative; flex: 1; min-height: 0; }
 .kartenbereich > .karte { position: absolute; inset: 0; }
-.kartenbereich > .kartenhinweis { top: 12px; }
+.kartenbereich > .kartenhinweis { top: auto; bottom: 14px; }
 .kartenbereich > .eigenschaften { top: 12px; max-height: calc(100% - 24px); }
 
 /* Knoten-Symbole und Beschriftungen */

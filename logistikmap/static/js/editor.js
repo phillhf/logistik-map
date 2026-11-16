@@ -28,6 +28,7 @@ export function starteEditor(ctx) {
     ["auswahl", "editor.werkzeug.auswahl", null],
     ["weg", "editor.werkzeug.weg", wegWerkzeug],
     ["punkt", "editor.werkzeug.punkt", punktWerkzeug],
+    ["radierer", "editor.werkzeug.radierer", radiererWerkzeug],
     ["raum_rechteck", "editor.werkzeug.raum_rechteck", () => flaechenWerkzeug("raum", true)],
     ["raum", "editor.werkzeug.raum", () => flaechenWerkzeug("raum", false)],
     ["bereich", "editor.werkzeug.bereich", () => flaechenWerkzeug("bereich", false)],
@@ -104,6 +105,81 @@ export function starteEditor(ctx) {
   }
 
   /** Knoten an Position p: vorhandenen fangen, Kante teilen oder neuen Wegknoten setzen. */
+  /** Wo kreuzt die Strecke a→b vorhandene Flure dieses Stockwerks? Sortiert ab a. */
+  function kreuzungen(a, b, ohne) {
+    if (!a || !b) return [];
+    const r = { x: b.x - a.x, y: b.y - a.y };
+    const treffer = [];
+    for (const e of ctx.netz.kanten) {
+      if (e.von_stockwerk !== sid || e.nach_stockwerk !== sid || ohne.includes(e.von) || ohne.includes(e.nach)) continue;
+      const c = ctx.knotenNachId(e.von), d = ctx.knotenNachId(e.nach);
+      if (!c || !d) continue;
+      const sv = { x: d.x - c.x, y: d.y - c.y };
+      const nenner = r.x * sv.y - r.y * sv.x;
+      if (Math.abs(nenner) < 1e-9) continue; // parallel
+      const tt = ((c.x - a.x) * sv.y - (c.y - a.y) * sv.x) / nenner;
+      const u = ((c.x - a.x) * r.y - (c.y - a.y) * r.x) / nenner;
+      if (tt <= 0.001 || tt >= 0.999 || u < -0.001 || u > 1.001) continue;
+      const punkt = { x: a.x + tt * r.x, y: a.y + tt * r.y };
+      // Läuft die Linie genau durch einen vorhandenen Punkt, diesen nehmen statt den Flur zu teilen
+      const knoten = ctx.pixel(punkt, c) <= FANG_KNOTEN ? c.id : ctx.pixel(punkt, d) <= FANG_KNOTEN ? d.id : null;
+      treffer.push({ tt, punkt, kante: e, knoten });
+    }
+    treffer.sort((x, y) => x.tt - y.tt);
+    return treffer.filter((x, i) => !i || x.knoten === null || x.knoten !== treffer[i - 1].knoten);
+  }
+
+  // ---------------------------------------------------------------- Werkzeug: Flur löschen
+  /** Klick auf einen Flur löscht das Stück bis zur nächsten Kreuzung bzw. zum nächsten Punkt. */
+  function radiererWerkzeug() {
+    karte.getContainer().classList.add("radierer");
+    ctx.hinweis(t("editor.hilfe.radierer"), [[t("karte.werkzeug_beenden"), () => wechseln("auswahl")]]);
+
+    /** Kette aus Wegstücken über Zwischenpunkte (unbenannt, genau zwei Anschlüsse) */
+    function flurStueck(start) {
+      const grad = (id) => ctx.netz.kanten.filter((e) => e.von === id || e.nach === id);
+      const kette = new Set([start.id]);
+      for (const ende of [start.von, start.nach]) {
+        let knoten = ende, kante = start;
+        for (;;) {
+          const k = ctx.knotenNachId(knoten);
+          const an = grad(knoten);
+          if (!k || k.art !== "weg" || an.length !== 2) break;
+          kante = an.find((e) => e.id !== kante.id);
+          if (!kante || kette.has(kante.id)) break;
+          kette.add(kante.id);
+          knoten = kante.von === knoten ? kante.nach : kante.von;
+        }
+      }
+      return [...kette];
+    }
+
+    return {
+      async objektKlick(typ, objekt, ereignis) {
+        L.DomEvent.stopPropagation(ereignis);
+        try {
+          if (typ === "kante") {
+            const ids = flurStueck(objekt);
+            await gruppe(async () => {
+              for (const id of ids) await api(`kanten/${id}`, { methode: "DELETE" });
+            });
+          } else if (typ === "knoten" && objekt.art === "weg") {
+            await api(`knoten/${objekt.id}`, { methode: "DELETE" });
+          } else if (typ === "knoten") {
+            return melden(t("editor.radierer_punkt"), "fehler");
+          } else return;
+          await ctx.netzLaden();
+        } catch (e) {
+          fehlerMelden(e);
+        }
+      },
+      beenden() {
+        karte.getContainer().classList.remove("radierer");
+        ctx.hinweisWeg();
+      },
+    };
+  }
+
   // ---------------------------------------------------------------- Punkte an Flure anschließen
   const MAX_ANSCHLUSS_M = 25;
 
@@ -408,7 +484,15 @@ export function starteEditor(ctx) {
         const id = await gruppe(async () => {
           const neu = await knotenAn(p);
           if (letzter && letzter !== neu) {
-            await api("kanten", { methode: "POST", daten: { von: letzter, nach: neu } });
+            await ctx.netzLaden();
+            // Kreuzt die neue Linie einen vorhandenen Flur, entsteht dort eine Kreuzung
+            let vorher = letzter;
+            for (const x of kreuzungen(ctx.knotenNachId(letzter), ctx.knotenNachId(neu), [letzter, neu])) {
+              const id = x.knoten ?? (await api(`kanten/${x.kante.id}/teilen`, { methode: "POST", daten: x.punkt })).id;
+              if (id !== vorher) await api("kanten", { methode: "POST", daten: { von: vorher, nach: id } });
+              vorher = id;
+            }
+            if (vorher !== neu) await api("kanten", { methode: "POST", daten: { von: vorher, nach: neu } });
             await ctx.netzLaden();
             const a = ctx.knotenNachId(letzter), b = ctx.knotenNachId(neu);
             if (a && b) mitgenommen = await loseNebenStrecke(a, b);

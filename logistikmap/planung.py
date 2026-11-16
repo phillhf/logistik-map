@@ -697,7 +697,15 @@ def registrieren(app: FastAPI, db: Datenbank, fehler, ansehen, bearbeiten, liefe
     def kante_loeschen(kid: int, request: Request, _: dict = Depends(bearbeiten)):
         k = holen("kanten", kid)
         merken(knoten_stockwerk(k["von"]), request, "weg_geloescht")
-        db.ausfuehren("DELETE FROM kanten WHERE id = ?", (kid,))
+        with db.transaktion() as con:
+            con.execute("DELETE FROM kanten WHERE id = ?", (kid,))
+            # Zwischenpunkte, die jetzt an nichts mehr hängen, mit wegräumen (benannte Punkte bleiben)
+            for nid in (k["von"], k["nach"]):
+                con.execute(
+                    """DELETE FROM knoten WHERE id = ? AND art = 'weg'
+                         AND NOT EXISTS (SELECT 1 FROM kanten WHERE von = ? OR nach = ?)""",
+                    (nid, nid, nid),
+                )
         return {"ok": True}
 
     @app.post("/api/kanten/{kid}/teilen")

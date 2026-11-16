@@ -93,7 +93,7 @@
         "titel": "Draw the map",
         "text": "On every floor where goods move, draw:",
         "liste": [
-          "The corridors as paths (“Draw path”): click point by point along the corridors.",
+          "All corridors where goods can move (“Draw corridors”). This is not a fixed route: the system finds the best route itself. Click at every corner and junction, crossings are created automatically.",
           "Start and destination points (“Add point”): ramp, store, kitchen, wards …",
           "Truck gates at the dock as a point of type “Gate / dock (truck)”, with the number of gates under “At most at once”.",
           "Lifts and stairs as points: on every floor where they stop, choosing the same lift each time.",
@@ -435,8 +435,9 @@
   "editor": {
     "werkzeug": {
       "auswahl": "Select",
-      "weg": "Draw path",
+      "weg": "Draw corridors",
       "punkt": "Add point",
+      "radierer": "Delete corridor",
       "raum_rechteck": "Room ▭",
       "raum": "Room (polygon)",
       "bereich": "Area",
@@ -444,19 +445,20 @@
     },
     "hilfe": {
       "auswahl": "Click an element to edit it. Points can be dragged. Del deletes.",
-      "weg": "Click point by point along the corridors. Existing points and paths snap, points right next to the line get connected. Double-click or Esc ends the line. Move the map: hold the right mouse button.",
+      "weg": "Draw every corridor where goods can move – the system finds the best route itself. Click at every corner; where you cross or click a corridor, a junction is created. Points right next to the line get connected. Double-click or Esc ends the line. Move the map: hold the right mouse button.",
       "punkt": "Click where the point should be (ramp, store, ward, lift …).",
       "rechteck": "Click two opposite corners of the room.",
       "vieleck": "Click the corners. Clicking the first point or double-clicking closes the area. Backspace removes the last point.",
       "ausrichten_alt": "New version of the plan? Click a drawn point or corner ({anzahl} pairs, at least 2, better 3 far apart).",
-      "ausrichten_neu": "Now click where this point is on the new plan."
+      "ausrichten_neu": "Now click where this point is on the new plan.",
+      "radierer": "Clicking a corridor deletes the piece up to the next junction or point. “Undo” brings it back."
     },
     "massstab_zuerst": "Set the scale first, otherwise routes cannot be calculated.",
     "punkt_neu": "New point",
     "raum_neu": "New room",
     "bereich_neu": "New area",
     "mit_weg_verbinden": "Connect to the nearest path",
-    "kein_weg_in_der_naehe": "No path nearby – please connect it with “Draw path”.",
+    "kein_weg_in_der_naehe": "No corridor nearby – please connect it with “Draw corridors”.",
     "kein_aufzug": "– none –",
     "aufzug_neu": "+ new lift",
     "treppe_neu": "+ new stairs",
@@ -503,7 +505,8 @@
     "anschliessen": "⇢ Connect points ({anzahl})",
     "anschliessen_hilfe": "Attaches every point on this floor that is not on a path to the nearest corridor with a short path.",
     "angeschlossen": "Connected to the corridor: {anzahl}",
-    "zu_weit": "More than {meter} m from the nearest corridor: {namen}. Draw a corridor there first."
+    "zu_weit": "More than {meter} m from the nearest corridor: {namen}. Draw a corridor there first.",
+    "radierer_punkt": "Delete points (gate, store, ward …) under “Select”: click it, then press Delete."
   },
   "aufzug": {
     "art": {
