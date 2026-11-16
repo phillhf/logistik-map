@@ -388,7 +388,9 @@
     "datei_leer": "The file is empty.",
     "spalten_fehlen": "Columns are missing. Required are at least Bezeichnung, Start, Ziel and Uhrzeit – easiest is to export with “Excel” and use that as a template.",
     "rueckgaengig_fremd": "The last change on this floor was made by {benutzer}. You can only undo your own changes.",
-    "beide_benannt": "Two named points cannot be merged. Connect them with “Draw paths”."
+    "beide_benannt": "Two named points cannot be merged. Connect them with “Draw paths”.",
+    "unbekannt": "Error {status} from the server: {text}",
+    "upload_reihenfolge": "The upload got out of order. Please upload the file again."
   },
   "knoten": {
     "art": {

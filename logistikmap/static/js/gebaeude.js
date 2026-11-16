@@ -1,6 +1,6 @@
 // Verwaltung: Gebäudeteile, Stockwerke, PDF-Pläne
 
-import { api, bestaetigen, datumText, fehlerMelden, formularDialog, groesse, h, hochladen, leeren, melden, t, zahl } from "./basis.js";
+import { api, bestaetigen, datumText, fehlerMelden, formularDialog, groesse, h, leeren, melden, pdfHochladen, t, zahl } from "./basis.js";
 
 export function zeigeGebaeude(wurzel) {
   const teileBox = h("div.teile");
@@ -262,7 +262,7 @@ export function zeigeGebaeude(wurzel) {
       const zeile = h("li.laeuft", t("dokumente.upload_zeile", { name: datei.name, nr: i + 1, von: liste.length }));
       uploadErgebnis.append(zeile);
       try {
-        const dok = await hochladen("dokumente", "datei", datei, (anteil) => {
+        const dok = await pdfHochladen(datei, (anteil) => {
           zeile.textContent = `${datei.name} – ${zahl(anteil * 100, 0)} %`;
         });
         zeile.className = "ok";

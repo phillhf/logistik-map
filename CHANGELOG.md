@@ -1,5 +1,15 @@
 # Änderungen
 
+## [0.6.8] - 2026-11-16
+
+- **Große PDF-Pläne (über ~25 MB) lassen sich hochladen.** Der Browser schickt die Datei jetzt
+  in Stücken zu 8 MB, der Server setzt sie wieder zusammen. Proxys, Virenscanner oder Webfilter
+  im Klinik-Netz begrenzen oft die Größe einer einzelnen Anfrage. Daran scheiterte der Upload bei
+  99 %, ohne dass die Anfrage beim Server ankam. Grenze bleibt 1 GB je Datei.
+- **Unbekannte Fehler zeigen Code und Text** (z. B. „Fehler 413 vom Server: …“) statt nur
+  „Es ist ein Fehler aufgetreten“.
+- Abgelehnte Änderungen stehen mit Status und Größe im Server-Log.
+
 ## [0.6.7] - 2026-11-16
 
 - **Mehrere PDF-Pläne auf einmal:** Im Dateidialog lassen sich mehrere PDFs auswählen, oder du

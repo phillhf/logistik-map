@@ -388,7 +388,9 @@
     "datei_leer": "Die Datei ist leer.",
     "spalten_fehlen": "Es fehlen Spalten. Nötig sind mindestens Bezeichnung, Start, Ziel und Uhrzeit – am einfachsten mit „Excel“ exportieren und als Vorlage nutzen.",
     "rueckgaengig_fremd": "Die letzte Änderung auf diesem Stockwerk stammt von {benutzer}. Rückgängig geht nur für eigene Änderungen.",
-    "beide_benannt": "Zwei benannte Punkte lassen sich nicht zusammenlegen. Verbinde sie mit „Strecken zeichnen“."
+    "beide_benannt": "Zwei benannte Punkte lassen sich nicht zusammenlegen. Verbinde sie mit „Strecken zeichnen“.",
+    "unbekannt": "Fehler {status} vom Server: {text}",
+    "upload_reihenfolge": "Der Upload ist durcheinandergeraten. Bitte die Datei noch einmal hochladen."
   },
   "knoten": {
     "art": {

@@ -41,8 +41,14 @@ export function groesse(bytes) {
 
 // ---------------------------------------------------------------- Server
 export class ApiFehler extends Error {
-  constructor(status, detail) {
-    const d = detail && typeof detail === "object" && detail.code ? detail : { code: "allgemein" };
+  constructor(status, detail, roh = "") {
+    let d = detail && typeof detail === "object" && detail.code ? detail : { code: "allgemein" };
+    // Unbekannte Antwort (z. B. Prüfung der Anfrage, Proxy, Absturz): Code und Text zeigen, damit man es nachverfolgen kann
+    if (d.code === "allgemein" && status) {
+      const text = (typeof detail === "string" ? detail : Array.isArray(detail) ? detail.map((x) => x.msg || "").join("; ") : roh || "")
+        .replace(/<[^>]*>/g, " ").replace(/\s+/g, " ").trim().slice(0, 160);
+      d = { code: "unbekannt", status, text: text || "–" };
+    }
     super(fehlerText(d));
     this.status = status;
     this.code = d.code;
@@ -91,7 +97,6 @@ export async function api(pfad, { methode = "GET", daten, roh = false } = {}) {
       detail = (await r.json()).detail;
     } catch {}
     if (r.status === 401 && pfad !== "anmelden") beiAbmeldung();
-    if (r.status === 422) detail = { code: "allgemein" };
     throw new ApiFehler(r.status, detail);
   }
   return roh ? r : r.json();
@@ -109,12 +114,54 @@ export function hochladen(pfad, feld, datei, fortschritt) {
         antwort = JSON.parse(xhr.responseText);
       } catch {}
       if (xhr.status >= 200 && xhr.status < 300) ok(antwort);
-      else fehler(new ApiFehler(xhr.status, antwort?.detail));
+      else fehler(new ApiFehler(xhr.status, antwort?.detail, xhr.responseText));
     };
     xhr.onerror = () => fehler(new ApiFehler(0, { code: "netzwerk" }));
     const form = new FormData();
     form.append(feld, datei);
     xhr.send(form);
+  });
+}
+
+/**
+ * PDF in Stücken hochladen (je 8 MB). Proxys und Webfilter im Klinik-Netz begrenzen oft die
+ * Größe einer einzelnen Anfrage; so bleibt jede Anfrage klein, auch bei Plänen mit Hunderten MB.
+ */
+export async function pdfHochladen(datei, fortschritt) {
+  const { id, stueck } = await api("uploads", { methode: "POST" });
+  const anzahl = Math.max(1, Math.ceil(datei.size / stueck));
+  for (let nr = 0; nr < anzahl; nr++) {
+    const teil = datei.slice(nr * stueck, Math.min(datei.size, (nr + 1) * stueck));
+    for (let versuch = 1; ; versuch++) {
+      try {
+        await stueckSenden(`/api/uploads/${id}?nr=${nr}`, teil, (anteil) => fortschritt((nr * stueck + anteil * teil.size) / datei.size));
+        break;
+      } catch (e) {
+        if (versuch >= 3 || e.status === 409 || e.status === 404) throw e;
+        await new Promise((r) => setTimeout(r, 1000 * versuch));
+      }
+    }
+  }
+  fortschritt(1);
+  return api(`uploads/${id}/fertig`, { methode: "POST", daten: { dateiname: datei.name } });
+}
+
+function stueckSenden(url, teil, fortschritt) {
+  return new Promise((ok, fehler) => {
+    const xhr = new XMLHttpRequest();
+    xhr.open("PUT", url);
+    xhr.setRequestHeader("Content-Type", "application/octet-stream");
+    xhr.upload.onprogress = (e) => e.lengthComputable && fortschritt(e.loaded / e.total);
+    xhr.onload = () => {
+      let antwort = null;
+      try {
+        antwort = JSON.parse(xhr.responseText);
+      } catch {}
+      if (xhr.status >= 200 && xhr.status < 300) ok(antwort);
+      else fehler(new ApiFehler(xhr.status, antwort?.detail, xhr.responseText));
+    };
+    xhr.onerror = () => fehler(new ApiFehler(0, { code: "netzwerk" }));
+    xhr.send(teil);
   });
 }
 

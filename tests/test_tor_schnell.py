@@ -137,3 +137,26 @@ def test_pdf_mit_vorspann_wird_angenommen(admin):
     r = admin.post("/api/dokumente", files={"datei": ("plot.pdf", b"\r\n  " + pdf_bytes(), "application/pdf")})
     assert r.status_code == 200, r.text
     assert admin.post("/api/dokumente", files={"datei": ("x.pdf", b"kein pdf" * 10, "application/pdf")}).status_code == 400
+
+
+def test_upload_in_stuecken(admin, client):
+    from conftest import pdf_bytes
+
+    daten = b"\n" + pdf_bytes() + b"%" + b"x" * 300_000
+    uid = admin.post("/api/uploads").json()["id"]
+    teile = [daten[i : i + 100_000] for i in range(0, len(daten), 100_000)]
+    for nr, teil in enumerate(teile):
+        r = admin.put(f"/api/uploads/{uid}?nr={nr}", content=teil, headers={"Content-Type": "application/octet-stream"})
+        assert r.status_code == 200, r.text
+    # falsche Reihenfolge wird abgelehnt
+    assert admin.put(f"/api/uploads/{uid}?nr=0", content=b"x").status_code == 409
+    r = admin.post(f"/api/uploads/{uid}/fertig", json={"dateiname": "EG gross.pdf"})
+    assert r.status_code == 200, r.text
+    dok = next(d for d in admin.get("/api/dokumente").json() if d["id"] == r.json()["id"])
+    assert dok["dateiname"] == "EG gross.pdf" and dok["groesse"] == len(daten)
+    # danach gibt es den Upload nicht mehr
+    assert admin.post(f"/api/uploads/{uid}/fertig", json={}).status_code == 404
+    # Protokoll: ein Eintrag für das Dokument, keiner je Stück
+    eintraege = admin.get("/api/protokoll").json()["eintraege"]
+    assert sum(1 for e in eintraege if e["objekt"] == "uploads") == 0
+    assert any(e["objekt"] == "dokumente" and e["bezeichnung"] == "EG gross.pdf" for e in eintraege)

@@ -11,6 +11,7 @@ import logging
 import re
 import secrets
 import shutil
+import time
 import sqlite3
 from contextlib import asynccontextmanager
 from datetime import date
@@ -33,6 +34,7 @@ from .plaene import KachelDienst, PdfFehler, leere_kachel, massstab_suchen, max_
 log = logging.getLogger(__name__)
 
 MAX_PDF_BYTES = 1024 * 1024 * 1024  # 1 GB
+UPLOAD_STUECK = 8 * 1024 * 1024  # Stückgröße beim Upload in Teilen
 SPRACHEN = {"de": "Deutsch", "en": "English"}  # weitere Sprachen: static/i18n/<code>.json anlegen und hier eintragen
 
 
@@ -140,6 +142,10 @@ class StockwerkAenderung(BaseModel):
 class PlanZuweisung(BaseModel):
     dokument_id: int
     seite: int = Field(ge=1)
+
+
+class UploadFertig(BaseModel):
+    dateiname: str = Field(default="plan.pdf", max_length=255)
 
 
 class Massstab(BaseModel):
@@ -819,6 +825,27 @@ def erstelle_app(pfade: Pfade, kacheln_starten: bool = True) -> FastAPI:
             r["verwendet"] = db.eins("SELECT COUNT(*) AS n FROM plaene WHERE dokument_id = ?", (r["id"],))["n"]
         return rows
 
+    def dokument_uebernehmen(tmp: Path, dateiname: str | None, groesse: int, ich: dict) -> dict:
+        """Hochgeladene Datei prüfen und als Dokument ablegen (tmp wird verschoben oder bleibt zum Aufräumen)."""
+        with tmp.open("rb") as f:
+            # Die PDF-Norm erlaubt Zeichen vor der Kennung, manche Plot-Programme nutzen das
+            if b"%PDF-" not in f.read(1024):
+                log.warning("Upload abgelehnt (kein PDF): %s, %d Bytes", dateiname, groesse)
+                raise fehler(400, "kein_pdf")
+        try:
+            seiten = pdf_seiten(tmp)
+        except PdfFehler as e:
+            log.warning("Upload abgelehnt (PDF defekt: %s): %s", e, dateiname)
+            raise fehler(400, "pdf_defekt", grund=str(e))
+        name = Path(dateiname or "plan.pdf").name[:200]
+        did = db.ausfuehren(
+            "INSERT INTO dokumente (dateiname, groesse, seiten, hochgeladen_von) VALUES (?, ?, ?, ?)",
+            (name, groesse, json.dumps(seiten), ich["id"]),
+        )
+        tmp.replace(pfade.dokumente / f"{did}.pdf")
+        log.info("PDF hochgeladen: %s (%d Seiten, %d Bytes)", name, len(seiten), groesse)
+        return {"id": did, "dateiname": name, "seiten": seiten}
+
     @app.post("/api/dokumente")
     async def dokument_hochladen(datei: UploadFile = File(...), ich: dict = Depends(bearbeiten)):
         tmp = pfade.dokumente / f"upload-{secrets.token_hex(8)}.tmp"
@@ -830,26 +857,68 @@ def erstelle_app(pfade: Pfade, kacheln_starten: bool = True) -> FastAPI:
                     if groesse > MAX_PDF_BYTES:
                         raise fehler(413, "datei_zu_gross")
                     f.write(chunk)
-            with tmp.open("rb") as f:
-                # Die PDF-Norm erlaubt Zeichen vor der Kennung, manche Plot-Programme nutzen das
-                if b"%PDF-" not in f.read(1024):
-                    log.warning("Upload abgelehnt (kein PDF): %s, %d Bytes", datei.filename, groesse)
-                    raise fehler(400, "kein_pdf")
-            try:
-                seiten = pdf_seiten(tmp)
-            except PdfFehler as e:
-                log.warning("Upload abgelehnt (PDF defekt: %s): %s", e, datei.filename)
-                raise fehler(400, "pdf_defekt", grund=str(e))
-            name = Path(datei.filename or "plan.pdf").name[:200]
-            did = db.ausfuehren(
-                "INSERT INTO dokumente (dateiname, groesse, seiten, hochgeladen_von) VALUES (?, ?, ?, ?)",
-                (name, groesse, json.dumps(seiten), ich["id"]),
-            )
-            tmp.replace(pfade.dokumente / f"{did}.pdf")
-            log.info("PDF hochgeladen: %s (%d Seiten, %d Bytes)", name, len(seiten), groesse)
+            return dokument_uebernehmen(tmp, datei.filename, groesse, ich)
         finally:
             tmp.unlink(missing_ok=True)
-        return {"id": did, "dateiname": name, "seiten": seiten}
+
+    # Upload in Stücken: Proxys und Webfilter im Klinik-Netz begrenzen oft die Größe je Anfrage
+    # (häufig ~25 MB). Der Browser schickt deshalb Stücke zu 8 MB, der Server setzt sie zusammen.
+    uploads: dict[str, dict] = {}
+
+    def uploads_aufraeumen() -> None:
+        jetzt = time.time()
+        for uid, u in list(uploads.items()):
+            if jetzt - u["zeit"] > 3 * 3600:
+                u["pfad"].unlink(missing_ok=True)
+                uploads.pop(uid, None)
+
+    def upload_holen(uid: str, ich: dict) -> dict:
+        u = uploads.get(uid)
+        if u is None or u["benutzer"] != ich["id"]:
+            raise fehler(404, "nicht_gefunden")
+        return u
+
+    @app.post("/api/uploads")
+    def upload_beginnen(ich: dict = Depends(bearbeiten)):
+        uploads_aufraeumen()
+        uid = secrets.token_hex(16)
+        pfad = pfade.dokumente / f"upload-{uid}.tmp"
+        pfad.write_bytes(b"")
+        uploads[uid] = {"benutzer": ich["id"], "pfad": pfad, "groesse": 0, "naechster": 0, "zeit": time.time()}
+        return {"id": uid, "stueck": UPLOAD_STUECK}
+
+    @app.put("/api/uploads/{uid}")
+    async def upload_stueck(uid: str, nr: int, request: Request, ich: dict = Depends(bearbeiten)):
+        u = upload_holen(uid, ich)
+        if nr != u["naechster"]:
+            raise fehler(409, "upload_reihenfolge")
+        daten = await request.body()
+        if len(daten) > 2 * UPLOAD_STUECK:
+            raise fehler(413, "datei_zu_gross")
+        if u["groesse"] + len(daten) > MAX_PDF_BYTES:
+            u["pfad"].unlink(missing_ok=True)
+            uploads.pop(uid, None)
+            raise fehler(413, "datei_zu_gross")
+        with u["pfad"].open("ab") as f:
+            f.write(daten)
+        u["groesse"] += len(daten)
+        u["naechster"] += 1
+        u["zeit"] = time.time()
+        return {"ok": True, "groesse": u["groesse"]}
+
+    @app.post("/api/uploads/{uid}/fertig")
+    def upload_fertig(uid: str, d: UploadFertig, ich: dict = Depends(bearbeiten)):
+        u = upload_holen(uid, ich)
+        uploads.pop(uid, None)
+        try:
+            dok = dokument_uebernehmen(u["pfad"], d.dateiname, u["groesse"], ich)
+        finally:
+            u["pfad"].unlink(missing_ok=True)
+        db.ausfuehren(
+            "INSERT INTO protokoll (benutzer, aktion, objekt, objekt_id, bezeichnung) VALUES (?, 'angelegt', 'dokumente', ?, ?)",
+            (ich["benutzername"], dok["id"], dok["dateiname"]),
+        )
+        return dok
 
     @app.delete("/api/dokumente/{did}")
     def dokument_loeschen(did: int, _: dict = Depends(bearbeiten)):
@@ -908,6 +977,9 @@ def erstelle_app(pfade: Pfade, kacheln_starten: bool = True) -> FastAPI:
         Ein unveränderter Stand kostet dank ETag nur eine kurze Antwort 304.
         """
         antwort = await call_next(request)
+        # Abgelehnte Änderungen protokollieren, damit sich Fehler im Betrieb nachvollziehen lassen
+        if request.url.path.startswith("/api/") and request.method != "GET" and antwort.status_code >= 400 and antwort.status_code != 401:
+            log.warning("%s %s → %d (%s Bytes)", request.method, request.url.path, antwort.status_code, request.headers.get("content-length", "?"))
         if not request.url.path.startswith("/api/") and "cache-control" not in antwort.headers:
             antwort.headers["Cache-Control"] = "no-cache"
         return antwort

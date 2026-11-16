@@ -57,7 +57,7 @@ def protokoll_einrichten(app: FastAPI, db) -> None:
     @app.middleware("http")
     async def mitschreiben(request: Request, call_next):
         pfad = request.url.path
-        if request.method not in ("POST", "PUT", "DELETE") or not pfad.startswith("/api/") or pfad in NICHT_PROTOKOLLIEREN:
+        if request.method not in ("POST", "PUT", "DELETE") or not pfad.startswith("/api/") or pfad in NICHT_PROTOKOLLIEREN or pfad.startswith("/api/uploads"):
             return await call_next(request)
         m = PFAD.match(pfad)
         objekt, oid, unterpfad = (m.group(1), int(m.group(2)) if m.group(2) else None, m.group(3)) if m else (pfad, None, None)
