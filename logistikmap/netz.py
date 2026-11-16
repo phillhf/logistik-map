@@ -177,3 +177,70 @@ class Netz:
             dist[n] = nd
             vorher[n] = (schritt.von, schritt)
             heapq.heappush(heap, (nd, n))
+
+    # ---------------------------------------------------------------- Prüfen (Erste Schritte)
+    def erreichbar(self, start: int, transportart: dict | None = None) -> tuple[set[int], set[int], bool]:
+        """Knoten, die von start aus erreichbar sind.
+
+        Ohne Transportart zählt jede Verbindung. Mit Transportart gelten deren Sperren; zurück
+        kommen dann auch die Aufzüge/Treppen, an denen sie nicht weiterkam, und ob eine Kante
+        für sie gesperrt war.
+        """
+        gesehen = {start}
+        offen = [start]
+        aufzug_gesperrt: set[int] = set()
+        kante_gesperrt = False
+        while offen:
+            k = offen.pop()
+            for n, kante in self.nachbarn.get(k, []):
+                if transportart and transportart["id"] in kante["gesperrt"]:
+                    kante_gesperrt = True
+                    continue
+                if n not in gesehen:
+                    gesehen.add(n)
+                    offen.append(n)
+            aid = self.knoten[k]["aufzug_id"]
+            if aid in self.aufzuege:
+                auf = self.aufzuege[aid]
+                if transportart and (
+                    (auf["transportarten"] and transportart["id"] not in auf["transportarten"])
+                    or (auf["art"] == "treppe" and not transportart["treppe"])
+                ):
+                    if len(self.aufzug_halte.get(aid, [])) > 1:
+                        aufzug_gesperrt.add(aid)
+                    continue
+                for n in self.aufzug_halte[aid]:
+                    if n not in gesehen:
+                        gesehen.add(n)
+                        offen.append(n)
+        return gesehen, aufzug_gesperrt, kante_gesperrt
+
+    def stockwerk_name(self, sid: int, teile: dict[int, str] | None = None) -> str:
+        s = self.stockwerke[sid]
+        teil = (teile or {}).get(s["gebaeudeteil_id"])
+        return f"{s['name']} ({teil})" if teil else s["name"]
+
+    def weg_diagnose(self, start: int, ziel: int, transportart: dict, teile: dict[int, str] | None = None) -> dict:
+        """Erklärt, warum es keinen Weg von start nach ziel gibt (für die Seite „Erste Schritte“)."""
+        if start not in self.knoten or ziel not in self.knoten:
+            return {"code": "punkt_fehlt"}
+        frei, _, _ = self.erreichbar(start)
+        if ziel not in frei:
+            sw_start = self.knoten[start]["stockwerk_id"]
+            sw_ziel = self.knoten[ziel]["stockwerk_id"]
+            if sw_start == sw_ziel and not any(self.knoten[k]["stockwerk_id"] != sw_start for k in frei):
+                return {"code": "weg_unterbrochen", "stockwerk": self.stockwerk_name(sw_start, teile), "stockwerk_id": sw_start}
+            erreicht = sorted({self.knoten[k]["stockwerk_id"] for k in frei}, key=lambda s: (self.stockwerke[s]["gebaeudeteil_id"], -self.stockwerke[s]["ebene"]))
+            return {
+                "code": "keine_verbindung",
+                "erreichbar": ", ".join(self.stockwerk_name(s, teile) for s in erreicht),
+                "ziel_stockwerk": self.stockwerk_name(sw_ziel, teile),
+                "stockwerk_id": sw_ziel,
+            }
+        _, aufzuege, kanten = self.erreichbar(start, transportart)
+        namen = sorted(self.aufzuege[a]["name"] for a in aufzuege)
+        if namen:
+            return {"code": "aufzug_nicht_erlaubt", "aufzuege": ", ".join(namen)}
+        if kanten:
+            return {"code": "weg_gesperrt", "stockwerk_id": self.knoten[start]["stockwerk_id"]}
+        return {"code": "kein_weg"}

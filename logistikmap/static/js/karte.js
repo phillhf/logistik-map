@@ -76,7 +76,7 @@ export function zeigeKarte(wurzel, [stockwerkParam, modusParam, ...rest]) {
       leeren(
         seitenleiste,
         h("p.leer", t("karte.keine_gebaeude")),
-        darf("bearbeiten") ? h("a.knopf", { href: "#/gebaeude" }, t("karte.zur_verwaltung")) : null
+        darf("bearbeiten") ? h("a.knopf", { href: "#/start" }, t("karte.zur_verwaltung")) : null
       );
       leeren(kopfzeile);
       return;
@@ -155,7 +155,13 @@ export function zeigeKarte(wurzel, [stockwerkParam, modusParam, ...rest]) {
     kartenBereich.hidden = false;
     karteAufbauen(plan);
     await netzLaden();
-    if (modus === "bearbeiten") modusAufraeumen = starteEditor(ctx);
+    if (modus === "bearbeiten" && ctx.rest[0] === "massstab") {
+      // Link aus „Erste Schritte“: Maßstab-Werkzeug gleich starten
+      ctx.rest = [];
+      history.replaceState(null, "", ctx.stockwerkLink(ctx.stockwerk.id, "bearbeiten"));
+      modusAufraeumen = starteEditor(ctx);
+      werkzeugStarten(massstabFestlegen);
+    } else if (modus === "bearbeiten") modusAufraeumen = starteEditor(ctx);
     else if (modus === "ablauf") modusAufraeumen = await starteAblauf(ctx);
     else if (modus === "weg") await wegZeigen(Number(rest[0]));
   }

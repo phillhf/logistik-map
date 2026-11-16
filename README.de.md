@@ -8,6 +8,11 @@ Wege und Lieferungen einzeichnen und sehen, wo es eng wird.
 
 ## So arbeitest du damit
 
+Nach der Installation öffnet sich die Seite **Erste Schritte**. Sie führt durch die Einrichtung,
+prüft selbst, was erledigt ist, und springt mit „Beheben“ an die Stelle, an der etwas fehlt –
+zum Beispiel zu einem Punkt, der an keinem Weg hängt, oder zu einer Lieferung, für die es keinen
+Weg gibt. Die Reihenfolge:
+
 1. **Gebäude & Pläne**: Gebäudeteile und Stockwerke anlegen, PDF hochladen, Seite zuweisen.
 2. **Karte → Bearbeiten**: Maßstab festlegen, Flure als Wege zeichnen, Start- und Zielpunkte
    setzen (Rampe, Lager, Stationen), Aufzüge auf jedem Stockwerk als Punkt setzen. Bei Bedarf
@@ -134,6 +139,7 @@ Ein Tag `vX.Y.Z` baut über GitHub Actions das Setup und veröffentlicht es als 
 | `logistikmap/netz.py` | Wegenetz und Wegsuche |
 | `logistikmap/simulation.py` | Ablauf eines Tages mit Wartezeiten |
 | `logistikmap/planung.py` | Schnittstellen für Netz, Stammdaten, Lieferungen, Szenarien, Simulation |
+| `logistikmap/einrichtung.py` | Prüfung für die Seite „Erste Schritte“ |
 | `logistikmap/export.py` | Excel-Import/-Export, Karte als PDF |
 | `logistikmap/wartung.py` | Sicherung, Wiederherstellung, Updates |
 | `logistikmap/verzeichnis.py` | Anmeldung über Active Directory (LDAP) |

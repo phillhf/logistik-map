@@ -21,7 +21,7 @@ export function regelText(r) {
   return text;
 }
 
-export function zeigeLieferungen(wurzel) {
+export function zeigeLieferungen(wurzel, [sprung] = []) {
   const bearbeiten = darf("lieferungen");
   const suche = h("input", { type: "search", placeholder: t("lieferung.suchen") });
   const box = h("div");
@@ -55,9 +55,21 @@ export function zeigeLieferungen(wurzel) {
       [liste, punkte, stamm] = await Promise.all([api("lieferungen"), api("punkte"), stammdaten(true)]);
       zeigen();
       vorschauLaden();
+      sprungZiel();
     } catch (e) {
       fehlerMelden(e);
     }
+  }
+
+  /** Links aus „Erste Schritte“: #/lieferungen/12 öffnet die Lieferung. */
+  function sprungZiel() {
+    if (!sprung) return;
+    const ziel = sprung;
+    sprung = null;
+    history.replaceState(null, "", "#/lieferungen");
+    if (!bearbeiten) return;
+    const l = liste.find((x) => x.id === Number(ziel));
+    if (l) dialog(l);
   }
 
   async function vorschauLaden() {

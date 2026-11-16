@@ -15,6 +15,7 @@
     "keine_eintraege": "No entries yet."
   },
   "nav": {
+    "start": "Getting started",
     "karte": "Map",
     "gebaeude": "Buildings & plans",
     "benutzer": "Users",
@@ -24,6 +25,121 @@
     "stammdaten": "Master data",
     "szenarien": "Scenarios",
     "protokoll": "Audit log"
+  },
+  "start": {
+    "titel": "Getting started",
+    "einleitung": "This page guides you through the setup. Work through the steps from top to bottom. Logistik Map checks by itself what is done and shows what is missing – with a link straight to the right place.",
+    "fertig": "Everything is set up. This page keeps checking: if a floor or a delivery without a route is added, it shows up here.",
+    "stand": "{erledigt} of {gesamt} steps done",
+    "als_naechstes": "Next",
+    "pruefen": "Please check",
+    "beheben": "Fix",
+    "weitere": "… and {anzahl} more",
+    "nur_admin": "Only an administrator can set the federal state.",
+    "uebernehmen": "Apply",
+    "gespeichert": "Saved.",
+    "werte_passen": "Values are correct",
+    "zum_ablauf": "Timeline on the map",
+    "zur_auswertung": "Analysis",
+    "zu_szenarien": "Scenarios",
+    "erst_oben": "The results are only reliable once the steps above are done.",
+    "ansehen": "View",
+    "einrichten": "Set up",
+    "optional_titel": "Later, when needed",
+    "optional_hilfe": "Not needed for planning, but useful for running it in your organisation.",
+    "optional": {
+      "benutzer": {
+        "titel": "Add more users",
+        "text": "For example viewers for ward managers or planners for logistics."
+      },
+      "ad": {
+        "titel": "Sign-in via Active Directory",
+        "text": "Staff sign in with their Windows account."
+      },
+      "https": {
+        "titel": "Set up HTTPS",
+        "text": "Encrypted connection with a certificate from your IT department."
+      }
+    },
+    "zahlen": {
+      "gebaeude": "Building sections: {teile} · Floors: {stockwerke}",
+      "plaene": "With plan: {mit_plan} of {stockwerke}",
+      "karte": "Path segments: {wege} · Start/destination points: {punkte} · Lifts/stairs: {aufzuege}",
+      "stammdaten": "Transport types: {transportarten} · Trolley types: {wagentypen} · Lifts/stairs: {aufzuege}",
+      "lieferungen": "Active deliveries: {lieferungen}"
+    },
+    "schritt": {
+      "bundesland": {
+        "titel": "Set the federal state",
+        "text": "Public holidays depend on it. Deliveries with the rule “not on public holidays” are skipped on those days.",
+        "knopf": "Settings"
+      },
+      "gebaeude": {
+        "titel": "Add building sections and floors",
+        "text": "Add each building section, for example House A and House B, and its floors. The level sets the order: -1 = basement, 0 = ground floor, 1 = 1st floor.",
+        "knopf": "To buildings & plans"
+      },
+      "plaene": {
+        "titel": "Upload and assign PDF plans",
+        "text": "Upload the plans under “Uploaded PDF plans” and assign each floor its page. Large plans take a few minutes to prepare; you can keep working in the meantime.",
+        "knopf": "To buildings & plans"
+      },
+      "massstab": {
+        "titel": "Set the scale",
+        "text": "On each plan, click two points whose distance you know, for example the ends of a dimensioned wall, and enter the metres. Without a scale no travel times can be calculated.",
+        "knopf": "Set scale"
+      },
+      "karte": {
+        "titel": "Draw the map",
+        "text": "On every floor where goods move, draw:",
+        "liste": [
+          "The corridors as paths (“Draw path”): click point by point along the corridors.",
+          "Start and destination points (“Add point”): ramp, store, kitchen, wards …",
+          "Lifts and stairs as points: on every floor where they stop, choosing the same lift each time.",
+          "Connections between building sections, if there are any.",
+          "Every point must be attached to a path. Rooms and areas are optional."
+        ],
+        "knopf": "Edit map"
+      },
+      "stammdaten": {
+        "titel": "Check master data",
+        "text": "Transport types (automated guided vehicles, transport staff) with speed, number and shifts, trolley types with the space they need, and the lift times. Example values are filled in. Adjust them to your building and then confirm.",
+        "knopf": "To master data"
+      },
+      "lieferungen": {
+        "titel": "Enter deliveries",
+        "text": "Enter what is brought from where to where and when, how often (for example Mon–Fri at 8:00) and whether there is a return trip. To add many deliveries at once, use “Import” on the Deliveries page with an Excel list; the “Excel” button downloads a matching template. Every delivery is checked for a route.",
+        "knopf": "To deliveries"
+      },
+      "ergebnis": {
+        "titel": "Look at the result",
+        "text": "The timeline shows the trips on the map, the analysis shows waiting times and bottlenecks. Scenarios let you try out changes without touching the current state."
+      }
+    },
+    "problem": {
+      "teil_ohne_stockwerke": "“{teil}” has no floors yet.",
+      "kein_plan": "{stockwerk}: no plan assigned yet.",
+      "plan_fehler": "{stockwerk}: the plan could not be prepared ({fehler}).",
+      "plan_laeuft": "{stockwerk}: the plan is being prepared.",
+      "massstab_fehlt": "{stockwerk}: the scale is missing.",
+      "keine_wege": "{stockwerk}: no paths drawn yet.",
+      "punkt_ohne_weg": "“{name}” ({stockwerk}) is not attached to a path.",
+      "uebergang_offen": "The connection “{name}” ({stockwerk}) does not lead to another floor yet.",
+      "aufzug_ein_halt": "“{aufzug}” is only drawn on {stockwerk}. Place it on every floor where it stops.",
+      "stockwerk_getrennt": "{stockwerk} is not connected to the rest of the network. A lift, stairs or a connection is missing.",
+      "punkt_getrennt": "“{name}” ({stockwerk}) lies on a path that is not connected to the rest of the network.",
+      "zu_wenig_punkte": "There are only {anzahl} start or destination points, at least 2 are needed.",
+      "keine_transportart": "There is no transport type.",
+      "anzahl_unbegrenzt": "“{name}”: the number is unlimited and there are no shifts. Missing vehicles or staff will not show up as a bottleneck.",
+      "aufzug_nicht_eingezeichnet": "“{aufzug}” is not drawn on any map.",
+      "lieferung_massstab": "“{lieferung}”: the scale is missing on {stockwerke}.",
+      "lieferung_weg_unterbrochen": "“{lieferung}”: on {stockwerk} the path from “{von}” to “{nach}” is interrupted.",
+      "lieferung_keine_verbindung": "“{lieferung}”: reachable from “{von}”: {erreichbar}. “{nach}” is on {ziel_stockwerk}; a connection to it is missing (lift, stairs or building connection).",
+      "lieferung_aufzug_nicht_erlaubt": "“{lieferung}”: {transportart} may not use {aufzuege}, and there is no other route from “{von}” to “{nach}”.",
+      "lieferung_weg_gesperrt": "“{lieferung}”: the route from “{von}” to “{nach}” is blocked for {transportart}.",
+      "lieferung_kein_weg": "“{lieferung}”: there is no route from “{von}” to “{nach}”.",
+      "lieferung_punkt_fehlt": "“{lieferung}”: a start or destination point was deleted."
+    }
   },
   "menue": {
     "passwort_aendern": "Change password",
@@ -52,8 +168,8 @@
   },
   "karte": {
     "kein_stockwerk": "Choose a floor on the left.",
-    "keine_gebaeude": "No buildings have been created yet.",
-    "zur_verwaltung": "Add buildings and plans",
+    "keine_gebaeude": "No buildings yet. The “Getting started” page guides you through the setup.",
+    "zur_verwaltung": "Getting started",
     "kein_plan": "There is no plan for this floor yet.",
     "plan_wird_erstellt": "Preparing the plan … {prozent} %",
     "plan_wartet": "The plan is waiting to be prepared …",
@@ -423,7 +539,7 @@
     "neu": "Add delivery",
     "bearbeiten": "Edit delivery",
     "suchen": "Search …",
-    "keine": "No deliveries yet.",
+    "keine": "No deliveries yet. A delivery says what is brought, when, from where to where and how often. Add one with “Add delivery” or take over an Excel list with “Import”.",
     "erst_punkte": "First add start and destination points on the map (“Edit” mode).",
     "spalte": {
       "uhrzeit": "Time",

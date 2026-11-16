@@ -123,3 +123,29 @@ def test_ablauf_und_auswertung(angemeldet, haus):
     page.wait_for_selector(".kennzahl")
     assert page.locator(".engpass").count() >= 1
     screenshot(page, "auswertung")
+
+
+def test_erste_schritte(angemeldet, haus):
+    page, c, og = angemeldet, haus["c"], haus["og"]
+    # Nach der Anmeldung landet man auf „Erste Schritte“, solange die Einrichtung nicht fertig ist
+    page.wait_for_url("**/#/start")
+    page.wait_for_selector(".schritt.naechster")
+    assert page.locator(".schritt.naechster h3").inner_text() == "Bundesland festlegen"
+    assert page.locator("#navigation .nav-marke").inner_text().strip().isdigit()
+    # Bundesland bestätigen → nächster Schritt rückt nach
+    page.locator("#schritt-bundesland").get_by_role("button", name="Übernehmen").click()
+    page.wait_for_selector("#schritt-bundesland.status-erledigt")
+    # Punkt ohne Weg wird erkannt, „Beheben“ springt auf die Karte und wählt ihn aus
+    kueche = c.post("knoten", json={"stockwerk_id": og, "x": 300, "y": 700, "art": "ziel", "name": "Küche"}).json()["id"]
+    page.reload()
+    problem = page.locator("#schritt-karte .probleme li", has_text="Küche")
+    problem.get_by_role("link", name="Beheben").click()
+    page.wait_for_url(f"**/#/karte/{og}/bearbeiten")
+    page.wait_for_selector(".eigenschaften:not([hidden])")
+    assert page.locator(".eigenschaften input").first.input_value() == "Küche"
+    screenshot(page, "erste-schritte-sprung")
+    # Stammdaten bestätigen
+    page.goto(f"{haus['basis']}/#/start")
+    page.locator("#schritt-stammdaten").get_by_role("button", name="Werte passen").click()
+    page.wait_for_function("!document.querySelector('#schritt-stammdaten button')")
+    assert kueche

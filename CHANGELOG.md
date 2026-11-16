@@ -1,5 +1,29 @@
 # Änderungen
 
+## [0.5.0] - 2026-11-16
+
+Neue Seite **Erste Schritte**: führt nach der Installation durch die Einrichtung.
+
+- Solange nicht alles eingerichtet ist, ist sie die Startseite. Im Menü zeigt eine Zahl, wie
+  viele Schritte noch offen sind.
+- Sieben Schritte in Arbeitsreihenfolge: Bundesland, Gebäudeteile und Stockwerke, PDF-Pläne,
+  Maßstab, Karte zeichnen, Stammdaten, Lieferungen. Danach Wegweiser zu Ablauf, Auswertung
+  und Szenarien.
+- Erledigt wird aus den Daten geprüft, nicht abgehakt. Nur Bundesland und Stammdaten werden
+  bestätigt, weil dort schon Vorgaben eingetragen sind.
+- Die Seite findet typische Fehler: Stockwerke ohne Plan oder Maßstab, Punkte, die an keinem
+  Weg hängen, Aufzüge, die nur auf einem Stockwerk eingezeichnet sind, vom übrigen Netz
+  getrennte Stockwerke, Übergänge ohne Gegenstück und Transportarten ohne Begrenzung.
+- **Wegeprüfung für jede Lieferung** (hin und zurück): Fehlt ein Weg, steht dort, wo das Netz
+  reißt, zum Beispiel „Von Rampe aus erreichbar: UG. Station 1 liegt auf EG, dorthin fehlt eine
+  Verbindung“ oder „FTS darf Aufzug Ost nicht benutzen“.
+- „Beheben“ springt an die richtige Stelle: Stockwerk mit gestartetem Maßstab-Werkzeug, den
+  betroffenen Punkt ausgewählt auf der Karte, die Lieferung oder die Stammdaten.
+- Menü in Arbeitsreihenfolge: Erste Schritte, Gebäude & Pläne, Karte, Stammdaten, Lieferungen,
+  Auswertung, Szenarien.
+- Leere Seiten verweisen auf die ersten Schritte. „Jetzt ausrichten“ nach einem Planwechsel
+  startet direkt das Werkzeug.
+
 ## [0.4.0] - 2026-11-16
 
 Korrekturen und Härtung nach der Durchsicht von 0.3.0.

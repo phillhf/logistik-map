@@ -391,3 +391,43 @@ dl.rechte-erklaerung { margin-top: 14px; }
   .engpass, .kennzahl { break-inside: avoid; }
   .zl-streifen > *, .wochentabelle td { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
 }
+
+/* ------------------------------------------------------------ Erste Schritte */
+#navigation a .nav-marke { margin-left: 6px; background: var(--gelb); color: #1d2430; border-radius: 9px; padding: 0 6px; font-size: 0.75rem; font-weight: 600; }
+main.seite-start { max-width: 920px; }
+.erste-schritte { display: flex; flex-direction: column; gap: 16px; }
+.start-kopf p { margin: 8px 0 14px; color: var(--gedimmt); }
+.fortschritt { display: flex; align-items: center; gap: 12px; font-size: 0.9rem; color: var(--gedimmt); }
+.fortschritt-balken { flex: 1; height: 8px; background: #eceff2; border-radius: 4px; overflow: hidden; }
+.fortschritt-balken span { display: block; height: 100%; background: var(--gruen); transition: width 0.3s; }
+.schritte { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 8px; }
+.schritt { display: flex; gap: 14px; background: var(--flaeche); border: 1px solid var(--linie); border-radius: var(--radius); padding: 14px 16px; box-shadow: var(--schatten); }
+.schritt.naechster { border-color: var(--blau); box-shadow: 0 0 0 2px var(--blau-hell); }
+.schritt .nummer { flex: none; width: 28px; height: 28px; border-radius: 50%; display: grid; place-items: center; font-weight: 600; background: #eceff2; color: var(--gedimmt); }
+.schritt.naechster .nummer { background: var(--blau); color: #fff; }
+.schritt.status-erledigt .nummer, .schritt.status-bereit .nummer { background: var(--gruen); color: #fff; }
+.schritt.status-hinweis .nummer { background: var(--gelb); color: #1d2430; }
+.schritt.status-erledigt h3 { color: var(--gedimmt); font-weight: 500; }
+.schritt-inhalt { flex: 1; min-width: 0; }
+.schritt-kopf { display: flex; align-items: center; flex-wrap: wrap; gap: 4px 8px; min-height: 28px; }
+.schritt-kopf .marke-klein { margin-left: 0; }
+.marke-klein.gelb { background: #fff3d6; color: #8a5a00; }
+.schritt-zahlen { margin-left: auto; font-size: 0.85rem; color: var(--gedimmt); }
+.schritt-text { margin: 6px 0 0; }
+.anleitung { margin: 6px 0 0; padding-left: 20px; }
+.anleitung li { margin: 2px 0; }
+.probleme { list-style: none; margin: 10px 0 0; padding: 0; display: flex; flex-direction: column; gap: 4px; }
+.probleme li { display: flex; gap: 10px; align-items: baseline; padding: 6px 10px; border-radius: 6px; background: #fdecec; font-size: 0.92rem; }
+.probleme li.hinweis { background: #fff6e0; }
+.probleme li.weitere { background: none; color: var(--gedimmt); }
+.probleme li span { flex: 1; }
+.probleme li a { white-space: nowrap; font-weight: 500; }
+.schritt-knoepfe { margin-top: 12px; gap: 8px; }
+.schritt-knoepfe select { padding: 6px 8px; }
+.optional ul { list-style: none; margin: 8px 0 0; padding: 0; display: flex; flex-direction: column; gap: 6px; }
+.optional li { display: flex; align-items: center; gap: 12px; }
+.optional li > div { flex: 1; display: flex; flex-direction: column; }
+.optional li small { color: var(--gedimmt); }
+.optional .symbol { width: 20px; text-align: center; color: var(--gedimmt); }
+.optional li.erledigt .symbol { color: var(--gruen); font-weight: 700; }
+@media (max-width: 700px) { .schritt-zahlen { margin-left: 0; width: 100%; } .probleme li { flex-direction: column; gap: 2px; } }

@@ -15,6 +15,7 @@
     "keine_eintraege": "Noch keine Einträge."
   },
   "nav": {
+    "start": "Erste Schritte",
     "karte": "Karte",
     "gebaeude": "Gebäude & Pläne",
     "benutzer": "Benutzer",
@@ -24,6 +25,121 @@
     "stammdaten": "Stammdaten",
     "szenarien": "Szenarien",
     "protokoll": "Protokoll"
+  },
+  "start": {
+    "titel": "Erste Schritte",
+    "einleitung": "Diese Seite führt dich durch die Einrichtung. Arbeite die Schritte von oben nach unten ab. Logistik Map prüft selbst, was erledigt ist, und zeigt, was noch fehlt – mit einem Link direkt an die richtige Stelle.",
+    "fertig": "Alles eingerichtet. Die Seite prüft weiter mit: Kommt ein Stockwerk oder eine Lieferung ohne Weg dazu, steht es hier.",
+    "stand": "{erledigt} von {gesamt} Schritten erledigt",
+    "als_naechstes": "Als Nächstes",
+    "pruefen": "Bitte prüfen",
+    "beheben": "Beheben",
+    "weitere": "… und {anzahl} weitere",
+    "nur_admin": "Das Bundesland kann nur ein Administrator festlegen.",
+    "uebernehmen": "Übernehmen",
+    "gespeichert": "Gespeichert.",
+    "werte_passen": "Werte passen",
+    "zum_ablauf": "Ablauf auf der Karte",
+    "zur_auswertung": "Auswertung",
+    "zu_szenarien": "Szenarien",
+    "erst_oben": "Die Ergebnisse sind erst verlässlich, wenn die Schritte oben erledigt sind.",
+    "ansehen": "Ansehen",
+    "einrichten": "Einrichten",
+    "optional_titel": "Später, wenn es gebraucht wird",
+    "optional_hilfe": "Für die Planung nicht nötig, aber für den Betrieb im Haus sinnvoll.",
+    "optional": {
+      "benutzer": {
+        "titel": "Weitere Benutzer anlegen",
+        "text": "Zum Beispiel Betrachter für Stationsleitungen oder Planer für die Logistik."
+      },
+      "ad": {
+        "titel": "Anmeldung über Active Directory",
+        "text": "Mitarbeitende melden sich mit ihrem Windows-Konto an."
+      },
+      "https": {
+        "titel": "HTTPS einrichten",
+        "text": "Verschlüsselte Verbindung mit einem Zertifikat eurer IT."
+      }
+    },
+    "zahlen": {
+      "gebaeude": "Gebäudeteile: {teile} · Stockwerke: {stockwerke}",
+      "plaene": "Mit Plan: {mit_plan} von {stockwerke}",
+      "karte": "Wegstücke: {wege} · Start-/Zielpunkte: {punkte} · Aufzüge/Treppen: {aufzuege}",
+      "stammdaten": "Transportarten: {transportarten} · Wagentypen: {wagentypen} · Aufzüge/Treppen: {aufzuege}",
+      "lieferungen": "Aktive Lieferungen: {lieferungen}"
+    },
+    "schritt": {
+      "bundesland": {
+        "titel": "Bundesland festlegen",
+        "text": "Davon hängen die Feiertage ab. Lieferungen mit der Regel „nicht an Feiertagen“ entfallen an diesen Tagen.",
+        "knopf": "Einstellungen"
+      },
+      "gebaeude": {
+        "titel": "Gebäudeteile und Stockwerke anlegen",
+        "text": "Lege jeden Gebäudeteil an, zum Beispiel Haus A und Haus B, und darin die Stockwerke. Die Ebene bestimmt die Reihenfolge: -1 = Untergeschoss, 0 = Erdgeschoss, 1 = 1. OG.",
+        "knopf": "Zu Gebäude & Pläne"
+      },
+      "plaene": {
+        "titel": "PDF-Pläne hochladen und zuweisen",
+        "text": "Lade die Pläne unter „Hochgeladene PDF-Pläne“ hoch und weise jedem Stockwerk seine Seite zu. Große Pläne brauchen einige Minuten zum Aufbereiten, du kannst währenddessen weiterarbeiten.",
+        "knopf": "Zu Gebäude & Pläne"
+      },
+      "massstab": {
+        "titel": "Maßstab festlegen",
+        "text": "Klicke auf jedem Plan zwei Punkte an, deren Abstand du kennst, zum Beispiel die Enden einer bemaßten Wand, und gib die Meter ein. Ohne Maßstab lassen sich keine Wegzeiten berechnen.",
+        "knopf": "Maßstab festlegen"
+      },
+      "karte": {
+        "titel": "Karte zeichnen",
+        "text": "Zeichne auf jedem Stockwerk, auf dem Waren unterwegs sind:",
+        "liste": [
+          "Die Flure als Wege („Weg zeichnen“): Punkt für Punkt entlang der Flure klicken.",
+          "Start- und Zielpunkte („Punkt setzen“): Rampe, Lager, Küche, Stationen …",
+          "Aufzüge und Treppen als Punkt: auf jedem Stockwerk, auf dem sie halten, und dort jeweils denselben Aufzug wählen.",
+          "Übergänge zwischen Gebäudeteilen, falls es welche gibt.",
+          "Jeder Punkt muss an einem Weg hängen. Räume und Bereiche sind optional."
+        ],
+        "knopf": "Karte bearbeiten"
+      },
+      "stammdaten": {
+        "titel": "Stammdaten prüfen",
+        "text": "Transportarten (FTS, Materialtransportdienst) mit Geschwindigkeit, Anzahl und Schichten, Wagentypen mit ihrem Platzbedarf und die Zeiten der Aufzüge. Es sind Beispielwerte eingetragen. Passe sie an euer Haus an und bestätige dann.",
+        "knopf": "Zu den Stammdaten"
+      },
+      "lieferungen": {
+        "titel": "Lieferungen erfassen",
+        "text": "Trage ein, was wann von wo nach wo gebracht wird, wie oft (zum Beispiel Mo–Fr um 8:00) und ob es einen Rückweg gibt. Viele Lieferungen auf einmal übernimmst du auf der Seite Lieferungen mit „Importieren“ aus einer Excel-Liste; der Knopf „Excel“ lädt die passende Vorlage herunter. Für jede Lieferung wird geprüft, ob es einen Weg gibt.",
+        "knopf": "Zu den Lieferungen"
+      },
+      "ergebnis": {
+        "titel": "Ergebnis ansehen",
+        "text": "Im Ablauf siehst du die Fahrten auf der Karte, in der Auswertung Wartezeiten und Engpässe. Mit Szenarien probierst du Änderungen aus, ohne den Ist-Zustand zu verändern."
+      }
+    },
+    "problem": {
+      "teil_ohne_stockwerke": "„{teil}“ hat noch keine Stockwerke.",
+      "kein_plan": "{stockwerk}: Es ist noch kein Plan zugewiesen.",
+      "plan_fehler": "{stockwerk}: Der Plan konnte nicht aufbereitet werden ({fehler}).",
+      "plan_laeuft": "{stockwerk}: Der Plan wird gerade aufbereitet.",
+      "massstab_fehlt": "{stockwerk}: Der Maßstab fehlt.",
+      "keine_wege": "{stockwerk}: Es sind noch keine Wege eingezeichnet.",
+      "punkt_ohne_weg": "„{name}“ ({stockwerk}) hängt an keinem Weg.",
+      "uebergang_offen": "Der Übergang „{name}“ ({stockwerk}) führt noch in kein anderes Stockwerk.",
+      "aufzug_ein_halt": "„{aufzug}“ ist nur auf {stockwerk} eingezeichnet. Setze ihn auf jedem Stockwerk, auf dem er hält.",
+      "stockwerk_getrennt": "{stockwerk} ist mit dem übrigen Netz nicht verbunden. Es fehlt ein Aufzug, eine Treppe oder ein Übergang.",
+      "punkt_getrennt": "„{name}“ ({stockwerk}) liegt an einem Wegstück, das nicht mit dem übrigen Netz verbunden ist.",
+      "zu_wenig_punkte": "Es gibt erst {anzahl} Start- oder Zielpunkte, mindestens 2 sind nötig.",
+      "keine_transportart": "Es gibt keine Transportart.",
+      "anzahl_unbegrenzt": "„{name}“: Die Anzahl ist unbegrenzt und es gibt keine Schichten. So werden fehlende Fahrzeuge oder fehlendes Personal nicht als Engpass sichtbar.",
+      "aufzug_nicht_eingezeichnet": "„{aufzug}“ ist auf keiner Karte eingezeichnet.",
+      "lieferung_massstab": "„{lieferung}“: Auf {stockwerke} fehlt der Maßstab.",
+      "lieferung_weg_unterbrochen": "„{lieferung}“: Auf {stockwerk} ist der Weg von „{von}“ nach „{nach}“ unterbrochen.",
+      "lieferung_keine_verbindung": "„{lieferung}“: Von „{von}“ aus erreichbar: {erreichbar}. „{nach}“ liegt auf {ziel_stockwerk}, dorthin fehlt eine Verbindung (Aufzug, Treppe oder Übergang).",
+      "lieferung_aufzug_nicht_erlaubt": "„{lieferung}“: {transportart} darf {aufzuege} nicht benutzen, einen anderen Weg von „{von}“ nach „{nach}“ gibt es nicht.",
+      "lieferung_weg_gesperrt": "„{lieferung}“: Der Weg von „{von}“ nach „{nach}“ ist für {transportart} gesperrt.",
+      "lieferung_kein_weg": "„{lieferung}“: Es gibt keinen Weg von „{von}“ nach „{nach}“.",
+      "lieferung_punkt_fehlt": "„{lieferung}“: Ein Start- oder Zielpunkt wurde gelöscht."
+    }
   },
   "menue": {
     "passwort_aendern": "Passwort ändern",
@@ -52,8 +168,8 @@
   },
   "karte": {
     "kein_stockwerk": "Wähle links ein Stockwerk aus.",
-    "keine_gebaeude": "Es sind noch keine Gebäude angelegt.",
-    "zur_verwaltung": "Gebäude und Pläne anlegen",
+    "keine_gebaeude": "Es sind noch keine Gebäude angelegt. Die Seite „Erste Schritte“ führt dich durch die Einrichtung.",
+    "zur_verwaltung": "Zu den ersten Schritten",
     "kein_plan": "Für dieses Stockwerk ist noch kein Plan hinterlegt.",
     "plan_wird_erstellt": "Der Plan wird aufbereitet … {prozent} %",
     "plan_wartet": "Der Plan wartet auf die Aufbereitung …",
@@ -423,7 +539,7 @@
     "neu": "Lieferung anlegen",
     "bearbeiten": "Lieferung bearbeiten",
     "suchen": "Suchen …",
-    "keine": "Noch keine Lieferungen angelegt.",
+    "keine": "Noch keine Lieferungen. Eine Lieferung sagt: was, wann, von wo nach wo und wie oft. Lege sie mit „Lieferung anlegen“ an oder übernimm eine Excel-Liste mit „Importieren“.",
     "erst_punkte": "Lege zuerst auf der Karte Start- und Zielpunkte an (Modus „Bearbeiten“).",
     "spalte": {
       "uhrzeit": "Uhrzeit",

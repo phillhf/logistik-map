@@ -14,6 +14,9 @@ Holidays are calculated for all German federal states.
 
 ## Features
 
+- **Getting started** page that guides you through the setup in the right order, checks by
+  itself what is missing (a floor without scale, a point not attached to a path, a delivery
+  without a route – and where the network breaks) and jumps straight to the place to fix it.
 - **Floor plans from PDF**, also very large CAD exports (A0 and beyond), converted once into a
   zoomable map. Scale is set by clicking two points with a known distance.
 - **Map editor**: corridors as a path network, start and destination points (ramps, stores,

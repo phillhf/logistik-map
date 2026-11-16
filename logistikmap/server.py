@@ -21,7 +21,7 @@ from fastapi.responses import FileResponse, JSONResponse
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel, Field
 
-from . import APP_NAME, __version__, auth, planung, verzeichnis, wartung
+from . import APP_NAME, __version__, auth, einrichtung, planung, verzeichnis, wartung
 from .config import Konfiguration, lade_konfiguration, speichere_konfiguration
 from . import protokoll as protokoll_modul
 from .protokoll import protokoll_einrichten
@@ -486,6 +486,7 @@ def erstelle_app(pfade: Pfade, kacheln_starten: bool = True) -> FastAPI:
             if daten.bundesland not in BUNDESLAENDER:
                 raise fehler(400, "bundesland_unbekannt")
             db.setze_einstellung("bundesland", daten.bundesland)
+            db.setze_einstellung("bundesland_bestaetigt", True)
         if daten.sprache is not None:
             if daten.sprache not in SPRACHEN:
                 raise fehler(400, "sprache_unbekannt")
@@ -862,6 +863,7 @@ def erstelle_app(pfade: Pfade, kacheln_starten: bool = True) -> FastAPI:
 
     # ---------------------------------------------------------------- Netz, Stammdaten, Lieferungen, Simulation
     planung.registrieren(app, db, fehler, ansehen, bearbeiten, lieferungen_recht, verwalten, pfade)
+    einrichtung.registrieren(app, db, fehler, bearbeiten, verwalten)
     protokoll_modul.registrieren(app, db, verwalten)
 
     @app.exception_handler(sqlite3.IntegrityError)

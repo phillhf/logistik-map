@@ -217,7 +217,7 @@ export function zeigeGebaeude(wurzel) {
     );
     dlg.addEventListener("close", () => {
       dlg.remove();
-      if (dlg.returnValue === "ja") location.hash = `#/karte/${s.id}/bearbeiten`;
+      if (dlg.returnValue === "ja") location.hash = `#/karte/${s.id}/bearbeiten/werkzeug/ausrichten`;
     });
     document.body.append(dlg);
     dlg.showModal();

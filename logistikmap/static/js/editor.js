@@ -761,6 +761,26 @@ export function starteEditor(ctx) {
 
   ctx.zeichnen({ netz: true });
   wechseln("auswahl");
+  sprungZiel();
+
+  /** Links aus „Erste Schritte“: …/bearbeiten/knoten/12 wählt einen Punkt aus, …/bearbeiten/werkzeug/weg startet ein Werkzeug. */
+  function sprungZiel() {
+    const [art, wert] = ctx.rest || [];
+    if (art === "knoten") {
+      const k = ctx.knotenNachId(Number(wert));
+      if (k) {
+        auswaehlen({ typ: "knoten", id: k.id });
+        karte.setView(ll(k.x, k.y), Math.min(karte.getMaxZoom(), Math.max(karte.getZoom(), 4.5)), { animate: false });
+        // Eigenschaften-Feld rechts verdeckt die Mitte: Punkt in die Mitte des freien Bereichs schieben
+        if (!panel.hidden) karte.panBy([panel.offsetWidth / 2, 0], { animate: false });
+      }
+    } else if (art === "werkzeug" && WERKZEUGE.some((w) => w[0] === wert) && (ctx.stockwerk.meter_pro_punkt || wert === "auswahl")) {
+      wechseln(wert);
+    }
+    // Sprungziel nur einmal ausführen, nicht nach jedem Neuladen
+    if (art) history.replaceState(null, "", ctx.stockwerkLink(sid, "bearbeiten"));
+    ctx.rest = [];
+  }
 
   return () => {
     clearInterval(standTimer);

@@ -4,6 +4,7 @@ __pycache__/
 .pytest_cache/
 # lokale Daten – echte Gebäudepläne gehören nie ins Repository
 data/
+data-*/
 *.pdf
 *.db
 *.db-wal

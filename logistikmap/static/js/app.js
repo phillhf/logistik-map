@@ -10,15 +10,18 @@ import { zeigeLieferungen } from "./lieferungen.js";
 import { zeigeProtokoll } from "./protokoll.js";
 import { zeigeStammdaten } from "./stammdaten.js";
 import { zeigeSzenarien } from "./szenarien.js";
+import { offeneSchritte, zeigeStart } from "./start.js";
 
 const inhalt = document.getElementById("inhalt");
+// Reihenfolge = Arbeitsreihenfolge beim Einrichten
 const SEITEN = [
+  { pfad: "start", recht: "bearbeiten", zeigen: (w, r) => zeigeStart(w, r, markeSetzen) },
+  { pfad: "gebaeude", recht: "bearbeiten", zeigen: zeigeGebaeude },
   { pfad: "karte", recht: "ansehen", zeigen: zeigeKarte },
+  { pfad: "stammdaten", recht: "ansehen", zeigen: zeigeStammdaten },
   { pfad: "lieferungen", recht: "ansehen", zeigen: zeigeLieferungen },
   { pfad: "auswertung", recht: "ansehen", zeigen: zeigeAuswertung },
   { pfad: "szenarien", recht: "ansehen", zeigen: zeigeSzenarien },
-  { pfad: "stammdaten", recht: "ansehen", zeigen: zeigeStammdaten },
-  { pfad: "gebaeude", recht: "bearbeiten", zeigen: zeigeGebaeude },
   { pfad: "benutzer", recht: "verwalten", zeigen: zeigeBenutzer },
   { pfad: "einstellungen", recht: "ansehen", zeigen: zeigeEinstellungen },
   { pfad: "protokoll", recht: "verwalten", zeigen: zeigeProtokoll, versteckt: true },
@@ -26,6 +29,7 @@ const SEITEN = [
 
 let aufraeumen = null; // Rückgabe der aktuellen Seite, wird beim Wechsel aufgerufen
 let letzteSeite = null;
+let startSeite = "karte"; // solange die Einrichtung nicht fertig ist: „Erste Schritte“
 
 async function start() {
   let status;
@@ -43,7 +47,18 @@ async function start() {
   if (status.ersteinrichtung) return zeigeErsteinrichtung();
   if (!status.benutzer) return zeigeAnmeldung();
   kopfAufbauen();
-  window.addEventListener("hashchange", seiteWechseln);
+  if (darf("bearbeiten")) {
+    try {
+      const e = await offeneSchritte();
+      markeSetzen(e);
+      if (!e.fertig) startSeite = "start";
+    } catch {}
+  }
+  window.addEventListener("hashchange", () => {
+    seiteWechseln();
+    // Marke im Menü aktuell halten (die Seite „Erste Schritte“ setzt sie selbst)
+    if (darf("bearbeiten") && !location.hash.startsWith("#/start")) offeneSchritte().then(markeSetzen).catch(() => {});
+  });
   seiteWechseln();
 }
 
@@ -51,7 +66,7 @@ function seiteWechseln() {
   const [pfad, ...rest] = location.hash.replace(/^#\/?/, "").split("/");
   const seite = SEITEN.find((s) => s.pfad === pfad && darf(s.recht));
   if (!seite) {
-    location.replace("#/karte");
+    location.replace(`#/${startSeite}`);
     return;
   }
   if (aufraeumen) aufraeumen();
@@ -62,6 +77,17 @@ function seiteWechseln() {
   letzteSeite = seite.pfad;
   inhalt.className = `seite-${seite.pfad}`;
   Promise.resolve(seite.zeigen(inhalt, rest)).then((r) => (aufraeumen = typeof r === "function" ? r : null));
+}
+
+/** Zahl offener Einrichtungsschritte neben „Erste Schritte“ im Menü */
+function markeSetzen(e) {
+  const a = document.querySelector('#navigation a[data-pfad="start"]');
+  if (!a || !e) return;
+  const offen = e.gesamt !== undefined ? e.gesamt - e.erledigt : e.offen;
+  let marke = a.querySelector(".nav-marke");
+  if (!marke) a.append((marke = h("span.nav-marke")));
+  marke.textContent = offen || "";
+  marke.hidden = !offen;
 }
 
 function kopfAufbauen() {
