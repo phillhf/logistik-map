@@ -1,0 +1,703 @@
+<!-- Help / manual (English). Every <section> with an id is a chapter; h3 with an id is a sub-chapter.
+     The page #/hilfe builds the table of contents and search from it. Links to chapters: href="#/hilfe/<id>".
+     The ids must be the same as in de.html. -->
+
+<section id="ueberblick">
+<h2>Overview: what Logistik Map does</h2>
+<p>Logistik Map models how goods move through a hospital: from the truck dock through stores, corridors, lifts and stairs to the wards and back. You enter <strong>where</strong> goods can move, <strong>who</strong> moves them and <strong>what</strong> is delivered <strong>when</strong>. The program then simulates a whole day. It shows where transports have to wait, which lift is overloaded at what time and how many vehicles or staff you need.</p>
+
+<h3 id="ueberblick-idee">The basic idea in four steps</h3>
+<ol>
+  <li><strong>Plans and paths:</strong> You upload the floor plans as PDF and draw every path on which goods <em>can</em> move, usually the corridors. This is not a fixed route. You only tell the system where it may go.</li>
+  <li><strong>Points:</strong> On the paths you place points: gates at the dock, the store, the kitchen, wards, lifts and stairs.</li>
+  <li><strong>Master data:</strong> You define how fast the transport service or an AGV moves, how many there are, how much fits into a lift and how long it takes per floor.</li>
+  <li><strong>Deliveries:</strong> You enter what happens, e.g. “At 8:00, 5 pallets from Gate 1 to ward B25”. The system finds the route, the lift and the transport type itself.</li>
+</ol>
+<p>Afterwards the <strong>Timeline</strong> shows all trips as moving dots on the map. The <strong>Analysis</strong> shows waiting times, bottlenecks and utilisation. With <strong>Scenarios</strong> you try out changes (“What if lift West is out of service?”) without touching the real data.</p>
+
+<div class="hilfe-tipp"><strong>Tip:</strong> The <a href="#/start">Getting started</a> page keeps checking what is still missing. Every open item has a link straight to the right place. If you are stuck, look there first.</div>
+
+<h3 id="ueberblick-begriffe">Key terms</h3>
+<table class="tabelle hilfe-tabelle">
+<tr><th>Term</th><th>Meaning</th></tr>
+<tr><td>Hospital (site)</td><td>A completely separate facility with its own buildings, plans, master data and deliveries. One installation can manage several hospitals.</td></tr>
+<tr><td>Building section</td><td>A house or wing, e.g. “House A”, “Ward block”, “Service yard”.</td></tr>
+<tr><td>Floor</td><td>One level in a building section. Every floor has its own plan and its own paths.</td></tr>
+<tr><td>Path</td><td>A drawn line on which goods can move. It consists of <em>path segments</em> (corner to corner or junction to junction).</td></tr>
+<tr><td>Point</td><td>A place on a path: corner, junction, start/destination, gate, lift, stairs or connection.</td></tr>
+<tr><td>Network</td><td>All paths and points of all floors together, linked by lifts, stairs and connections.</td></tr>
+<tr><td>Transport type</td><td>Who or what moves the goods, e.g. “Transport service” (people) or “AGV” (automated guided vehicle).</td></tr>
+<tr><td>Cart type</td><td>What is moved: linen trolley, roll container, pallet, bed … with the space it needs in a lift.</td></tr>
+<tr><td>Delivery</td><td>A recurring transport: what, when, from where to where, how often, with which return trip.</td></tr>
+<tr><td>Trip</td><td>A single run of a transport type. A delivery of 6 linen trolleys with “1 trolley per trip” results in six trips.</td></tr>
+<tr><td>Bottleneck</td><td>A place where transports wait (at least 1 minute) or which is 90 % or more utilised.</td></tr>
+<tr><td>Scenario</td><td>A copy of the current state with changes, to try things out.</td></tr>
+</table>
+</section>
+
+<section id="erste-schritte">
+<h2>Getting started: setting up step by step</h2>
+<p>The <a href="#/start">Getting started</a> page guides you through the setup. As long as something is open, Logistik Map opens this page after sign-in, and the menu shows the number of open steps next to “Getting started”. Every step shows a counter (e.g. “With plan: 3 of 5”). Problems are listed below it, each with a <em>Fix →</em> link.</p>
+
+<table class="tabelle hilfe-tabelle">
+<tr><th>Step</th><th>What to do</th><th>More</th></tr>
+<tr><td>1. Set the federal state</td><td>Public holidays depend on it. Deliveries marked “not on public holidays” are skipped on those days. Only an administrator can set it.</td><td><a href="#/hilfe/einstellungen">Settings</a></td></tr>
+<tr><td>2. Building sections and floors</td><td>Add every building section and every floor in it with its level.</td><td><a href="#/hilfe/gebaeude">Buildings &amp; plans</a></td></tr>
+<tr><td>3. Upload and assign PDF plans</td><td>Upload PDFs and assign each floor its page. Preparation runs in the background.</td><td><a href="#/hilfe/gebaeude-plaene">PDF plans</a></td></tr>
+<tr><td>4. Set the scale</td><td>Type in or measure the scale on every floor. Without scale there are no path lengths or travel times.</td><td><a href="#/hilfe/karte-massstab">Scale</a></td></tr>
+<tr><td>5. Draw the map</td><td>Draw paths, points, gates, lifts and stairs.</td><td><a href="#/hilfe/editor">Editing the map</a></td></tr>
+<tr><td>6. Check master data</td><td>Adjust the example values for transport types, cart types and lifts to your hospital, then click “Values are correct”.</td><td><a href="#/hilfe/stammdaten">Master data</a></td></tr>
+<tr><td>7. Enter deliveries</td><td>Enter deliveries and internal transports, one by one or via Excel import.</td><td><a href="#/hilfe/lieferungen">Deliveries</a></td></tr>
+<tr><td>8. Look at the result</td><td>Timeline, analysis and scenarios.</td><td><a href="#/hilfe/ablauf">Timeline</a>, <a href="#/hilfe/auswertung">Analysis</a></td></tr>
+</table>
+
+<p>A step with a yellow <em>Please check</em> badge is basically done but has remarks, e.g. a point not attached to any path. The page keeps checking after the setup. If a floor without paths or a delivery without a route is added, it shows up here again.</p>
+<p><em>Later, when needed</em> lists things not required for planning: more users, sign-in via Active Directory and HTTPS.</p>
+</section>
+
+<section id="bedienung">
+<h2>General use</h2>
+
+<h3 id="bedienung-kopf">Header and menu</h3>
+<ul>
+  <li><strong>Hospital selection</strong> (next to “Logistik Map”): switch between hospitals. Administrators also find <em>＋ New hospital …</em> here. See <a href="#/hilfe/standorte">Several hospitals</a>.</li>
+  <li><strong>Menu items</strong> in working order: Getting started · Buildings &amp; plans · Map · Master data · Deliveries · Analysis · Scenarios · Users · Settings · Help. You only see the pages your role allows.</li>
+  <li><strong>?</strong> opens the help for exactly the page you are on.</li>
+  <li><strong>Your name</strong> (right) opens a menu: language, change password, sign out. Hovering shows user name, role and installed version.</li>
+</ul>
+
+<h3 id="bedienung-formulare">Forms, saving and confirmations</h3>
+<ul>
+  <li>Most fields have a short grey explanation underneath. This help explains the same fields in more detail.</li>
+  <li>Required fields cannot be saved empty. If there is an error, the message appears at the top of the dialog and your input is kept.</li>
+  <li>Logistik Map never changes the network without your consent. Wherever the system would connect or delete something, it asks first with <em>Yes</em> or <em>No</em>.</li>
+  <li>Confirmations and errors appear at the bottom right. Error messages carry a code you can pass on to IT.</li>
+</ul>
+
+<h3 id="bedienung-mehrere">Several people at the same time</h3>
+<p>Several people can work at the same time. If someone changes the floor you are editing, the map reloads and tells you who changed it. Every change is recorded with time and user in the <a href="#/hilfe/einstellungen-protokoll">audit log</a>.</p>
+
+<h3 id="bedienung-update">After an update</h3>
+<p>When Logistik Map is updated, the open page reloads by itself once it notices the new version (within a minute or when you return to the browser tab). If you still see the old interface, press <kbd>Ctrl</kbd> + <kbd>F5</kbd> once.</p>
+</section>
+
+<section id="standorte">
+<h2>Several hospitals</h2>
+<p>One installation can manage several hospitals. Each hospital is completely separate: its own building sections, plans, paths, master data (transport types, cart types, lifts), deliveries, scenarios, special days, federal state and analyses. Only users, roles and sign-in are shared.</p>
+
+<h3 id="standorte-anlegen">Adding a new hospital</h3>
+<ol>
+  <li>Choose <em>＋ New hospital …</em> in the selection next to “Logistik Map” (or under Settings → Hospitals).</li>
+  <li><strong>Name:</strong> e.g. “North Hospital”.</li>
+  <li><strong>Copy transport types and cart types from:</strong> either copy the values of an existing hospital or start with the default values. Buildings, plans, lifts and deliveries always start empty.</li>
+  <li><em>Create and switch</em>. Then “Getting started” guides you through setting up the new hospital, beginning with the federal state.</li>
+</ol>
+
+<h3 id="standorte-wechseln">Switching, renaming, deleting</h3>
+<ul>
+  <li><strong>Switch:</strong> choose the hospital in the selection at the top. The choice applies to your browser; other users stay in theirs.</li>
+  <li><strong>Rename and delete:</strong> under Settings → Hospitals. Deleting removes everything of that hospital and can only be undone from a backup. The last remaining hospital cannot be deleted.</li>
+</ul>
+</section>
+
+<section id="gebaeude">
+<h2>Buildings &amp; plans</h2>
+<p>On this page you set up the structure of the hospital and assign each floor its floor plan. You need the right “Buildings, map &amp; master data”.</p>
+
+<h3 id="gebaeude-teile">Building sections</h3>
+<table class="tabelle hilfe-tabelle">
+<tr><th>Field</th><th>Meaning</th></tr>
+<tr><td>Name</td><td>e.g. “House A”, “Ward block”, “Service yard”.</td></tr>
+<tr><td>Short name</td><td>Abbreviation for lists and for unique point names, e.g. “A”. If a point name exists in several houses, the short name is added.</td></tr>
+<tr><td>Order</td><td>Only sets the sorting in lists and in the map sidebar.</td></tr>
+</table>
+
+<h3 id="gebaeude-stockwerke">Floors</h3>
+<table class="tabelle hilfe-tabelle">
+<tr><th>Field</th><th>Meaning</th></tr>
+<tr><td>Name</td><td>e.g. “Basement”, “Ground floor”, “1st floor”, “Level 3”.</td></tr>
+<tr><td>Level</td><td>A number for the height: -1 = basement, 0 = ground floor, 1 = 1st floor and so on. <strong>Important:</strong> the difference between levels determines how many floors a lift travels, i.e. its travel time. If lifts in different houses are at the same height, give the floors the same level.</td></tr>
+</table>
+
+<h3 id="gebaeude-plaene">Uploading and assigning PDF plans</h3>
+<ol>
+  <li>Under <em>Uploaded PDF plans</em> click <em>Upload PDF</em> or drag files onto the area. You can choose several PDFs at once. Each file gets a row with progress and result.</li>
+  <li>At a floor click <em>Assign plan</em>, choose the PDF and, for multi-page PDFs, the page.</li>
+  <li>The plan is converted into map tiles once. The status shows <em>waiting</em>, <em>being prepared … %</em>, <em>ready</em> or <em>error</em>. Large plans take a few minutes; you can keep working meanwhile.</li>
+</ol>
+<ul>
+  <li><strong>Large files:</strong> PDFs are transferred in 8 MB pieces, even plans over 100 MB. If an upload still fails, a proxy or filter in the network is usually the cause. Then upload the PDF in a browser directly on the server.</li>
+  <li><strong>Prepare again:</strong> creates the tiles once more, e.g. after an error.</li>
+  <li><strong>Change plan:</strong> for a new plan version, assign the new PDF. If paths and points are already drawn on the floor and the new plan is shifted or has a different scale, realign them with the <a href="#/hilfe/editor-ausrichten">Align</a> tool. Logistik Map offers this right away.</li>
+  <li><strong>Remove plan:</strong> only removes the assignment. The PDF stays in the list.</li>
+  <li>The column <em>used</em> shows how often a PDF is assigned to a floor. A PDF can only be deleted once it is no longer used anywhere.</li>
+</ul>
+<div class="hilfe-achtung"><strong>Data protection:</strong> The plans stay on your server in the data folder. They are not sent anywhere.</div>
+</section>
+
+<section id="karte">
+<h2>Map</h2>
+<p>Choose the floor in the sidebar on the left. At the top are the mode switch, the <strong>Scale</strong> field and the tools.</p>
+
+<h3 id="karte-modi">The three modes</h3>
+<table class="tabelle hilfe-tabelle">
+<tr><th>Mode</th><th>Purpose</th></tr>
+<tr><td>View</td><td>Look at plan, paths and points, measure distances. Nothing can be changed here.</td></tr>
+<tr><td>Edit</td><td>Draw paths, add points, draw rooms, set the scale. See <a href="#/hilfe/editor">Editing the map</a>.</td></tr>
+<tr><td>Timeline</td><td>Play back a day and see all trips on the map. See <a href="#/hilfe/ablauf">Timeline</a>.</td></tr>
+</table>
+
+<h3 id="karte-bewegen">Moving and zooming</h3>
+<ul>
+  <li><strong>Zoom:</strong> mouse wheel or the + and − buttons at the top left.</li>
+  <li><strong>Move:</strong> drag with the left mouse button. While drawing with a tool, drag with the <strong>right</strong> (or middle) mouse button so that no click accidentally adds a corner.</li>
+  <li><strong>Measure distance:</strong> click points, the length is shown. Double-click or <kbd>Esc</kbd> ends measuring. This is also how you check the scale.</li>
+  <li>The <strong>scale bar</strong> at the bottom left shows a length in metres.</li>
+</ul>
+
+<h3 id="karte-massstab">Scale</h3>
+<p>Without a scale the system does not know how long a path is in metres and cannot calculate travel times. Every floor needs its own scale because plans may be printed differently.</p>
+<p><strong>Option 1: type it in (recommended if the scale is printed on the plan).</strong> At the top of the map there is the field <em>Scale 1 :</em>. Enter the number from the title block, i.e. for “1:200” enter <strong>200</strong>, and press <em>Save</em>. If Logistik Map finds the scale in the PDF text, it is already suggested in the field (“Read on the plan: 1:200”). Then just save.</p>
+<p><strong>Option 2: measure.</strong> In Edit mode choose <em>Set scale</em> → <em>Measure on the plan</em>. Click two points whose distance you know, e.g. the ends of a dimensioned wall, and enter the distance in metres. The further apart the points, the more accurate.</p>
+<div class="hilfe-achtung"><strong>Careful with “1:N”:</strong> The calculation from the title block is only correct if the PDF was saved at its original paper size. If the plan was scaled down when the PDF was created (e.g. A0 to A3), “1:200” no longer holds. So check the scale after saving with <em>Measure distance</em> on a known length. If it differs, use option 2.</div>
+</section>
+
+<section id="editor">
+<h2>Editing the map: paths, points and rooms</h2>
+<p>In <em>Edit</em> mode the toolbar appears. Clicking a tool turns it on; clicking the same button again switches back to <em>Select</em>. A short hint at the bottom of the map always says what the active tool expects.</p>
+
+<h3 id="editor-prinzip">The principle: paths instead of fixed routes</h3>
+<p>You do <strong>not</strong> draw every single delivery route. You draw once every path on which goods can move, a network like a road network. For each delivery the system finds the fastest route in it. Example: three docks, a goods-in area and a store. You draw the corridor from the docks to goods-in and on into the store and place the three gates, goods-in and the store as points on it. You do not need connections “from every point to every other”.</p>
+<p>Rooms do not matter for route finding. They are only for orientation. What counts are paths and points.</p>
+
+<h3 id="editor-werkzeuge">The tools</h3>
+<table class="tabelle hilfe-tabelle">
+<tr><th>Tool</th><th>What it does</th></tr>
+<tr><td>Select</td><td>Click an element to edit it in the side panel. Points can be dragged. If you drag a point onto a path point (corner, junction, open end), both are merged into one point; “Undo” restores the previous state. <kbd>Del</kbd> deletes the selected element.</td></tr>
+<tr><td>Draw paths</td><td>Click at every corner. Where you cross or click an existing path, a junction is created automatically. A <strong>right-click</strong> ends the current line, a second right-click ends the tool.</td></tr>
+<tr><td>Add point</td><td>Clicking the spot adds a new point (gate, store, ward, lift …). If it is on a path, it is attached right away. Then the point form opens.</td></tr>
+<tr><td>Delete path</td><td>Clicking a path deletes the piece up to the next junction or point. Named points stay; delete them with “Select”.</td></tr>
+<tr><td>Room ▭</td><td>Draw a rectangular room: click two opposite corners.</td></tr>
+<tr><td>Room (polygon)</td><td>Click the corners. A click on the first point or a double-click closes the shape; <kbd>Backspace</kbd> removes the last point.</td></tr>
+<tr><td>Area</td><td>Like Room (polygon), but for larger zones (e.g. “Ward B2”) that contain several rooms.</td></tr>
+<tr><td>Align</td><td>After a plan change, move all elements of the floor onto the new plan. See <a href="#/hilfe/editor-ausrichten">Align</a>.</td></tr>
+<tr><td>Set scale</td><td>Asks whether you want to type it in or measure. See <a href="#/hilfe/karte-massstab">Scale</a>.</td></tr>
+<tr><td>Undo</td><td>Reverts the last change on this floor, also several times in a row (<kbd>Ctrl</kbd> + <kbd>Z</kbd>).</td></tr>
+<tr><td>⇢ Check gaps (number)</td><td>Goes through open path ends and unconnected points one by one. The number says how many places are left to check. See <a href="#/hilfe/editor-luecken">Check gaps</a>.</td></tr>
+</table>
+
+<h3 id="editor-zeichnen">Drawing paths properly</h3>
+<ul>
+  <li>Draw along the <strong>middle of the corridor</strong> and click at every corner and every branch.</li>
+  <li><strong>Junctions:</strong> if you draw across an existing path, a junction is created automatically at the intersection. Starting or ending on a path also connects. So you do not have to draw junctions in one go.</li>
+  <li>If you click near an existing point (about 20 screen pixels), the line snaps to it.</li>
+  <li>Almost horizontal or vertical pieces are straightened.</li>
+  <li><strong>Open ends</strong> are marked orange: the path does not continue there. If that is intended (dead end), leave it. Otherwise drag the end in “Select” onto the point it should connect to.</li>
+  <li>Simply draw through doors, airlocks and fire doors. If a door is a bottleneck (only one trolley at a time), enter that on the path segment, see below.</li>
+</ul>
+
+<h3 id="editor-punkte">Points and their types</h3>
+<p>Every point has a <strong>type</strong>. It determines what the point can be used for:</p>
+<table class="tabelle hilfe-tabelle">
+<tr><th>Type</th><th>Use</th></tr>
+<tr><td>Path point</td><td>Corner or junction of a path. Created automatically while drawing and usually unnamed.</td></tr>
+<tr><td>Start/destination</td><td>A place where goods start or end: store, kitchen, pharmacy, ward, reprocessing … Can be chosen as start and as destination in deliveries.</td></tr>
+<tr><td>Start point / Destination</td><td>As above, but meant only as start or only as destination. If in doubt, use “Start/destination”.</td></tr>
+<tr><td>Gate / dock (truck)</td><td>A gate where trucks are unloaded. The truck waits here until a gate is free; the goods only move on after unloading. See <a href="#/hilfe/berechnung-tor">Truck at the gate</a>.</td></tr>
+<tr><td>Lift/stairs</td><td>A stop of a lift or staircase. Place it on <strong>every</strong> floor where the lift stops and choose the <strong>same</strong> lift each time. This connects all floors.</td></tr>
+<tr><td>Connection</td><td>Link to a point on another floor or in another building section without a lift: bridge, link corridor, ramp between houses.</td></tr>
+</table>
+
+<p><strong>Fields of a point</strong> (shown depending on the type):</p>
+<table class="tabelle hilfe-tabelle">
+<tr><th>Field</th><th>Meaning</th></tr>
+<tr><td>Name</td><td>How the point appears in deliveries, selection lists and Excel import. Choose unique names (e.g. “B25”, “Store GF”, “Gate 1”). If the same name exists on several floors, floor and short name are added to tell them apart.</td></tr>
+<tr><td>Type</td><td>See the table above.</td></tr>
+<tr><td>At most at the same time</td><td><strong>For a gate/dock:</strong> how many trucks can be unloaded at the same time, i.e. the number of gates at this point (empty = 1). Three neighbouring gates can be one point with “3” or three points. <strong>For start/destination points:</strong> how many trolleys can be loaded or unloaded there at once, e.g. 2 places at the pharmacy reception. Empty = unlimited.</td></tr>
+<tr><td>Unloading per pallet/cart (minutes), from … to</td><td>Only for gates: how long the gate is occupied per unit. A truck with 10 pallets at 2 minutes per pallet occupies the gate for 20 minutes. Empty = 2 minutes. With a value in <em>to</em> the time varies randomly between both values; this only affects the <a href="#/hilfe/auswertung-streuung">Variation</a> analysis. Otherwise the average is used.</td></tr>
+<tr><td>Lift or stairs</td><td>Only for type “Lift/stairs”: which lift or staircase. <em>+ new lift</em> / <em>+ new stairs</em> creates it directly. Set travel times and spaces afterwards under <a href="#/hilfe/stammdaten-aufzuege">Master data</a>.</td></tr>
+<tr><td>Connections to other floors</td><td>Only for connections: <em>Add connection</em> → choose the target point on another floor and enter the path length in metres. Lifts do not need this.</td></tr>
+<tr><td>Lies in</td><td>Shows the room or area containing the point (display only).</td></tr>
+<tr><td>Continues to</td><td>For lifts and connections: which floors can be reached from here.</td></tr>
+</table>
+<p>A point must be attached to a path, otherwise it cannot be reached. So place it directly on the path. If it lies next to it, <em>Connect to the nearest path</em> in the point form or <em>Check gaps</em> offers the connection.</p>
+
+<h3 id="editor-strecken">Path segments: length, bottlenecks and blocking</h3>
+<p>In “Select” mode click a path. The form applies to the clicked piece between two points.</p>
+<table class="tabelle hilfe-tabelle">
+<tr><th>Field</th><th>Meaning</th></tr>
+<tr><td>Name</td><td>Optional, e.g. “Corridor East” or “Fire door B”. Only named segments can be blocked in <a href="#/hilfe/szenarien">scenarios</a> and appear by name in the analysis.</td></tr>
+<tr><td>Length in metres</td><td>Empty = calculated from plan and scale. Only fill in if the real route is longer than the drawn line, e.g. a ramp or a detour.</td></tr>
+<tr><td>At most at the same time</td><td>Bottleneck: how many trolleys fit through at once, e.g. 1 for a narrow door. Further trips wait in front of it. Empty = unlimited.</td></tr>
+<tr><td>Blocked for</td><td>Ticked transport types may not use this segment. Route finding takes another way for them. If there is none, the delivery shows up in “Getting started” as “route blocked”. Blocked segments are dashed red.</td></tr>
+<tr><td>For the whole path up to the next junction</td><td>If ticked, “Blocked for”, “At most at the same time” and “Name” apply to all pieces up to the next junction or named point. The number in brackets says how many pieces that is.</td></tr>
+</table>
+<div class="hilfe-tipp"><strong>Example: block a path for the AGV.</strong> Edit mode → <em>Select</em> → click the path → tick “AGV” under <em>Blocked for</em> → tick <em>For the whole path up to the next junction</em> → Save. The path turns dashed red. People may still use it; the AGV goes around.</div>
+
+<h3 id="editor-aufzuege">Lifts and stairs across several floors</h3>
+<ol>
+  <li>On the first floor use <em>Add point</em> to place the lift directly on the corridor in front of the lift door, type “Lift/stairs”, then <em>+ new lift</em> and give it a name (e.g. “Lift West”).</li>
+  <li>On every other floor where it stops, add another “Lift/stairs” point and choose the <strong>same</strong> “Lift West” in the list.</li>
+  <li>Enter spaces and times under <a href="#/hilfe/stammdaten-aufzuege">Master data → Lifts and stairs</a>.</li>
+</ol>
+<p>All points with the same lift are connected automatically. The travel time follows from the difference of the <a href="#/hilfe/gebaeude-stockwerke">levels</a>. Stairs work the same way but may only be used by transport types with “Can use stairs” ticked.</p>
+<p>“Getting started” reports a lift drawn on only one floor and floors not connected to the rest of the network.</p>
+
+<h3 id="editor-uebergaenge">Connections between building sections</h3>
+<p>For bridges, link corridors or ramps between houses: place a “Connection” point on both sides, each on the path. Then at one of them use <em>Add connection</em>, choose the point on the other side and enter the path length in metres. The connection works in both directions.</p>
+
+<h3 id="editor-luecken">Check gaps</h3>
+<p>Small gaps easily happen while drawing: one corridor ends half a metre next to another, or a point lies beside the path. The <em>⇢ Check gaps</em> button shows the number of such places. A click goes through them <strong>one by one</strong>: the map jumps to the spot, shows the suggestion dashed and asks:</p>
+<ul>
+  <li><strong>Yes, connect:</strong> the two ends, or the point and the path, are connected.</li>
+  <li><strong>No:</strong> everything stays as it is <em>and this place is never reported again</em>. Right for intended dead ends or two corridors that are not connected (e.g. separated by a wall).</li>
+  <li><strong>End check:</strong> stop. The remaining places stay open.</li>
+</ul>
+<p>Logistik Map never connects anything without your “Yes”.</p>
+
+<h3 id="editor-raeume">Rooms and areas</h3>
+<p>Rooms and areas are optional and only for orientation. They do not affect route finding.</p>
+<table class="tabelle hilfe-tabelle">
+<tr><th>Field</th><th>Meaning</th></tr>
+<tr><td>Name</td><td>e.g. “Linen store” or “Ward B2”.</td></tr>
+<tr><td>Room number</td><td>Optional, e.g. “E.1.023”.</td></tr>
+<tr><td>Type</td><td>Room or area. An area contains rooms.</td></tr>
+<tr><td>Colour</td><td>Fill colour on the map.</td></tr>
+<tr><td>Belongs to area</td><td>For rooms: the parent area.</td></tr>
+</table>
+<p>Drag corners to move them. Dragging the middle of an edge inserts a corner; double-clicking a corner deletes it.</p>
+
+<h3 id="editor-ausrichten">Aligning after a plan change</h3>
+<p>If a new plan version is shifted, rotated or scaled differently, the drawn paths no longer fit. To realign them:</p>
+<ol>
+  <li>Choose the <em>Align</em> tool.</li>
+  <li>Click a drawn point or a room corner (old position).</li>
+  <li>Click the spot on the new plan where this point belongs (new position).</li>
+  <li>Repeat for at least 2, better 3 pairs, as far apart as possible (e.g. three building corners).</li>
+  <li><em>Apply</em>. All elements are moved, rotated and scaled; the scale adjusts.</li>
+</ol>
+</section>
+
+<section id="stammdaten">
+<h2>Master data</h2>
+<p>Master data is the basis of all calculations. Example values are entered. Check and adapt them to your hospital, otherwise the analysis calculates with assumptions. Each hospital has its own master data.</p>
+
+<h3 id="stammdaten-transportarten">Transport types</h3>
+<p>A transport type describes <strong>who or what</strong> transports. Typical are “Transport service” (people pushing trolleys) and “AGV” (automated guided vehicles).</p>
+<table class="tabelle hilfe-tabelle">
+<tr><th>Field</th><th>Meaning and typical values</th></tr>
+<tr><td>Name</td><td>How the transport type appears in deliveries and analyses.</td></tr>
+<tr><td>Colour</td><td>Colour of the trips in the timeline and in charts.</td></tr>
+<tr><td>Speed (m/s)</td><td>Average speed on the paths. Pushing a trolley: about 0.8–1.2 m/s, AGVs often 0.5–1.0 m/s. 1 m/s = 3.6 km/h, a slow walk.</td></tr>
+<tr><td>Loading time at start (seconds)</td><td>How long loading or picking up the trolleys at the start takes, per trip.</td></tr>
+<tr><td>Unloading time at destination (seconds)</td><td>How long parking and handing over at the destination takes, per trip. Also applies at the return destination for a loaded return trip.</td></tr>
+<tr><td>Trolleys per trip</td><td>How many trolleys a person or vehicle moves at once. With 1, 6 linen trolleys become 6 trips; with 2, 3 trips.</td></tr>
+<tr><td>Number of vehicles / staff</td><td>How many people or vehicles are on duty <strong>at the same time</strong>. For the transport service, the number of staff driving transports at the same time; for AGVs, the number of vehicles. This means people on duty, not positions: add breaks, holidays and sickness yourself. Each trip occupies one person or vehicle from departure until return. If all are busy, the next trip waits. <strong>0 = unlimited.</strong> Then nobody ever waits for staff and missing staff never shows up as a bottleneck.</td></tr>
+<tr><td>Reserves the lift exclusively</td><td>For AGVs: the vehicle travels alone in the car, people have to leave. The lift's clearing time is added. Not ticked: the trip shares the car with other trolleys as long as there is space.</td></tr>
+<tr><td>Can use stairs</td><td>Only ticked transport types may use stairs, e.g. a messenger with a box. An AGV cannot.</td></tr>
+<tr><td>Shifts</td><td>Optional. Each row is a shift with time from–to, number and weekdays, e.g. “Mon–Fri 06:00–14:00, 3 people”. <strong>If shifts are entered, their number applies instead of the fixed number above.</strong> Outside all shifts nobody is available; trips wait until the next shift starts. Overlapping shifts add up.</td></tr>
+</table>
+
+<h3 id="stammdaten-aufzuege">Lifts and stairs</h3>
+<p>On the map you place lifts as points at every stop. Their properties are set here.</p>
+<table class="tabelle hilfe-tabelle">
+<tr><th>Field</th><th>Meaning and typical values</th></tr>
+<tr><td>Name</td><td>e.g. “Lift West” or “Bed lift 3”.</td></tr>
+<tr><td>Type</td><td>Lift or stairs. For stairs only the time per floor counts.</td></tr>
+<tr><td>Spaces</td><td>How many standard trolleys fit into the car at once (1 space = 1 linen trolley). A pallet needing 2 spaces takes the whole car of a 2-space lift. 0 = unlimited.</td></tr>
+<tr><td>Travel time per floor (seconds)</td><td>Pure travel time for one floor, typically 3–10 s. For stairs: time for one floor on foot with a load, about 20–40 s.</td></tr>
+<tr><td>Door time (seconds)</td><td>Opening, getting in or out and closing. Counted twice (in and out), typically 8–15 s.</td></tr>
+<tr><td>Average wait for the car (seconds)</td><td>Until the car arrives after calling, including passenger traffic. If the car is already on the floor, this time is skipped. Typically 20–60 s.</td></tr>
+<tr><td>Clearing time for AGVs (seconds)</td><td>Extra time until people have left when an AGV reserves the lift.</td></tr>
+<tr><td>Only for these transport types</td><td>Nothing ticked = everyone may use the lift. If some are ticked, only those may. Use this for a bed-only lift or an AGV lift.</td></tr>
+<tr><td>Base load by people</td><td>Time windows with a percentage, e.g. “Mon–Fri 07:00–09:00, 40 %”. Means: in this period the lift is busy with staff, patients and visitors 40 % of the time. These passenger trips block the car, so goods wait longer. Passenger trips themselves do not count as waiting time.</td></tr>
+</table>
+<p><strong>How the system calculates a lift trip:</strong></p>
+<p class="hilfe-formel">Duration = average wait for the car + 2 × door time + floors × travel time per floor (+ clearing time for AGVs)</p>
+<p>Example: 30 s wait + 2 × 10 s door + 3 floors × 8 s = 74 seconds. With an AGV and 20 s clearing time: 94 seconds.</p>
+<div class="hilfe-achtung"><strong>Do not count twice:</strong> “Average wait for the car” and “Base load” both model passenger traffic. If you enter a base load, set the average wait rather small (e.g. 10 s), otherwise passenger traffic counts twice.</div>
+
+<h3 id="stammdaten-wagentypen">Cart types</h3>
+<table class="tabelle hilfe-tabelle">
+<tr><th>Field</th><th>Meaning</th></tr>
+<tr><td>Name</td><td>e.g. linen trolley, roll container, food trolley, pallet, bed. The name is also recognised in the Excel import (“12 linen trolleys”).</td></tr>
+<tr><td>Space needed</td><td>How many lift spaces one cart needs. 1 = one standard space (linen trolley), 2 e.g. for a pallet or a bed. If a cart does not fit into a car at all, the analysis reports “did not fit into the car”.</td></tr>
+</table>
+</section>
+
+<section id="lieferungen">
+<h2>Deliveries and transports</h2>
+<p>A delivery describes a recurring transport: <strong>what</strong> (load), <strong>when</strong> (time and days), <strong>from where to where</strong> and <strong>what happens afterwards</strong> (return trip). This covers external deliveries (trucks), supply of the wards, disposal and internal transports such as bed exchange.</p>
+
+<h3 id="lieferungen-schnell">New delivery in one line</h3>
+<p>At the top of the page there is a sentence to fill in:</p>
+<p class="hilfe-formel">At [08:00] , [5] [pallets] from [Gate 1] to [B25], then [return empty] → Add</p>
+<p>The system finds the route, the lift and the transport type itself. The name becomes “Gate 1 → B25” automatically. After adding, a message confirms it, e.g. “uses transport service, approx. 6 min route”. If there is no route yet, the message says so and “Getting started” shows the cause. Everything else (days, period, deadline …) you change afterwards in the list with <em>Edit</em>.</p>
+<p>The choice after “then”:</p>
+<ul>
+  <li><strong>return empty:</strong> the person or vehicle returns empty to the start (default).</li>
+  <li><strong>return loaded:</strong> something is carried back again, e.g. soiled bed there, clean bed back.</li>
+  <li><strong>stays there / truck leaves:</strong> no return trip, e.g. for external suppliers.</li>
+</ul>
+
+<h3 id="lieferungen-formular">All fields of a delivery</h3>
+<table class="tabelle hilfe-tabelle">
+<tr><th>Field</th><th>Meaning</th></tr>
+<tr><td>Name</td><td>Name in lists and analyses. Empty = automatically “Start → Destination”.</td></tr>
+<tr><td>Supplier / service provider</td><td>Optional, for information only (e.g. laundry, wholesaler).</td></tr>
+<tr><td>Direction</td><td><strong>Supply</strong> (goods to the ward), <strong>Disposal</strong> (waste, soiled linen away from the ward) or <strong>Internal</strong> (between two areas, e.g. bed to reprocessing). Used for filtering in timeline and analysis; the calculation is the same.</td></tr>
+<tr><td>Transport type</td><td>Who drives. <strong>Automatic (whatever gets through)</strong> takes the first transport type, in the order of the master data, that has a route there and back. Choose a fixed transport type if a delivery should always go by AGV, for example.</td></tr>
+<tr><td>Time (arrival at start)</td><td>When the goods are ready at the start or the truck arrives at the gate. From then on a vehicle or person is requested.</td></tr>
+<tr><td>At destination by</td><td>Optional. If the goods arrive later, the trip counts as <strong>late</strong> and is counted red in the analysis. Ideal for meal times or the start of surgery.</td></tr>
+<tr><td>Variation ± min</td><td>How many minutes earlier or later the arrival can be, e.g. 15 for a truck arriving between 7:45 and 8:15. Only used in the <a href="#/hilfe/auswertung-streuung">Variation</a> analysis, where the planned time is most frequent and the edges rarer.</td></tr>
+<tr><td>Start / Destination</td><td>Points on the map. Start and destination may be on different floors and in different houses.</td></tr>
+<tr><td>Load</td><td>One cart type and a number per row, e.g. 6 linen trolleys and 2 roll containers. Together with “Trolleys per trip” this gives the number of trips.</td></tr>
+<tr><td>When</td><td>On which days the delivery takes place, see <a href="#/hilfe/lieferungen-regeln">Days, holidays and period</a>.</td></tr>
+<tr><td>Return trip</td><td>What happens after unloading, see <a href="#/hilfe/lieferungen-rueckweg">Return trip</a>.</td></tr>
+<tr><td>Via points</td><td>Optional: points the route <em>must</em> pass, e.g. a particular lift or airlock. Otherwise the fastest route is taken.</td></tr>
+<tr><td>Active</td><td>Not ticked = paused. The delivery is kept but not included in timeline and analysis.</td></tr>
+<tr><td>Note</td><td>Free text, e.g. contact person.</td></tr>
+</table>
+
+<h3 id="lieferungen-regeln">Days, holidays and period</h3>
+<table class="tabelle hilfe-tabelle">
+<tr><th>Field</th><th>Meaning</th></tr>
+<tr><td>Weekdays</td><td>On which days. Quick choice: daily, Mon–Fri, Mon–Sat, weekend. No day ticked = additional days only.</td></tr>
+<tr><td>Public holidays and special days</td><td><strong>not on public holidays</strong> (default): skipped on public holidays of the federal state and on own special days. <strong>also on public holidays:</strong> takes place anyway. <strong>only on public holidays:</strong> e.g. a special service.</td></tr>
+<tr><td>Valid from / until</td><td>Optional period, e.g. for construction work or a new contract.</td></tr>
+<tr><td>Exceptions (cancelled)</td><td>Single dates on which the delivery is cancelled, as YYYY-MM-DD, separated by commas.</td></tr>
+<tr><td>Additional days</td><td>Single dates on which it also takes place.</td></tr>
+</table>
+<p>Own special days (carnival, staff outing, emergency operation) are entered under <a href="#/hilfe/einstellungen">Settings</a>. They count like public holidays.</p>
+
+<h3 id="lieferungen-rueckweg">Return trip</h3>
+<table class="tabelle hilfe-tabelle">
+<tr><th>Choice</th><th>What happens</th></tr>
+<tr><td>return empty to start</td><td>After unloading, the person or vehicle returns empty. Only then are they free again.</td></tr>
+<tr><td>return loaded</td><td>A load is taken back (soiled linen, empties, clean bed). The return trip needs the same lift spaces as the outward trip and is unloaded at the return destination.</td></tr>
+<tr><td>return later at a fixed time</td><td>The trolleys stay at the destination and are collected at the given time, e.g. food trolleys after the meal. Delivery and collection are two separate trips; in between the person is free.</td></tr>
+<tr><td>no return</td><td>The trip ends at the destination, e.g. for an external supplier.</td></tr>
+<tr><td>Return to</td><td>Where the return trip goes: to the start point (default) or another point. Example bed exchange: soiled bed from the ward to reprocessing, return <em>loaded</em> to the ward, i.e. the clean bed back.</td></tr>
+</table>
+
+<h3 id="lieferungen-liste">The list</h3>
+<ul>
+  <li><strong>Search:</strong> filters by name, supplier, start and destination.</li>
+  <li><strong>Route:</strong> shows the route found on the map, floor by floor, with length and travel time.</li>
+  <li><strong>Copy:</strong> creates a copy, handy for similar deliveries to other wards.</li>
+  <li><strong>paused</strong> marks inactive deliveries.</li>
+</ul>
+
+<h3 id="lieferungen-excel">Excel: template, export and import</h3>
+<p>The <strong>Excel</strong> button downloads all deliveries as an Excel file. A second sheet explains the columns; if the list is empty, the file is the template. <strong>Import</strong> reads such a file (or CSV) back in.</p>
+<table class="tabelle hilfe-tabelle">
+<tr><th>Column</th><th>Content</th></tr>
+<tr><td>ID</td><td>Leave empty for new deliveries. With an ID the existing delivery is changed.</td></tr>
+<tr><td>Name, supplier</td><td>Text.</td></tr>
+<tr><td>Direction</td><td>Supply, disposal or internal (German column values: Versorgung, Entsorgung, Intern).</td></tr>
+<tr><td>Transport type</td><td>Name as in master data, e.g. AGV.</td></tr>
+<tr><td>Start, destination, return to</td><td>Name of the point. If the name exists several times: “Name (floor)” or “Name (floor, short name)”.</td></tr>
+<tr><td>Time, deadline, return time</td><td>HH:MM, e.g. 08:00.</td></tr>
+<tr><td>Variation (± min)</td><td>Number, e.g. 15.</td></tr>
+<tr><td>Load</td><td>e.g. “12 linen trolleys, 2 roll containers” (names as under cart types).</td></tr>
+<tr><td>Days</td><td>daily, Mon-Fri, Mon-Sat, weekend or individual days.</td></tr>
+<tr><td>Holidays</td><td>not (default), also or only.</td></tr>
+<tr><td>Valid from / until</td><td>Date, optional.</td></tr>
+<tr><td>Return trip</td><td>empty (default), loaded, later, none.</td></tr>
+<tr><td>Active</td><td>yes or no.</td></tr>
+<tr><td>Note</td><td>Text.</td></tr>
+</table>
+<p>The column headers and the values are the ones in the downloaded file; the sheet “Hinweise” lists the exact spellings. Before applying, Logistik Map shows a preview: which rows are new, which will be changed and which have errors, e.g. “start unknown”. Nothing is applied until all rows are fine. Correct the marked rows in the file and import again.</p>
+</section>
+
+<section id="berechnung">
+<h2>How Logistik Map calculates</h2>
+<p>This chapter explains what happens behind timeline and analysis, so you can judge the results and adjust master data in a targeted way.</p>
+
+<h3 id="berechnung-fahrten">Deliveries become trips</h3>
+<p>For the chosen day the system takes all active deliveries that take place on that day. Each delivery becomes trips: number of trolleys divided by “trolleys per trip”, rounded up. 7 linen trolleys at 2 per trip become 4 trips. All trips of a delivery start at the same time, i.e. one after another if staff is limited.</p>
+<p>Deliveries from the previous day that run past midnight are included, so that staff and lifts are not artificially free in the morning.</p>
+
+<h3 id="berechnung-weg">Route finding</h3>
+<p>For every trip the system finds the <strong>fastest</strong> route through the network, measured in time, not metres. It counts:</p>
+<ul>
+  <li>the length of each path segment (from plan and scale or the entered value) divided by the speed of the transport type,</li>
+  <li>lift trips with waiting, door and travel time, stairs with their time per floor,</li>
+  <li>connections with their entered length.</li>
+</ul>
+<p>Excluded are path segments blocked for the transport type, lifts it may not use and stairs if “Can use stairs” is not ticked. With via points the route must pass them. Waiting times do not influence route choice: the system does not switch to another lift by itself if one is full. Model that with via points or scenarios.</p>
+
+<h3 id="berechnung-ablauf">Course of a trip</h3>
+<ol>
+  <li><strong>Request a vehicle or person:</strong> at the time of the delivery. If nobody is free (number or shift exhausted), the trip waits. This counts as waiting <em>for vehicle</em>.</li>
+  <li><strong>Loading at the start:</strong> loading time of the transport type. If the start point has “At most at the same time”, the trip waits for a free place.</li>
+  <li><strong>Driving:</strong> segment by segment. At bottlenecks it waits until there is room (<em>at bottleneck</em>).</li>
+  <li><strong>Lift:</strong> the trip joins the queue (<em>at lift</em>), see below.</li>
+  <li><strong>Unloading at the destination:</strong> unloading time, possibly waiting for a free place.</li>
+  <li><strong>Return trip</strong> as set. Only then is the person or vehicle free again.</li>
+</ol>
+
+<h3 id="berechnung-aufzug">How the lift is calculated</h3>
+<ul>
+  <li>Every lift is <strong>one</strong> car. Waiting trips board in order of arrival.</li>
+  <li>Trips with the same start and destination floor travel together as long as there is space. A linen trolley (1 space) and a roll container (1 space) fit together into a car with 2 spaces.</li>
+  <li>Transport types with “Reserves the lift exclusively” (AGV) always travel alone and need the clearing time on top.</li>
+  <li>If the car is already on the right floor, the average wait for the car is skipped.</li>
+  <li>Base load: in the entered time window, passenger trips occupy the car for the given share of time.</li>
+</ul>
+
+<h3 id="berechnung-tor">Truck at the gate</h3>
+<p>If a delivery starts at a point of type “Gate / dock (truck)”:</p>
+<ol>
+  <li>The truck arrives at the given time and waits until one of the gates is free (“At most at the same time”, empty = 1).</li>
+  <li>It occupies the gate for <em>units × minutes per unit</em>: 10 pallets × 2 minutes = 20 minutes.</li>
+  <li>Only then do the trips into the building start, which need staff, lifts and paths as usual.</li>
+</ol>
+<p>If 4 trucks arrive at the same time at a gate with “1”, the second is unloaded after the first, the third after the second and so on. The analysis then shows the gate as a bottleneck with waiting time.</p>
+
+<h3 id="berechnung-zahlen">What the figures mean</h3>
+<table class="tabelle hilfe-tabelle">
+<tr><th>Figure</th><th>Meaning</th></tr>
+<tr><td>Waiting time</td><td>Time a trip stands still because something is occupied: <em>for vehicle</em> (no staff or vehicle free), <em>at lift</em>, <em>at bottleneck</em> (bottleneck, gate, loading place). Loading, driving and unloading are not waiting time.</td></tr>
+<tr><td>Utilisation</td><td>Share of capacity occupied in a 5-minute step. 100 % means all places, all people or the car were busy for the whole 5 minutes.</td></tr>
+<tr><td>Bottleneck</td><td>A place where someone waits at least 1 minute or which is 90 % or more utilised.</td></tr>
+<tr><td>late</td><td>Trips arriving after “At destination by”.</td></tr>
+</table>
+<div class="hilfe-tipp"><strong>The model is deliberately coarse.</strong> It does not know oncoming traffic in corridors, breaks within a shift or people switching to other lifts. It is good for finding bottlenecks and <em>comparing</em> variants. The absolute minutes are guide values; the better the master data, the closer to reality.</div>
+</section>
+
+<section id="ablauf">
+<h2>Timeline on the map</h2>
+<p>In the map's <em>Timeline</em> mode you play back a day. Every trip is a dot in the colour of its transport type moving along the paths.</p>
+<table class="tabelle hilfe-tabelle">
+<tr><th>Control</th><th>Meaning</th></tr>
+<tr><td>Date</td><td>Which day is calculated. Weekday, holidays and the deliveries' periods are taken into account.</td></tr>
+<tr><td>Scenario</td><td>Play back the current state or a scenario.</td></tr>
+<tr><td>Time slider</td><td>Jump to a time of day.</td></tr>
+<tr><td>Play / Pause</td><td>Let time run.</td></tr>
+<tr><td>Playback speed</td><td>30× to 600×: at 60× one minute passes in one second.</td></tr>
+<tr><td>Which routes to show</td><td>Lines of the trips: only those on the way now, those of the next 15/30/60 minutes or the whole day. The thicker the line, the more trips use the segment. Hovering over a line shows the number of trips.</td></tr>
+<tr><td>Filters</td><td>Only show certain start points, transport types, directions or a single delivery. All trips are always calculated; filters only hide.</td></tr>
+<tr><td>Map as PDF</td><td>The current floor with the routes as PDF, e.g. for meetings.</td></tr>
+</table>
+<p><strong>States of the dots:</strong> on the way · waiting (for vehicle, at lift, at bottleneck) · in the lift · loading · unloading. The header counts how many are currently waiting on this floor; lifts show their queue. Clicking a dot shows the trip: delivery, trip x of y, from/to, planned, departure, arrival, back and how long and where it waited. If several are at the same spot, all are listed.</p>
+<p>When a trip changes floor, it disappears on this one and appears on the other. Choose another floor on the left to follow it. The footer shows deliveries, trips, bottlenecks and deliveries without a route with a link to the analysis.</p>
+</section>
+
+<section id="auswertung">
+<h2>Analysis</h2>
+<p>The analysis calculates all deliveries of a day. At the top choose the view (<em>Day</em>, <em>Week</em>, <em>Variation</em>, <em>Minimum needed</em>), the date and optionally a scenario.</p>
+
+<h3 id="auswertung-tag">“Day” view</h3>
+<p><strong>Filters:</strong> time from–to, start point and transport type limit the displayed trips and figures. All trips of the day are always calculated, so bottlenecks and utilisation apply to the whole day. <em>Recalculate</em> uses the current data.</p>
+<table class="tabelle hilfe-tabelle">
+<tr><th>Figure</th><th>Meaning</th></tr>
+<tr><td>deliveries / trips</td><td>How many deliveries take place that day and how many trips they become.</td></tr>
+<tr><td>late</td><td>Trips arriving after “At destination by”.</td></tr>
+<tr><td>longest wait</td><td>The longest total waiting time of a single trip.</td></tr>
+<tr><td>bottlenecks</td><td>Number of places with at least 1 minute waiting or at least 90 % utilisation.</td></tr>
+<tr><td>total waiting time</td><td>Sum of all waiting times of all trips. Good for comparing scenarios.</td></tr>
+</table>
+<p><strong>Bottlenecks:</strong> each card names the place (lift, bottleneck, loading point, vehicles), the longest and total waiting time, how many waited at most at once, the peak utilisation with time and ideas for a remedy. <em>Show on map</em> jumps to the place.</p>
+<p><strong>Utilisation over the day:</strong> one band per place in 5-minute steps. The darker or redder, the fuller. Hover for the exact value.</p>
+<p><strong>Trips:</strong> table of all trips with planned time, delivery, from/to, departure, arrival, waiting time and return. Late trips are marked.</p>
+<p><strong>Deliveries without a route</strong> are listed at the top in a separate box with the reason. They are not calculated.</p>
+<p><strong>Excel</strong> downloads overview, bottlenecks, trips and utilisation as an Excel file, <strong>Map as PDF</strong> the floors with routes, <strong>Print</strong> prints the page.</p>
+
+<h3 id="auswertung-woche">“Week” view</h3>
+<p>The week (Monday to Sunday) containing the chosen date. Each cell is one hour: the number is the trips, the colour the longest wait (green = none, yellow, red = long). Clicking a cell opens that day in the “Day” view. With a scenario, the current-state value is shown in grey next to it. This quickly finds the most critical weekday and hour.</p>
+
+<h3 id="auswertung-streuung">“Variation” view</h3>
+<p>The planned day uses exact times. In reality the truck comes earlier or later and unloading takes different amounts of time. The variation therefore calculates the chosen day many times with random deviations:</p>
+<ul>
+  <li>arrival ± the delivery's <em>variation</em> (planned time most frequent),</li>
+  <li>unloading time at the gate randomly between <em>from</em> and <em>to</em>,</li>
+  <li>passenger trips in lifts according to the <em>base load</em>, at different moments each time.</li>
+</ul>
+<table class="tabelle hilfe-tabelle">
+<tr><th>Input / result</th><th>Meaning</th></tr>
+<tr><td>Days</td><td>How many random days are calculated. 100 is a good value; more is more accurate but takes longer.</td></tr>
+<tr><td>Threshold (min)</td><td>From which waiting time a day counts as “bad”, e.g. 30 minutes.</td></tr>
+<tr><td>% of days …</td><td>On how many of the calculated days someone somewhere waits longer than the threshold.</td></tr>
+<tr><td>longest wait on 9 of 10 days at most</td><td>The value the longest wait does not exceed on 90 % of days.</td></tr>
+<tr><td>Where it gets tight</td><td>Per place: share of days over the threshold, typical value (median), value on 9 of 10 days, worst day and utilisation on 9 of 10 days.</td></tr>
+<tr><td>Deliveries</td><td>Per delivery: on how many days late, on how many over the threshold, and the wait on 9 of 10 days.</td></tr>
+</table>
+<p>How to read: “Days over 30 min = 20 %” means that on every fifth day at least one transport waits there longer than 30 minutes. Without entered variation and base load all days are the same; the page points this out.</p>
+
+<h3 id="auswertung-bedarf">“Minimum needed” view</h3>
+<p>Answers the question: <strong>how many do I need at least so that nobody waits longer than X minutes?</strong> The system tries 1, 2, 3 … and names the smallest number that is enough.</p>
+<table class="tabelle hilfe-tabelle">
+<tr><th>Input / result</th><th>Meaning</th></tr>
+<tr><td>What?</td><td>A transport type (number of vehicles or staff), a gate or loading point (number of gates or places) or a bottleneck (how many at once).</td></tr>
+<tr><td>maximum wait (min)</td><td>Goal: nobody waits longer <em>at this place</em>, e.g. 15 minutes.</td></tr>
+<tr><td>with variation</td><td>Calculate 30 random days per number. It is enough if the goal is met on 9 of 10 days.</td></tr>
+<tr><td>“Number” column</td><td>The number tried. For a transport type this means: this many people or vehicles <strong>on duty at the same time</strong>, all day. It is not a staffing ratio (no full-time equivalents): for staff planning add shifts, breaks and absences.</td></tr>
+<tr><td>longest wait there</td><td>The longest wait at this place with this number. Green = goal reached.</td></tr>
+<tr><td>Utilisation (peak)</td><td>The highest utilisation in a 5-minute step.</td></tr>
+<tr><td>late trips</td><td>How many trips are late with this number.</td></tr>
+</table>
+<p>If the transport type has shifts, minimum needed still calculates with a fixed number all day. For the distribution over the day look at the utilisation in the “Day” view. If even the highest number tried is not enough, the bottleneck is probably elsewhere, e.g. at the lift.</p>
+</section>
+
+<section id="szenarien">
+<h2>Scenarios</h2>
+<p>A scenario is a copy of the current state with changes, for example: “Linen arrives at 7:30 instead of 8:00”, “Lift West under maintenance”, “one more AGV”, “Fire door B closed”. The real data stays unchanged until you explicitly apply a scenario.</p>
+
+<h3 id="szenarien-anlegen">Creating and editing</h3>
+<p><em>Add scenario</em> → name and description. In the editor you only change what should be different. Changed fields are marked; the list shows the number of differences.</p>
+<table class="tabelle hilfe-tabelle">
+<tr><th>Section</th><th>What can be changed</th></tr>
+<tr><td>Deliveries</td><td>Active, time, deadline, transport type.</td></tr>
+<tr><td>Lifts and stairs</td><td>Out of service, spaces, travel time per floor.</td></tr>
+<tr><td>Transport types</td><td>Number and speed. A changed number applies all day in the scenario, instead of the shifts.</td></tr>
+<tr><td>Ramps and loading points</td><td>How many can be loaded or unloaded at once, or how many truck gates there are.</td></tr>
+<tr><td>Block path segments</td><td>Block named path segments, e.g. a door closed for construction. Only named segments appear here; you give names in the map editor.</td></tr>
+</table>
+
+<h3 id="szenarien-vergleichen">Viewing, comparing, applying</h3>
+<ul>
+  <li><strong>Compare:</strong> opens the analysis with this scenario. The small grey numbers show the current state for comparison, with a conclusion above, e.g. “In the scenario there is 1 h 20 min less waiting in total. Late trips: 5 → 1”.</li>
+  <li><strong>Timeline:</strong> the scenario can also be chosen at the top of the map timeline and in the Week, Variation and Minimum needed views.</li>
+  <li><strong>Apply:</strong> writes the changed <em>deliveries</em> into the current state, after confirmation. Changes to lifts, transport types, ramps and blocks are <em>not</em> applied; enter those yourself in master data or on the map if needed.</li>
+</ul>
+</section>
+
+<section id="einstellungen">
+<h2>Settings</h2>
+
+<h3 id="einstellungen-allgemein">General</h3>
+<table class="tabelle hilfe-tabelle">
+<tr><th>Field</th><th>Meaning</th></tr>
+<tr><td>Federal state (for public holidays)</td><td>Applies to the hospital currently open. Determines the public holidays; the list of this year's holidays is shown below.</td></tr>
+<tr><td>Language</td><td>Default language for everyone. Everyone can choose their own via the menu at the top right.</td></tr>
+<tr><td>Sign out after … hours without use</td><td>After this many hours of inactivity users must sign in again.</td></tr>
+<tr><td>Active Directory users must sign in again after at most … hours</td><td>So changed AD groups or locked accounts take effect at the latest then.</td></tr>
+<tr><td>Keep audit log (days)</td><td>Older entries are deleted daily. 0 = unlimited.</td></tr>
+</table>
+
+<h3 id="einstellungen-sondertage">Own special days</h3>
+<p>Additional days that count like public holidays: local holidays, carnival, emergency operation. Deliveries marked “not on public holidays” are skipped, those marked “only on public holidays” take place. Special days apply per hospital.</p>
+
+<h3 id="einstellungen-standorte">Hospitals</h3>
+<p>List of all hospitals with their content (building sections, deliveries): open, rename, delete, add. See <a href="#/hilfe/standorte">Several hospitals</a>.</p>
+
+<h3 id="einstellungen-sicherung">Backup</h3>
+<ul>
+  <li>Logistik Map backs up the database <strong>daily</strong> and additionally all PDF plans <strong>once a week</strong>, in the data folder under “sicherungen”.</li>
+  <li><strong>Keep automatic backups:</strong> how many are kept.</li>
+  <li><strong>Back up now</strong> and <strong>Download backup</strong> always contain everything (database and plans). Also keep a downloaded backup in another place.</li>
+  <li><strong>Restore backup:</strong> replaces <em>all</em> data of all hospitals with the state of the backup. The current state is backed up automatically first. If plans are missing from a database-only backup, Logistik Map lists them; they must be uploaded again.</li>
+</ul>
+
+<h3 id="einstellungen-updates">Updates</h3>
+<p><em>Check now</em> asks GitHub for a new version. <em>Install update</em> downloads and installs it. Logistik Map is unavailable for about a minute; the data is kept. If the server has no internet access, install the update manually: download the new installer and run it on the server.</p>
+
+<h3 id="einstellungen-ad">Sign-in via Active Directory</h3>
+<table class="tabelle hilfe-tabelle">
+<tr><th>Field</th><th>Meaning</th></tr>
+<tr><td>Turn on</td><td>Staff sign in with their Windows account. Local users keep working.</td></tr>
+<tr><td>Server</td><td>e.g. ldaps://dc01.clinic.local, several separated by commas.</td></tr>
+<tr><td>Domain</td><td>Appended to the user name: user@domain.</td></tr>
+<tr><td>Search base (base DN)</td><td>Where users and groups are searched, e.g. DC=clinic,DC=local.</td></tr>
+<tr><td>Groups → roles</td><td>Which AD group gets which role. The first matching row applies, so put the most powerful role at the top.</td></tr>
+<tr><td>Role without matching group</td><td>What users without a matching group get, or “no access”.</td></tr>
+<tr><td>Test sign-in</td><td>Check with a real account whether sign-in and group mapping work.</td></tr>
+</table>
+
+<h3 id="einstellungen-https">HTTPS</h3>
+<p>For an encrypted connection Logistik Map needs a certificate and its private key as PEM files on the server, ideally issued by your IT. Enter both paths, save and restart. Leaving both fields empty turns HTTPS off.</p>
+
+<h3 id="einstellungen-protokoll">Audit log</h3>
+<p>Via <em>View audit log</em>: every change with time, user, object and action, filterable by user and object type. Administrators only.</p>
+</section>
+
+<section id="benutzer">
+<h2>Users and roles</h2>
+
+<h3 id="benutzer-rechte">Rights</h3>
+<table class="tabelle hilfe-tabelle">
+<tr><th>Right</th><th>Allows</th></tr>
+<tr><td>View</td><td>View map, deliveries, timeline and analysis, download exports.</td></tr>
+<tr><td>Deliveries &amp; scenarios</td><td>Add, change and import deliveries; maintain and apply scenarios.</td></tr>
+<tr><td>Buildings, map &amp; master data</td><td>Upload plans, buildings and floors, draw paths and points, change master data.</td></tr>
+<tr><td>Administration</td><td>Users and roles, settings, hospitals, backup, updates, Active Directory, audit log.</td></tr>
+</table>
+
+<h3 id="benutzer-rollen">Roles</h3>
+<p>A role bundles rights. Built in are <strong>Administrator</strong> (everything), <strong>Planner</strong> (View + Deliveries &amp; scenarios) and <strong>Viewer</strong> (View only). These cannot be changed. You can add your own roles with any combination, e.g. “Map maintenance” with View and Buildings, map &amp; master data.</p>
+
+<h3 id="benutzer-anlegen">Users</h3>
+<table class="tabelle hilfe-tabelle">
+<tr><th>Field</th><th>Meaning</th></tr>
+<tr><td>User name</td><td>For signing in.</td></tr>
+<tr><td>Display name</td><td>Shown at the top right and in the audit log.</td></tr>
+<tr><td>Role</td><td>See above. For Active Directory users it is set from the groups at every sign-in.</td></tr>
+<tr><td>Password</td><td>At least 8 characters. When editing, leave empty = unchanged.</td></tr>
+<tr><td>Active</td><td>Deactivated users can no longer sign in but remain in the audit log.</td></tr>
+</table>
+<p>Everyone can change their own password via the menu at the top right.</p>
+</section>
+
+<section id="anleitungen">
+<h2>Step-by-step guides</h2>
+
+<h3 id="anleitung-lkw">Truck delivery through three gates into the store and to the ward</h3>
+<ol>
+  <li>Map → floor with the service yard → Edit.</li>
+  <li><em>Draw paths</em>: path from the dock through goods-in into the store and on to the lift. Right-click ends the line.</li>
+  <li><em>Add point</em> at the dock, type <em>Gate / dock (truck)</em>, name “Dock”, <em>At most at the same time</em> 3, unloading per pallet e.g. 2 to 4 minutes.</li>
+  <li>Place the point “Store” (start/destination) and the lift (lift/stairs) on the path. On the ward floor place the same lift, draw the corridor and add the point “B25”.</li>
+  <li>Deliveries: “At 08:00, 10 pallets from Dock to Store, then stays there / truck leaves”.</li>
+  <li>Distribution: “At 09:00, 2 roll containers from Store to B25, then return empty”.</li>
+  <li>Analysis → Day: does the truck wait at the gate? Does the distribution wait at the lift?</li>
+</ol>
+
+<h3 id="anleitung-bett">Bed exchange: soiled there, clean back</h3>
+<ol>
+  <li>Add points “Ward B25” and “Bed reprocessing”, check the cart type “Bed” (space needed 2).</li>
+  <li>Delivery: direction <em>Internal</em>, start ward B25, destination bed reprocessing, load 1 bed.</li>
+  <li>Return trip: <em>return loaded</em>, return to ward B25. The clean bed goes back.</li>
+  <li>In the one-line entry this is “then: return loaded (e.g. clean bed)”.</li>
+</ol>
+
+<h3 id="anleitung-personal">How many transport service staff do I need?</h3>
+<ol>
+  <li>Enter all deliveries of a typical day, check master data (speed, loading and unloading times, lifts).</li>
+  <li>Analysis → <em>Minimum needed</em> → What? “Transport service”, maximum wait e.g. 10 minutes → Calculate.</li>
+  <li>Result e.g. “4 vehicles or staff are enough”, i.e. 4 people on duty at the same time.</li>
+  <li>Repeat “with variation” to cover fluctuations.</li>
+  <li>In the “Day” view look at the utilisation to see <em>when</em> these 4 are needed, and build shifts from it (master data → transport type → shifts).</li>
+</ol>
+
+<h3 id="anleitung-wartung">What happens if a lift fails?</h3>
+<ol>
+  <li>Scenarios → <em>Add scenario</em>, name “Lift West under maintenance”.</li>
+  <li>Under lifts and stairs: tick Lift West <em>out of service</em>.</li>
+  <li><em>Compare</em>: how much longer is the waiting, which deliveries no longer have a route?</li>
+  <li>Shift times in the scenario until it works. If you like the result, write the deliveries into the current state with <em>Apply</em>.</li>
+</ol>
+
+<h3 id="anleitung-fts">An AGV must not use certain corridors</h3>
+<p>See <a href="#/hilfe/editor-strecken">Path segments</a>: click the path, “Blocked for: AGV”, tick “whole path”. If an AGV must not use a particular lift, tick all other transport types under “Only for these transport types” at the lift. If it should only use one particular lift, enter it as a via point.</p>
+</section>
+
+<section id="probleme">
+<h2>Troubleshooting</h2>
+<table class="tabelle hilfe-tabelle">
+<tr><th>Problem</th><th>Cause and solution</th></tr>
+<tr><td>“No route from … to …”</td><td>The network is interrupted somewhere. “Getting started” names the floor. Use <em>Check gaps</em> there and look for orange open ends. If the route is only blocked for one transport type, it says “route blocked”.</td></tr>
+<tr><td>“… is not attached to a path”</td><td>The point lies next to the path. Drag it onto the path in “Select” or use <em>Check gaps</em>.</td></tr>
+<tr><td>“Floor is not connected to the rest of the network”</td><td>A lift, stairs or connection is missing. Check that the lift on both floors is the same one (same name in the selection).</td></tr>
+<tr><td>“Lift is only drawn on one floor”</td><td>Add a “Lift/stairs” point on the other floors and choose the same lift.</td></tr>
+<tr><td>“… may not use …”</td><td>The lift is limited to other transport types in master data. Allow it or choose another transport type.</td></tr>
+<tr><td>Travel times are unrealistically long or short</td><td>Check the scale with <em>Measure distance</em> on a known wall. Check the transport type's speed.</td></tr>
+<tr><td>Nobody ever waits for staff</td><td>The transport type's number is 0 (unlimited) and there are no shifts.</td></tr>
+<tr><td>Waiting at the lift is very high</td><td>Base load and average wait may count twice. Check spaces and the carts' space needed. An AGV reserves the car alone.</td></tr>
+<tr><td>A delivery does not appear on a day</td><td>Check weekdays, holidays (“not on public holidays”), valid from/until, exceptions and “Active”.</td></tr>
+<tr><td>The plan stays grey or “waiting”</td><td>Large plans take a few minutes. On “error”: <em>Prepare again</em>, otherwise save the PDF anew (e.g. export again from the CAD program).</td></tr>
+<tr><td>Upload fails</td><td>A proxy in the network usually limits the size. Upload in a browser directly on the server.</td></tr>
+<tr><td>After an update I still see the old interface</td><td>Press <kbd>Ctrl</kbd> + <kbd>F5</kbd>.</td></tr>
+<tr><td>I suddenly see other buildings</td><td>Another hospital is selected at the top.</td></tr>
+</table>
+</section>

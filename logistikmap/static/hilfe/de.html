@@ -1,0 +1,702 @@
+<!-- Hilfe / Anleitung (Deutsch). Jede <section> mit id ist ein Kapitel; h3 mit id sind Unterkapitel.
+     Die Seite #/hilfe baut daraus Inhaltsverzeichnis und Suche. Links auf Kapitel: href="#/hilfe/<id>". -->
+
+<section id="ueberblick">
+<h2>Überblick: Was Logistik Map macht</h2>
+<p>Logistik Map bildet die Warenwege eines Krankenhauses nach: von der LKW-Rampe über Lager, Flure, Aufzüge und Treppen bis zur Station und wieder zurück. Du trägst ein, <strong>wo</strong> Ware fahren kann, <strong>wer</strong> sie fährt und <strong>was wann</strong> geliefert wird. Das Programm rechnet daraus einen ganzen Tag durch. Es zeigt dir, wo Transporte warten müssen, welcher Aufzug zu welcher Uhrzeit überlastet ist und wie viele Fahrzeuge oder Mitarbeitende du brauchst.</p>
+
+<h3 id="ueberblick-idee">Die Grundidee in vier Schritten</h3>
+<ol>
+  <li><strong>Pläne und Strecken:</strong> Du lädst die Grundrisse als PDF hoch und zeichnest darauf alle Strecken, auf denen Ware fahren <em>kann</em>, meist die Flure. Das ist kein fester Fahrweg. Du sagst dem System nur, wo es sich bewegen darf.</li>
+  <li><strong>Punkte:</strong> Auf die Strecken setzt du Punkte: Tore an der Rampe, das Lager, die Küche, Stationen, Aufzüge und Treppen.</li>
+  <li><strong>Stammdaten:</strong> Du legst fest, wie schnell der Materialtransportdienst oder ein FTS fährt, wie viele es davon gibt, wie viel in einen Aufzug passt und wie lange er für ein Stockwerk braucht.</li>
+  <li><strong>Lieferungen:</strong> Du trägst ein, was passiert, zum Beispiel „Um 8 Uhr kommen 5 Paletten von Tor 1 nach Station B25“. Den Weg, den Aufzug und die Transportart sucht das System selbst.</li>
+</ol>
+<p>Danach siehst du im <strong>Ablauf</strong> alle Fahrten als bewegte Punkte auf der Karte. Die <strong>Auswertung</strong> zeigt Wartezeiten, Engpässe und Auslastung. Mit <strong>Szenarien</strong> probierst du Änderungen aus („Was ist, wenn Aufzug West ausfällt?“), ohne die echten Daten anzufassen.</p>
+
+<div class="hilfe-tipp"><strong>Tipp:</strong> Die Seite <a href="#/start">Erste Schritte</a> prüft laufend, was noch fehlt. Bei jedem offenen Punkt führt ein Link direkt an die richtige Stelle. Wenn du nicht weiterweißt, schau dort zuerst nach.</div>
+
+<h3 id="ueberblick-begriffe">Die wichtigsten Begriffe</h3>
+<table class="tabelle hilfe-tabelle">
+<tr><th>Begriff</th><th>Bedeutung</th></tr>
+<tr><td>Krankenhaus (Standort)</td><td>Eine vollständig eigene Einrichtung mit eigenen Gebäuden, Plänen, Stammdaten und Lieferungen. Eine Installation kann mehrere Krankenhäuser verwalten.</td></tr>
+<tr><td>Gebäudeteil</td><td>Ein Haus oder Bauteil, z. B. „Haus A“, „Bettenhaus“, „Wirtschaftshof“.</td></tr>
+<tr><td>Stockwerk</td><td>Eine Ebene in einem Gebäudeteil. Jedes Stockwerk hat einen eigenen Plan und eigene Strecken.</td></tr>
+<tr><td>Strecke</td><td>Eine gezeichnete Linie, auf der Ware fahren kann. Sie besteht aus <em>Streckenstücken</em> (von Ecke zu Ecke bzw. von Kreuzung zu Kreuzung).</td></tr>
+<tr><td>Punkt</td><td>Ein Ort auf einer Strecke: Ecke, Kreuzung, Start-/Zielpunkt, Tor, Aufzug, Treppe oder Übergang.</td></tr>
+<tr><td>Netz</td><td>Alle Strecken und Punkte aller Stockwerke zusammen, verbunden über Aufzüge, Treppen und Übergänge.</td></tr>
+<tr><td>Transportart</td><td>Wer oder was fährt: z. B. „Materialtransportdienst“ (Menschen) oder „FTS“ (fahrerloses Transportsystem).</td></tr>
+<tr><td>Wagentyp</td><td>Was gefahren wird: Wäschewagen, Rollcontainer, Palette, Bett … mit seinem Platzbedarf im Aufzug.</td></tr>
+<tr><td>Lieferung</td><td>Ein wiederkehrender Transport: was, wann, von wo nach wo, wie oft, mit welchem Rückweg.</td></tr>
+<tr><td>Fahrt</td><td>Eine einzelne Tour einer Transportart. Eine Lieferung mit 6 Wäschewagen ergibt bei „1 Wagen je Fahrt“ sechs Fahrten.</td></tr>
+<tr><td>Engpass</td><td>Eine Stelle, an der Transporte warten müssen (mindestens 1 Minute) oder die zu 90 % oder mehr ausgelastet ist.</td></tr>
+<tr><td>Szenario</td><td>Eine Kopie des Ist-Zustands mit Änderungen zum Ausprobieren.</td></tr>
+</table>
+</section>
+
+<section id="erste-schritte">
+<h2>Erste Schritte: Die Einrichtung der Reihe nach</h2>
+<p>Die Seite <a href="#/start">Erste Schritte</a> führt dich durch die Einrichtung. Solange noch etwas offen ist, öffnet Logistik Map nach der Anmeldung diese Seite, und im Menü steht neben „Erste Schritte“ die Zahl der offenen Schritte. Jeder Schritt zeigt einen Zähler (z. B. „Mit Plan: 3 von 5“). Probleme stehen als Liste darunter, jeweils mit einem Link <em>Beheben →</em>.</p>
+
+<table class="tabelle hilfe-tabelle">
+<tr><th>Schritt</th><th>Was zu tun ist</th><th>Mehr dazu</th></tr>
+<tr><td>1. Bundesland festlegen</td><td>Davon hängen die Feiertage ab. Lieferungen mit „nicht an Feiertagen“ entfallen an diesen Tagen. Nur ein Administrator kann das einstellen.</td><td><a href="#/hilfe/einstellungen">Einstellungen</a></td></tr>
+<tr><td>2. Gebäudeteile und Stockwerke</td><td>Jeden Gebäudeteil und darin jedes Stockwerk mit seiner Ebene anlegen.</td><td><a href="#/hilfe/gebaeude">Gebäude &amp; Pläne</a></td></tr>
+<tr><td>3. PDF-Pläne hochladen und zuweisen</td><td>PDFs hochladen, jedem Stockwerk seine Seite zuweisen. Die Aufbereitung läuft im Hintergrund.</td><td><a href="#/hilfe/gebaeude-plaene">PDF-Pläne</a></td></tr>
+<tr><td>4. Maßstab festlegen</td><td>Auf jedem Stockwerk den Maßstab eintragen oder abmessen. Ohne Maßstab gibt es keine Weglängen und Fahrzeiten.</td><td><a href="#/hilfe/karte-massstab">Maßstab</a></td></tr>
+<tr><td>5. Karte zeichnen</td><td>Strecken, Punkte, Tore, Aufzüge und Treppen einzeichnen.</td><td><a href="#/hilfe/editor">Karte bearbeiten</a></td></tr>
+<tr><td>6. Stammdaten prüfen</td><td>Beispielwerte für Transportarten, Wagentypen und Aufzüge an euer Haus anpassen, dann „Werte passen“ klicken.</td><td><a href="#/hilfe/stammdaten">Stammdaten</a></td></tr>
+<tr><td>7. Lieferungen erfassen</td><td>Lieferungen und interne Transporte eintragen, einzeln oder per Excel-Import.</td><td><a href="#/hilfe/lieferungen">Lieferungen</a></td></tr>
+<tr><td>8. Ergebnis ansehen</td><td>Ablauf, Auswertung und Szenarien.</td><td><a href="#/hilfe/ablauf">Ablauf</a>, <a href="#/hilfe/auswertung">Auswertung</a></td></tr>
+</table>
+
+<p>Ein Schritt mit gelber Marke <em>Bitte prüfen</em> ist grundsätzlich erledigt, hat aber Hinweise, etwa einen Punkt, der an keiner Strecke hängt. Die Seite prüft auch nach der Einrichtung weiter mit. Kommt ein Stockwerk ohne Strecken oder eine Lieferung ohne Weg dazu, erscheint es wieder hier.</p>
+<p>Unter <em>Später, wenn es gebraucht wird</em> stehen Dinge, die für die Planung nicht nötig sind: weitere Benutzer, die Anmeldung über Active Directory und HTTPS.</p>
+</section>
+
+<section id="bedienung">
+<h2>Bedienung allgemein</h2>
+
+<h3 id="bedienung-kopf">Kopfzeile und Menü</h3>
+<ul>
+  <li><strong>Krankenhaus-Auswahl</strong> (neben „Logistik Map“): Hier wechselst du zwischen den Krankenhäusern. Administratoren finden hier auch <em>＋ Neues Krankenhaus …</em>. Siehe <a href="#/hilfe/standorte">Mehrere Krankenhäuser</a>.</li>
+  <li><strong>Menüpunkte</strong> in Arbeitsreihenfolge: Erste Schritte · Gebäude &amp; Pläne · Karte · Stammdaten · Lieferungen · Auswertung · Szenarien · Benutzer · Einstellungen · Hilfe. Du siehst nur die Seiten, für die deine Rolle Rechte hat.</li>
+  <li><strong>?</strong> öffnet die Hilfe genau zu der Seite, auf der du gerade bist.</li>
+  <li><strong>Dein Name</strong> (rechts) öffnet ein Menü: Sprache wählen, Passwort ändern, Abmelden. Fährst du mit der Maus darüber, siehst du Benutzername, Rolle und installierte Version.</li>
+</ul>
+
+<h3 id="bedienung-formulare">Formulare, Speichern und Rückfragen</h3>
+<ul>
+  <li>Unter den meisten Feldern steht eine kurze graue Erklärung. Diese Hilfe erklärt dieselben Felder ausführlicher.</li>
+  <li>Pflichtfelder lassen sich nicht leer speichern. Bei einem Fehler erscheint die Meldung oben im Dialog, deine Eingaben bleiben erhalten.</li>
+  <li>Logistik Map ändert das Netz nie ohne deine Zustimmung. Wo das System etwas verbinden oder löschen würde, fragt es vorher mit <em>Ja</em> oder <em>Nein</em>.</li>
+  <li>Bestätigungen und Fehler erscheinen unten rechts. Fehlermeldungen tragen einen Code. Den kannst du bei Rückfragen an die IT mitschicken.</li>
+</ul>
+
+<h3 id="bedienung-mehrere">Mehrere Personen gleichzeitig</h3>
+<p>Mehrere Personen können gleichzeitig arbeiten. Ändert jemand das Stockwerk, das du gerade bearbeitest, lädt die Karte neu und meldet, wer es geändert hat. Jede Änderung steht mit Zeitpunkt und Benutzer im <a href="#/hilfe/einstellungen-protokoll">Änderungsprotokoll</a>.</p>
+
+<h3 id="bedienung-update">Nach einem Update</h3>
+<p>Wird Logistik Map aktualisiert, lädt sich die geöffnete Seite von selbst neu, sobald sie die neue Version bemerkt (spätestens nach einer Minute oder beim Zurückwechseln in den Browser-Tab). Siehst du trotzdem die alte Oberfläche, drück einmal <kbd>Strg</kbd> + <kbd>F5</kbd>.</p>
+</section>
+
+<section id="standorte">
+<h2>Mehrere Krankenhäuser</h2>
+<p>Eine Installation kann mehrere Krankenhäuser verwalten. Jedes Krankenhaus ist vollständig getrennt: eigene Gebäudeteile, Pläne, Strecken, Stammdaten (Transportarten, Wagentypen, Aufzüge), Lieferungen, Szenarien, Sondertage, Bundesland und Auswertungen. Gemeinsam sind nur die Benutzer, die Rollen und die Anmeldung.</p>
+
+<h3 id="standorte-anlegen">Neues Krankenhaus anlegen</h3>
+<ol>
+  <li>Oben in der Auswahl neben „Logistik Map“ <em>＋ Neues Krankenhaus …</em> wählen (oder unter Einstellungen → Krankenhäuser).</li>
+  <li><strong>Name:</strong> z. B. „Klinikum Nord“.</li>
+  <li><strong>Transportarten und Wagentypen übernehmen von:</strong> Entweder die Werte eines vorhandenen Krankenhauses kopieren oder mit den Standardwerten beginnen. Gebäude, Pläne, Aufzüge und Lieferungen beginnen immer leer.</li>
+  <li><em>Anlegen und wechseln</em>. Danach führt dich „Erste Schritte“ durch die Einrichtung des neuen Hauses, beginnend beim Bundesland.</li>
+</ol>
+
+<h3 id="standorte-wechseln">Wechseln, umbenennen, löschen</h3>
+<ul>
+  <li><strong>Wechseln:</strong> Krankenhaus oben in der Auswahl anklicken. Die Wahl gilt für deinen Browser, andere Benutzer bleiben in ihrem Haus.</li>
+  <li><strong>Umbenennen und löschen:</strong> unter Einstellungen → Krankenhäuser. Beim Löschen wird alles dieses Hauses entfernt. Das lässt sich nur über eine Sicherung zurückholen. Das letzte verbliebene Krankenhaus kann nicht gelöscht werden.</li>
+</ul>
+</section>
+
+<section id="gebaeude">
+<h2>Gebäude &amp; Pläne</h2>
+<p>Auf dieser Seite legst du den Aufbau des Hauses an und ordnest jedem Stockwerk seinen Grundriss zu. Du brauchst dafür das Recht „Gebäude, Karte &amp; Stammdaten“.</p>
+
+<h3 id="gebaeude-teile">Gebäudeteile</h3>
+<table class="tabelle hilfe-tabelle">
+<tr><th>Feld</th><th>Bedeutung</th></tr>
+<tr><td>Name</td><td>z. B. „Haus A“, „Bettenhaus“, „Wirtschaftshof“.</td></tr>
+<tr><td>Kürzel</td><td>Kurzform für Listen und für eindeutige Punktnamen, z. B. „A“. Gibt es einen Punktnamen in mehreren Häusern, steht das Kürzel dahinter.</td></tr>
+<tr><td>Reihenfolge</td><td>Bestimmt nur die Sortierung in Listen und in der Seitenleiste der Karte.</td></tr>
+</table>
+
+<h3 id="gebaeude-stockwerke">Stockwerke</h3>
+<table class="tabelle hilfe-tabelle">
+<tr><th>Feld</th><th>Bedeutung</th></tr>
+<tr><td>Name</td><td>z. B. „UG“, „EG“, „1. OG“, „Ebene 3“.</td></tr>
+<tr><td>Ebene</td><td>Eine Zahl für die Höhe: -1 = Untergeschoss, 0 = Erdgeschoss, 1 = 1. OG usw. <strong>Wichtig:</strong> Aus der Differenz der Ebenen ergibt sich, wie viele Stockwerke ein Aufzug fährt, also seine Fahrzeit. Fahren Aufzüge in verschiedenen Häusern auf derselben Höhe, gib den Stockwerken dieselbe Ebene.</td></tr>
+</table>
+
+<h3 id="gebaeude-plaene">PDF-Pläne hochladen und zuweisen</h3>
+<ol>
+  <li>Unter <em>Hochgeladene PDF-Pläne</em> auf <em>PDF hochladen</em> klicken oder Dateien in den Bereich ziehen. Du kannst mehrere PDFs auf einmal wählen. Für jede Datei siehst du eine Zeile mit Fortschritt und Ergebnis.</li>
+  <li>Bei einem Stockwerk auf <em>Plan zuweisen</em> klicken, die PDF wählen und bei mehrseitigen PDFs die Seite.</li>
+  <li>Der Plan wird einmalig in Kartenkacheln umgewandelt. Der Status zeigt <em>wartet</em>, <em>wird aufbereitet … %</em>, <em>bereit</em> oder <em>Fehler</em>. Bei großen Plänen dauert das einige Minuten, du kannst währenddessen weiterarbeiten.</li>
+</ol>
+<ul>
+  <li><strong>Große Dateien:</strong> PDFs werden in Stücken zu 8 MB übertragen, auch über 100 MB große Pläne. Bricht der Upload dennoch ab, liegt es meist an einem Proxy oder Filter im Netz. Dann die PDF direkt am Server im Browser hochladen.</li>
+  <li><strong>Neu aufbereiten:</strong> erzeugt die Kacheln noch einmal, z. B. nach einem Fehler.</li>
+  <li><strong>Plan ändern:</strong> Gibt es einen neuen Planstand, weist du die neue PDF zu. Sind auf dem Stockwerk schon Strecken und Punkte eingezeichnet und liegt der neue Plan verschoben oder in anderem Maßstab, richtest du sie mit dem Werkzeug <a href="#/hilfe/editor-ausrichten">Ausrichten</a> neu aus. Logistik Map bietet das direkt an.</li>
+  <li><strong>Plan entfernen:</strong> löst nur die Zuordnung. Die PDF bleibt in der Liste.</li>
+  <li>Die Spalte <em>verwendet</em> zeigt, wie oft eine PDF einem Stockwerk zugewiesen ist. Eine PDF lässt sich erst löschen, wenn sie nirgends mehr verwendet wird.</li>
+</ul>
+<div class="hilfe-achtung"><strong>Datenschutz:</strong> Die Pläne bleiben auf eurem Server im Datenordner. Sie werden nirgendwohin übertragen.</div>
+</section>
+
+<section id="karte">
+<h2>Karte</h2>
+<p>Links in der Seitenleiste wählst du das Stockwerk. Oben stehen der Umschalter für den Modus, das Feld <strong>Maßstab</strong> und die Werkzeuge.</p>
+
+<h3 id="karte-modi">Die drei Modi</h3>
+<table class="tabelle hilfe-tabelle">
+<tr><th>Modus</th><th>Wofür</th></tr>
+<tr><td>Ansehen</td><td>Plan, Strecken und Punkte betrachten, Strecken messen. Hier lässt sich nichts verändern.</td></tr>
+<tr><td>Bearbeiten</td><td>Strecken zeichnen, Punkte setzen, Räume einzeichnen, Maßstab festlegen. Siehe <a href="#/hilfe/editor">Karte bearbeiten</a>.</td></tr>
+<tr><td>Ablauf</td><td>Einen Tag abspielen und alle Fahrten auf der Karte sehen. Siehe <a href="#/hilfe/ablauf">Ablauf</a>.</td></tr>
+</table>
+
+<h3 id="karte-bewegen">Karte bewegen und zoomen</h3>
+<ul>
+  <li><strong>Zoomen:</strong> Mausrad oder die Knöpfe + und − links oben.</li>
+  <li><strong>Verschieben:</strong> Mit der linken Maustaste ziehen. Während du mit einem Werkzeug zeichnest, ziehst du mit der <strong>rechten</strong> (oder mittleren) Maustaste, damit kein Klick versehentlich eine Ecke setzt.</li>
+  <li><strong>Strecke messen:</strong> Punkte anklicken, die Länge wird angezeigt. Doppelklick oder <kbd>Esc</kbd> beendet die Messung. So prüfst du auch den Maßstab.</li>
+  <li>Die <strong>Maßstabsleiste</strong> unten links zeigt eine Länge in Metern.</li>
+</ul>
+
+<h3 id="karte-massstab">Maßstab</h3>
+<p>Ohne Maßstab weiß das System nicht, wie lang eine Strecke in Metern ist, und kann keine Fahrzeiten rechnen. Jedes Stockwerk braucht seinen eigenen Maßstab, weil Pläne unterschiedlich gedruckt sein können.</p>
+<p><strong>Weg 1: Eintippen (empfohlen, wenn der Maßstab auf dem Plan steht).</strong> Oben auf der Karte steht das Feld <em>Maßstab 1 :</em>. Trag die Zahl aus dem Plankopf ein, also bei „1:200“ die <strong>200</strong>, und drück <em>Speichern</em>. Findet Logistik Map den Maßstab selbst im PDF-Text, steht er schon als Vorschlag im Feld („Auf dem Plan gelesen: 1:200“). Dann nur noch speichern.</p>
+<p><strong>Weg 2: Abmessen.</strong> Im Modus Bearbeiten <em>Maßstab festlegen</em> → <em>Auf dem Plan abmessen</em>. Klick zwei Punkte an, deren Abstand du kennst, etwa die Enden einer bemaßten Wand. Dann gibst du den Abstand in Metern ein. Je weiter die Punkte auseinanderliegen, desto genauer.</p>
+<div class="hilfe-achtung"><strong>Achtung bei „1:N“:</strong> Die Rechnung aus dem Plankopf stimmt nur, wenn die PDF im Originalformat gespeichert wurde. Wurde der Plan beim Erstellen der PDF verkleinert (z. B. A0 auf A3), stimmt „1:200“ nicht mehr. Prüf den Maßstab deshalb nach dem Speichern mit <em>Strecke messen</em> an einer bekannten Länge. Weicht er ab, nimm Weg 2.</div>
+</section>
+
+<section id="editor">
+<h2>Karte bearbeiten: Strecken, Punkte und Räume</h2>
+<p>Im Modus <em>Bearbeiten</em> erscheint die Werkzeugleiste. Ein Klick auf ein Werkzeug schaltet es ein, ein zweiter Klick auf denselben Knopf schaltet zurück zu <em>Auswählen</em>. Unten auf der Karte steht immer ein kurzer Hinweis, was das aktive Werkzeug gerade erwartet.</p>
+
+<h3 id="editor-prinzip">Das Prinzip: Strecken statt fester Wege</h3>
+<p>Du zeichnest <strong>nicht</strong> jeden einzelnen Lieferweg. Du zeichnest einmal alle Strecken, auf denen Ware fahren kann, ein Netz wie ein Straßennetz. Für jede Lieferung sucht das System darin selbst den schnellsten Weg. Beispiel: Drei Rampen, ein Wareneingang und ein Lager. Du zeichnest den Flur von den Rampen zum Wareneingang und weiter ins Lager und setzt die drei Tore, den Wareneingang und das Lager als Punkte darauf. Verbindungen „von jedem Punkt zu jedem“ brauchst du nicht.</p>
+<p>Räume sind für die Wegsuche unwichtig. Sie dienen nur der Orientierung. Was zählt, sind Strecken und Punkte.</p>
+
+<h3 id="editor-werkzeuge">Die Werkzeuge</h3>
+<table class="tabelle hilfe-tabelle">
+<tr><th>Werkzeug</th><th>Was es tut</th></tr>
+<tr><td>Auswählen</td><td>Element anklicken, um es im Seitenfenster zu bearbeiten. Punkte lassen sich ziehen. Ziehst du einen Punkt auf einen Wegpunkt (Ecke, Kreuzung, offenes Ende), werden beide zu einem Punkt vereint. „Rückgängig“ holt den alten Stand zurück. <kbd>Entf</kbd> löscht das gewählte Element.</td></tr>
+<tr><td>Strecken zeichnen</td><td>An jeder Ecke klicken. Wo du eine vorhandene Strecke kreuzt oder anklickst, entsteht automatisch eine Kreuzung. <strong>Rechtsklick</strong> beendet die aktuelle Linie, ein zweiter Rechtsklick das Werkzeug.</td></tr>
+<tr><td>Punkt setzen</td><td>Klick auf die Stelle setzt einen neuen Punkt (Tor, Lager, Station, Aufzug …). Liegt er auf einer Strecke, hängt er sofort daran. Danach öffnet sich das Formular des Punkts.</td></tr>
+<tr><td>Strecke löschen</td><td>Klick auf eine Strecke löscht das Stück bis zur nächsten Kreuzung oder zum nächsten Punkt. Benannte Punkte bleiben stehen, die löschst du unter „Auswählen“.</td></tr>
+<tr><td>Raum ▭</td><td>Rechteckigen Raum zeichnen: zwei gegenüberliegende Ecken anklicken.</td></tr>
+<tr><td>Raum (Vieleck)</td><td>Ecken anklicken. Ein Klick auf den ersten Punkt oder ein Doppelklick schließt die Fläche, <kbd>Rücktaste</kbd> nimmt den letzten Punkt zurück.</td></tr>
+<tr><td>Bereich</td><td>Wie Raum (Vieleck), aber für größere Zonen (z. B. „Station B2“), die mehrere Räume enthalten.</td></tr>
+<tr><td>Ausrichten</td><td>Nach einem Planwechsel alle Elemente des Stockwerks auf den neuen Plan schieben. Siehe <a href="#/hilfe/editor-ausrichten">Ausrichten</a>.</td></tr>
+<tr><td>Maßstab festlegen</td><td>Fragt, ob du eintippen oder abmessen willst. Siehe <a href="#/hilfe/karte-massstab">Maßstab</a>.</td></tr>
+<tr><td>Rückgängig</td><td>Nimmt die letzte Änderung auf diesem Stockwerk zurück, auch mehrfach hintereinander (<kbd>Strg</kbd> + <kbd>Z</kbd>).</td></tr>
+<tr><td>⇢ Lücken prüfen (Zahl)</td><td>Geht offene Streckenenden und Punkte ohne Anschluss einzeln durch. Die Zahl sagt, wie viele Stellen noch zu prüfen sind. Siehe <a href="#/hilfe/editor-luecken">Lücken prüfen</a>.</td></tr>
+</table>
+
+<h3 id="editor-zeichnen">Strecken richtig zeichnen</h3>
+<ul>
+  <li>Zeichne entlang der <strong>Flurmitte</strong> und klick an jeder Ecke und an jeder Abzweigung.</li>
+  <li><strong>Kreuzungen:</strong> Zeichnest du über eine vorhandene Strecke hinweg, entsteht am Schnittpunkt automatisch eine Kreuzung. Fängst du auf einer Strecke an oder hörst dort auf, wird ebenfalls verbunden. Du musst Kreuzungen also nicht in einem Zug zeichnen.</li>
+  <li>Klickst du in der Nähe eines vorhandenen Punkts (etwa 20 Bildschirmpunkte), rastet die Linie dort ein.</li>
+  <li>Fast waagerechte oder senkrechte Stücke werden gerade gezogen.</li>
+  <li><strong>Offene Enden</strong> werden orange markiert. Dort geht es nicht weiter. Ist das gewollt (Sackgasse), lass es so. Sonst ziehst du das Ende im Modus „Auswählen“ auf den Punkt, mit dem es verbunden werden soll.</li>
+  <li>Durch Türen, Schleusen und Brandschutztüren zeichnest du einfach hindurch. Ist eine Tür eine Engstelle (nur ein Wagen gleichzeitig), trag das am Streckenstück ein, siehe unten.</li>
+</ul>
+
+<h3 id="editor-punkte">Punkte und ihre Arten</h3>
+<p>Jeder Punkt hat eine <strong>Art</strong>. Sie bestimmt, wofür er verwendet werden kann:</p>
+<table class="tabelle hilfe-tabelle">
+<tr><th>Art</th><th>Verwendung</th></tr>
+<tr><td>Wegpunkt</td><td>Ecke oder Kreuzung einer Strecke. Entsteht beim Zeichnen von selbst und hat meist keinen Namen.</td></tr>
+<tr><td>Start-/Zielpunkt</td><td>Ein Ort, an dem Ware beginnt oder endet: Lager, Küche, Apotheke, Station, Aufbereitung … Kann in Lieferungen als Start und als Ziel gewählt werden.</td></tr>
+<tr><td>Startpunkt / Zielpunkt</td><td>Wie oben, aber nur als Start bzw. nur als Ziel gedacht. Im Zweifel nimm „Start-/Zielpunkt“.</td></tr>
+<tr><td>Tor / Rampe (LKW)</td><td>Ein Tor, an dem LKW entladen werden. Hier wartet der LKW, bis ein Tor frei ist. Die Ware geht erst nach dem Entladen weiter. Siehe <a href="#/hilfe/berechnung-tor">LKW am Tor</a>.</td></tr>
+<tr><td>Aufzug/Treppe</td><td>Ein Halt eines Aufzugs oder einer Treppe. Setz ihn auf <strong>jedem</strong> Stockwerk, auf dem der Aufzug hält, und wähle dort jeweils <strong>denselben</strong> Aufzug. So sind alle Stockwerke verbunden.</td></tr>
+<tr><td>Übergang</td><td>Verbindung zu einem Punkt auf einem anderen Stockwerk oder in einem anderen Gebäudeteil ohne Aufzug: Brücke, Verbindungsgang, Rampe zwischen Häusern.</td></tr>
+</table>
+
+<p><strong>Felder eines Punkts</strong> (erscheinen je nach Art):</p>
+<table class="tabelle hilfe-tabelle">
+<tr><th>Feld</th><th>Bedeutung</th></tr>
+<tr><td>Name</td><td>So erscheint der Punkt in Lieferungen, Auswahllisten und im Excel-Import. Wähle eindeutige Namen (z. B. „B25“, „Lager EG“, „Tor 1“). Gibt es denselben Namen auf mehreren Stockwerken, wird er mit Stockwerk und Kürzel unterschieden.</td></tr>
+<tr><td>Art</td><td>Siehe Tabelle oben.</td></tr>
+<tr><td>Gleichzeitig höchstens</td><td><strong>Bei Tor/Rampe:</strong> Wie viele LKW gleichzeitig entladen werden können, also die Anzahl der Tore an diesem Punkt (leer = 1). Drei nebeneinanderliegende Tore kannst du als <em>einen</em> Punkt mit „3“ eintragen oder als drei Punkte. <strong>Bei Start-/Zielpunkten:</strong> Wie viele Wagen dort gleichzeitig be- oder entladen werden können, z. B. 2 Plätze an der Annahme der Apotheke. Leer = unbegrenzt.</td></tr>
+<tr><td>Entladen je Palette/Wagen (Minuten), von … bis</td><td>Nur bei Tor/Rampe: Wie lange das Tor je Einheit belegt ist. Ein LKW mit 10 Paletten und 2 Minuten je Palette belegt das Tor 20 Minuten. Leer = 2 Minuten. Mit einem Wert bei <em>bis</em> schwankt die Zeit zufällig zwischen beiden Werten, das wirkt nur in der Auswertung <a href="#/hilfe/auswertung-streuung">Streuung</a>. Sonst wird mit dem Mittelwert gerechnet.</td></tr>
+<tr><td>Aufzug oder Treppe</td><td>Nur bei Art „Aufzug/Treppe“: welcher Aufzug bzw. welche Treppe. Mit <em>+ neuer Aufzug</em> / <em>+ neue Treppe</em> legst du ihn direkt an. Fahrzeiten und Plätze stellst du danach unter <a href="#/hilfe/stammdaten-aufzuege">Stammdaten</a> ein.</td></tr>
+<tr><td>Verbindungen zu anderen Stockwerken</td><td>Nur bei Übergängen: <em>Verbindung hinzufügen</em> → Zielpunkt auf einem anderen Stockwerk wählen und die Weglänge in Metern angeben. Aufzüge brauchen das nicht.</td></tr>
+<tr><td>Liegt in</td><td>Zeigt den Raum bzw. Bereich, in dem der Punkt liegt (nur Anzeige).</td></tr>
+<tr><td>Weiter nach</td><td>Zeigt bei Aufzügen und Übergängen, zu welchen Stockwerken es von hier weitergeht.</td></tr>
+</table>
+<p>Ein Punkt muss an einer Strecke hängen, sonst ist er nicht erreichbar. Setz ihn deshalb direkt auf die Strecke. Liegt er daneben, bietet <em>Mit der nächsten Strecke verbinden</em> im Punktformular oder <em>Lücken prüfen</em> den Anschluss an.</p>
+
+<h3 id="editor-strecken">Streckenstücke: Länge, Engstellen und Sperren</h3>
+<p>Klick im Modus „Auswählen“ auf eine Strecke. Das Formular gilt für das angeklickte Stück zwischen zwei Punkten.</p>
+<table class="tabelle hilfe-tabelle">
+<tr><th>Feld</th><th>Bedeutung</th></tr>
+<tr><td>Bezeichnung</td><td>Optional, z. B. „Flur Ost“ oder „Brandschutztür B“. Nur benannte Stücke lassen sich in <a href="#/hilfe/szenarien">Szenarien</a> sperren und erscheinen namentlich in der Auswertung.</td></tr>
+<tr><td>Länge in Metern</td><td>Leer = aus dem Plan und dem Maßstab berechnet. Trag nur etwas ein, wenn der echte Weg länger ist als die gezeichnete Linie, z. B. bei einer Rampe oder einem Umweg.</td></tr>
+<tr><td>Gleichzeitig höchstens</td><td>Engstelle: Wie viele Wagen gleichzeitig durchpassen, z. B. 1 bei einer schmalen Tür. Weitere Fahrten warten davor. Leer = unbegrenzt.</td></tr>
+<tr><td>Gesperrt für</td><td>Angehakte Transportarten dürfen hier nicht fahren. Die Wegsuche nimmt für sie einen anderen Weg. Gibt es keinen, erscheint die Lieferung unter „Erste Schritte“ als „Weg gesperrt“. Gesperrte Stücke sind rot gestrichelt.</td></tr>
+<tr><td>Für die ganze Strecke bis zur nächsten Kreuzung</td><td>Ist der Haken gesetzt, gelten „Gesperrt für“, „Gleichzeitig höchstens“ und „Bezeichnung“ für alle Stücke bis zur nächsten Kreuzung bzw. zum nächsten benannten Punkt. Die Zahl in Klammern nennt, wie viele Stücke das sind.</td></tr>
+</table>
+<div class="hilfe-tipp"><strong>Beispiel: Strecke für das FTS sperren.</strong> Modus Bearbeiten → <em>Auswählen</em> → die Strecke anklicken → bei <em>Gesperrt für</em> „FTS“ anhaken → <em>Für die ganze Strecke bis zur nächsten Kreuzung</em> anhaken → Speichern. Die Strecke wird rot gestrichelt. Menschen dürfen sie weiterhin benutzen, das FTS fährt außen herum.</div>
+
+<h3 id="editor-aufzuege">Aufzüge und Treppen über mehrere Stockwerke</h3>
+<ol>
+  <li>Auf dem ersten Stockwerk mit <em>Punkt setzen</em> den Aufzug direkt auf den Flur vor der Aufzugstür setzen, Art „Aufzug/Treppe“, dann <em>+ neuer Aufzug</em> und einen Namen vergeben (z. B. „Aufzug West“).</li>
+  <li>Auf jedem weiteren Stockwerk, auf dem er hält, wieder einen Punkt „Aufzug/Treppe“ setzen und in der Liste <strong>denselben</strong> „Aufzug West“ wählen.</li>
+  <li>Unter <a href="#/hilfe/stammdaten-aufzuege">Stammdaten → Aufzüge und Treppen</a> Plätze und Zeiten eintragen.</li>
+</ol>
+<p>Alle Punkte mit demselben Aufzug sind automatisch miteinander verbunden. Die Fahrzeit ergibt sich aus der Differenz der <a href="#/hilfe/gebaeude-stockwerke">Ebenen</a>. Treppen funktionieren genauso, dürfen aber nur von Transportarten benutzt werden, bei denen „Kann Treppen nutzen“ angehakt ist.</p>
+<p>„Erste Schritte“ meldet einen Aufzug, der nur auf einem Stockwerk eingezeichnet ist, und Stockwerke, die mit dem übrigen Netz nicht verbunden sind.</p>
+
+<h3 id="editor-uebergaenge">Übergänge zwischen Gebäudeteilen</h3>
+<p>Für Brücken, Verbindungsgänge oder Rampen zwischen Häusern: auf beiden Seiten einen Punkt der Art „Übergang“ setzen, jeweils an der Strecke. Dann bei einem davon <em>Verbindung hinzufügen</em>, den Punkt auf der anderen Seite wählen und die Weglänge in Metern eintragen. Die Verbindung gilt in beide Richtungen.</p>
+
+<h3 id="editor-luecken">Lücken prüfen</h3>
+<p>Beim Zeichnen bleiben leicht kleine Lücken: Ein Flur endet einen halben Meter neben dem anderen, oder ein Punkt liegt neben der Strecke. Der Knopf <em>⇢ Lücken prüfen</em> zeigt die Zahl solcher Stellen. Ein Klick geht sie <strong>einzeln</strong> durch: Die Karte springt zur Stelle, zeigt den Vorschlag gestrichelt und fragt:</p>
+<ul>
+  <li><strong>Ja, verbinden:</strong> Die beiden Enden bzw. der Punkt und die Strecke werden verbunden.</li>
+  <li><strong>Nein:</strong> Es bleibt, wie es ist, <em>und diese Stelle wird nie wieder gemeldet</em>. Das ist richtig für gewollte Sackgassen oder zwei Flure, die nicht verbunden sind (z. B. durch eine Wand getrennt).</li>
+  <li><strong>Prüfung beenden:</strong> Aufhören. Die übrigen Stellen bleiben offen.</li>
+</ul>
+<p>Logistik Map verbindet nie etwas ohne dein „Ja“.</p>
+
+<h3 id="editor-raeume">Räume und Bereiche</h3>
+<p>Räume und Bereiche sind optional und nur zur Orientierung. Sie beeinflussen die Wegsuche nicht.</p>
+<table class="tabelle hilfe-tabelle">
+<tr><th>Feld</th><th>Bedeutung</th></tr>
+<tr><td>Name</td><td>z. B. „Lager Wäsche“ oder „Station B2“.</td></tr>
+<tr><td>Raumnummer</td><td>Optional, z. B. „E.1.023“.</td></tr>
+<tr><td>Art</td><td>Raum oder Bereich. Ein Bereich enthält Räume.</td></tr>
+<tr><td>Farbe</td><td>Füllfarbe auf der Karte.</td></tr>
+<tr><td>Gehört zum Bereich</td><td>Bei Räumen: der übergeordnete Bereich.</td></tr>
+</table>
+<p>Ecken verschiebst du durch Ziehen. Ziehen an der Mitte einer Kante fügt eine Ecke ein, ein Doppelklick auf eine Ecke löscht sie.</p>
+
+<h3 id="editor-ausrichten">Ausrichten nach einem Planwechsel</h3>
+<p>Wenn ein neuer Planstand verschoben, gedreht oder anders skaliert ist, liegen die eingezeichneten Strecken nicht mehr richtig. So richtest du sie neu aus:</p>
+<ol>
+  <li>Werkzeug <em>Ausrichten</em> wählen.</li>
+  <li>Einen eingezeichneten Punkt oder eine Raumecke anklicken (alte Lage).</li>
+  <li>Die Stelle auf dem neuen Plan anklicken, an die dieser Punkt gehört (neue Lage).</li>
+  <li>Das für mindestens 2, besser 3 Paare wiederholen, möglichst weit auseinander (z. B. drei Gebäudeecken).</li>
+  <li><em>Anwenden</em>. Alle Elemente werden verschoben, gedreht und skaliert. Der Maßstab passt sich an.</li>
+</ol>
+</section>
+
+<section id="stammdaten">
+<h2>Stammdaten</h2>
+<p>Die Stammdaten sind die Rechengrundlage. Es sind Beispielwerte eingetragen. Prüfe sie und passe sie an euer Haus an, sonst rechnet die Auswertung mit Annahmen. Jedes Krankenhaus hat eigene Stammdaten.</p>
+
+<h3 id="stammdaten-transportarten">Transportarten</h3>
+<p>Eine Transportart beschreibt, <strong>wer oder was</strong> transportiert. Typisch sind „Materialtransportdienst“ (Menschen, die Wagen schieben) und „FTS“ (fahrerlose Transportfahrzeuge).</p>
+<table class="tabelle hilfe-tabelle">
+<tr><th>Feld</th><th>Bedeutung und typische Werte</th></tr>
+<tr><td>Name</td><td>So erscheint die Transportart in Lieferungen und Auswertungen.</td></tr>
+<tr><td>Farbe</td><td>Farbe der Fahrten im Ablauf und in Diagrammen.</td></tr>
+<tr><td>Geschwindigkeit (m/s)</td><td>Durchschnittliches Tempo auf den Strecken. Einen Wagen schieben: etwa 0,8–1,2 m/s, FTS oft 0,5–1,0 m/s. 1 m/s = 3,6 km/h, also ein langsamer Spaziergang.</td></tr>
+<tr><td>Ladezeit am Start (Sekunden)</td><td>Wie lange das Beladen bzw. das Aufnehmen der Wagen am Startpunkt dauert, je Fahrt.</td></tr>
+<tr><td>Entladezeit am Ziel (Sekunden)</td><td>Wie lange das Abstellen und Übergeben am Ziel dauert, je Fahrt. Gilt auch beim beladenen Rückweg am Rückwegziel.</td></tr>
+<tr><td>Wagen je Fahrt</td><td>Wie viele Wagen eine Person oder ein Fahrzeug auf einmal bewegt. Bei 1 ergeben 6 Wäschewagen 6 Fahrten, bei 2 sind es 3 Fahrten. Ein Zug aus mehreren Wagen zählt entsprechend mehr.</td></tr>
+<tr><td>Anzahl Fahrzeuge / Personen</td><td>Wie viele Personen bzw. Fahrzeuge <strong>gleichzeitig</strong> im Einsatz sind. Beim Materialtransportdienst also die Zahl der Mitarbeitenden, die zur selben Zeit Transporte fahren, beim FTS die Zahl der Fahrzeuge. Gemeint sind Leute im Einsatz, keine Stellen: Pausen, Urlaub und Krankheit musst du selbst dazurechnen. Jede Fahrt belegt eine Person bzw. ein Fahrzeug von der Abfahrt bis zur Rückkehr. Sind alle unterwegs, wartet die nächste Fahrt. <strong>0 = unbegrenzt.</strong> Dann wartet nie jemand auf Personal, und fehlendes Personal wird nicht als Engpass sichtbar.</td></tr>
+<tr><td>Reserviert den Aufzug für sich allein</td><td>Für FTS: Das Fahrzeug fährt allein in der Kabine, Personen müssen aussteigen. Dazu kommt die Räumzeit des Aufzugs. Nicht angehakt: Die Fahrt teilt sich die Kabine mit anderen Wagen, solange die Plätze reichen.</td></tr>
+<tr><td>Kann Treppen nutzen</td><td>Nur angehakte Transportarten dürfen Treppen benutzen, z. B. ein Bote mit einer Kiste. Ein FTS kann das nicht.</td></tr>
+<tr><td>Schichten</td><td>Optional. Jede Zeile ist eine Schicht mit Uhrzeit von–bis, Anzahl und Wochentagen, z. B. „Mo–Fr 06:00–14:00, 3 Personen“. <strong>Sind Schichten eingetragen, gilt deren Anzahl statt der festen Anzahl oben.</strong> Außerhalb aller Schichten steht niemand zur Verfügung, Fahrten warten bis zum nächsten Schichtbeginn. Überlappen sich Schichten, zählen die Anzahlen zusammen.</td></tr>
+</table>
+
+<h3 id="stammdaten-aufzuege">Aufzüge und Treppen</h3>
+<p>Auf der Karte setzt du Aufzüge als Punkte an jedem Halt. Hier stehen ihre Eigenschaften.</p>
+<table class="tabelle hilfe-tabelle">
+<tr><th>Feld</th><th>Bedeutung und typische Werte</th></tr>
+<tr><td>Name</td><td>z. B. „Aufzug West“ oder „Bettenaufzug 3“.</td></tr>
+<tr><td>Art</td><td>Aufzug oder Treppe. Bei Treppen zählt nur die Zeit je Stockwerk.</td></tr>
+<tr><td>Plätze</td><td>Wie viele Standard-Wagen gleichzeitig in die Kabine passen (1 Platz = 1 Wäschewagen). Eine Palette mit Platzbedarf 2 braucht in einer Kabine mit 2 Plätzen den ganzen Aufzug. 0 = unbegrenzt.</td></tr>
+<tr><td>Fahrzeit je Stockwerk (Sekunden)</td><td>Reine Fahrzeit für eine Etage, typisch 3–10 s. Bei Treppen: Zeit für ein Stockwerk zu Fuß mit Last, etwa 20–40 s.</td></tr>
+<tr><td>Türzeit (Sekunden)</td><td>Öffnen, Ein- bzw. Aussteigen und Schließen. Wird zweimal gerechnet (einsteigen und aussteigen), typisch 8–15 s.</td></tr>
+<tr><td>Mittlere Wartezeit auf die Kabine (Sekunden)</td><td>Bis die Kabine nach dem Rufen da ist, auch wegen Personenverkehr. Steht die Kabine schon auf dem Stockwerk, entfällt diese Zeit. Typisch 20–60 s.</td></tr>
+<tr><td>Räumzeit für FTS (Sekunden)</td><td>Zusätzliche Zeit, bis Personen ausgestiegen sind, wenn ein FTS den Aufzug für sich reserviert.</td></tr>
+<tr><td>Nur für diese Transportarten</td><td>Nichts angehakt = alle dürfen den Aufzug benutzen. Sind welche angehakt, dürfen nur diese. So bildest du z. B. einen reinen Bettenaufzug oder einen FTS-Aufzug ab.</td></tr>
+<tr><td>Grundlast durch Personen</td><td>Zeitfenster mit Prozentangabe, z. B. „Mo–Fr 07:00–09:00, 40 %“. Bedeutet: In diesem Zeitraum ist der Aufzug zu 40 % der Zeit mit Personal, Patienten und Besuchern unterwegs. Diese Personenfahrten blockieren die Kabine, die Waren warten dadurch länger. Personenfahrten selbst zählen nicht als Wartezeit.</td></tr>
+</table>
+<p><strong>So rechnet das System eine Aufzugfahrt:</strong></p>
+<p class="hilfe-formel">Dauer = Wartezeit auf die Kabine + 2 × Türzeit + Stockwerke × Fahrzeit je Stockwerk (+ Räumzeit bei FTS)</p>
+<p>Beispiel: 30 s Warten + 2 × 10 s Tür + 3 Stockwerke × 8 s = 74 Sekunden. Mit FTS und 20 s Räumzeit: 94 Sekunden.</p>
+<div class="hilfe-achtung"><strong>Nicht doppelt zählen:</strong> „Mittlere Wartezeit auf die Kabine“ und „Grundlast“ bilden beide den Personenverkehr ab. Trägst du Grundlast ein, setz die mittlere Wartezeit eher klein (z. B. 10 s), sonst zählt der Personenverkehr doppelt.</div>
+
+<h3 id="stammdaten-wagentypen">Wagentypen</h3>
+<table class="tabelle hilfe-tabelle">
+<tr><th>Feld</th><th>Bedeutung</th></tr>
+<tr><td>Name</td><td>z. B. Wäschewagen, Rollcontainer, Speisenwagen, Palette, Bett. Der Name wird auch im Excel-Import erkannt („12 Wäschewagen“).</td></tr>
+<tr><td>Platzbedarf</td><td>Wie viele Aufzugsplätze ein Wagen braucht. 1 = ein Standardplatz (Wäschewagen), 2 z. B. für eine Palette oder ein Bett. Passt ein Wagen gar nicht in eine Kabine, meldet die Auswertung „passte nicht in die Kabine“.</td></tr>
+</table>
+</section>
+
+<section id="lieferungen">
+<h2>Lieferungen und Transporte</h2>
+<p>Eine Lieferung beschreibt einen wiederkehrenden Transport: <strong>was</strong> (Ladung), <strong>wann</strong> (Uhrzeit und Tage), <strong>von wo nach wo</strong> und <strong>was danach</strong> passiert (Rückweg). Gemeint sind externe Anlieferungen (LKW), die Versorgung der Stationen, Entsorgung und interne Transporte wie der Bettentausch.</p>
+
+<h3 id="lieferungen-schnell">Neue Lieferung in einer Zeile</h3>
+<p>Oben auf der Seite steht ein Satz zum Ausfüllen:</p>
+<p class="hilfe-formel">Um [08:00] kommen [5] [Paletten] von [Tor 1] nach [B25], danach [leer zurück] → Anlegen</p>
+<p>Den Weg, den Aufzug und die Transportart sucht das System selbst. Die Bezeichnung lautet automatisch „Tor 1 → B25“. Nach dem Anlegen steht eine Rückmeldung da, z. B. „fährt mit Materialtransportdienst, ca. 6 Min. Weg“. Gibt es noch keinen Weg, sagt die Rückmeldung das, und „Erste Schritte“ zeigt die Ursache. Alles Weitere (Tage, Zeitraum, Spätestens …) änderst du danach in der Liste mit <em>Bearbeiten</em>.</p>
+<p>Die Auswahl „danach“:</p>
+<ul>
+  <li><strong>leer zurück:</strong> Person bzw. Fahrzeug fährt leer zum Start zurück (Standard).</li>
+  <li><strong>beladen zurück:</strong> Auf dem Rückweg wird wieder etwas transportiert, z. B. schmutziges Bett hin, sauberes Bett zurück.</li>
+  <li><strong>bleibt dort / LKW fährt weg:</strong> kein Rückweg, z. B. bei externen Lieferanten.</li>
+</ul>
+
+<h3 id="lieferungen-formular">Alle Felder einer Lieferung</h3>
+<table class="tabelle hilfe-tabelle">
+<tr><th>Feld</th><th>Bedeutung</th></tr>
+<tr><td>Bezeichnung</td><td>Name in Listen und Auswertungen. Leer = automatisch „Start → Ziel“.</td></tr>
+<tr><td>Lieferant / Dienstleister</td><td>Optional, nur zur Information (z. B. Wäscherei, Großhändler).</td></tr>
+<tr><td>Richtung</td><td><strong>Versorgung</strong> (Ware zur Station), <strong>Entsorgung</strong> (Abfall, Schmutzwäsche von der Station weg) oder <strong>Intern</strong> (zwischen zwei Bereichen, z. B. Bett zur Aufbereitung). Dient zum Filtern in Ablauf und Auswertung, die Rechnung ist dieselbe.</td></tr>
+<tr><td>Transportart</td><td>Wer fährt. <strong>Automatisch (was durchkommt)</strong> nimmt die erste Transportart in der Reihenfolge der Stammdaten, für die es hin und zurück einen Weg gibt. Wähl eine feste Transportart, wenn eine Lieferung immer z. B. per FTS fahren soll.</td></tr>
+<tr><td>Uhrzeit (Ankunft am Start)</td><td>Wann die Ware am Startpunkt bereitsteht bzw. der LKW am Tor ankommt. Ab dann wird ein Fahrzeug bzw. eine Person angefordert.</td></tr>
+<tr><td>Spätestens am Ziel</td><td>Optional. Kommt die Ware später an, gilt die Fahrt als <strong>verspätet</strong> und wird in der Auswertung rot gezählt. Ideal für Essenszeiten oder OP-Beginn.</td></tr>
+<tr><td>Schwankung ± Min.</td><td>Wie viele Minuten die Ankunft früher oder später sein kann, z. B. 15 bei einem LKW, der zwischen 7:45 und 8:15 kommt. Zählt nur für die Auswertung <a href="#/hilfe/auswertung-streuung">Streuung</a>. Dort ist der Planwert am häufigsten, die Ränder seltener.</td></tr>
+<tr><td>Start / Ziel</td><td>Punkte auf der Karte. Start und Ziel dürfen auf verschiedenen Stockwerken und in verschiedenen Häusern liegen.</td></tr>
+<tr><td>Ladung</td><td>Je Zeile ein Wagentyp und eine Anzahl, z. B. 6 Wäschewagen und 2 Rollcontainer. Daraus ergibt sich zusammen mit „Wagen je Fahrt“ die Zahl der Fahrten.</td></tr>
+<tr><td>Wann</td><td>An welchen Tagen die Lieferung stattfindet, siehe <a href="#/hilfe/lieferungen-regeln">Tage, Feiertage und Zeitraum</a>.</td></tr>
+<tr><td>Rückweg</td><td>Was nach dem Entladen passiert, siehe <a href="#/hilfe/lieferungen-rueckweg">Rückweg</a>.</td></tr>
+<tr><td>Zwischenstationen</td><td>Optional: Punkte, über die der Weg führen <em>muss</em>, z. B. ein bestimmter Aufzug oder eine Schleuse. Sonst nimmt das System den schnellsten Weg.</td></tr>
+<tr><td>Aktiv</td><td>Nicht angehakt = pausiert. Die Lieferung bleibt erhalten, wird aber in Ablauf und Auswertung nicht gerechnet.</td></tr>
+<tr><td>Notiz</td><td>Freier Text, z. B. Ansprechpartner.</td></tr>
+</table>
+
+<h3 id="lieferungen-regeln">Tage, Feiertage und Zeitraum</h3>
+<table class="tabelle hilfe-tabelle">
+<tr><th>Feld</th><th>Bedeutung</th></tr>
+<tr><td>Wochentage</td><td>An welchen Tagen. Schnellwahl: täglich, Mo–Fr, Mo–Sa, Wochenende. Kein Tag angehakt = nur an den Zusatztagen.</td></tr>
+<tr><td>Feiertage und Sondertage</td><td><strong>nicht an Feiertagen</strong> (Standard): entfällt an gesetzlichen Feiertagen des Bundeslands und an eigenen Sondertagen. <strong>auch an Feiertagen:</strong> findet trotzdem statt. <strong>nur an Feiertagen:</strong> z. B. ein Sonderdienst.</td></tr>
+<tr><td>Gültig ab / bis</td><td>Optionaler Zeitraum, z. B. für eine Baustelle oder einen neuen Vertrag.</td></tr>
+<tr><td>Ausnahmen (fällt aus)</td><td>Einzelne Daten, an denen die Lieferung ausfällt, im Format JJJJ-MM-TT, durch Komma getrennt.</td></tr>
+<tr><td>Zusätzliche Tage</td><td>Einzelne Daten, an denen sie zusätzlich stattfindet.</td></tr>
+</table>
+<p>Eigene Sondertage (Rosenmontag, Betriebsausflug, Notbetrieb) trägst du unter <a href="#/hilfe/einstellungen">Einstellungen</a> ein. Sie gelten wie Feiertage.</p>
+
+<h3 id="lieferungen-rueckweg">Rückweg</h3>
+<table class="tabelle hilfe-tabelle">
+<tr><th>Auswahl</th><th>Was passiert</th></tr>
+<tr><td>leer zurück zum Start</td><td>Nach dem Entladen fährt die Person bzw. das Fahrzeug leer zurück. Erst danach ist sie wieder frei.</td></tr>
+<tr><td>beladen zurück</td><td>Auf dem Rückweg wird wieder Ladung mitgenommen (Schmutzwäsche, Leergut, sauberes Bett). Die Rückfahrt braucht dieselben Aufzugsplätze wie die Hinfahrt, und am Rückwegziel wird entladen.</td></tr>
+<tr><td>später zurück zu fester Uhrzeit</td><td>Die Wagen bleiben am Ziel und werden zur angegebenen Uhrzeit abgeholt, z. B. Speisenwagen nach dem Essen. Hin- und Abholfahrt sind zwei getrennte Fahrten. Dazwischen ist die Person frei.</td></tr>
+<tr><td>kein Rückweg</td><td>Die Fahrt endet am Ziel, z. B. bei einem externen Lieferanten.</td></tr>
+<tr><td>Rückweg nach</td><td>Wohin es zurückgeht: zum Startpunkt (Standard) oder zu einem anderen Punkt. Beispiel Bettentausch: schmutziges Bett von der Station zur Aufbereitung, Rückweg <em>beladen</em> nach Station, also das saubere Bett zurück.</td></tr>
+</table>
+
+<h3 id="lieferungen-liste">Die Liste</h3>
+<ul>
+  <li><strong>Suchen:</strong> filtert nach Bezeichnung, Lieferant, Start und Ziel.</li>
+  <li><strong>Weg:</strong> zeigt den gefundenen Weg auf der Karte, Stockwerk für Stockwerk, mit Länge und Fahrzeit.</li>
+  <li><strong>Kopieren:</strong> legt eine Kopie an, praktisch für ähnliche Lieferungen an andere Stationen.</li>
+  <li><strong>pausiert</strong> steht bei Lieferungen, die nicht aktiv sind.</li>
+</ul>
+
+<h3 id="lieferungen-excel">Excel: Vorlage, Export und Import</h3>
+<p>Der Knopf <strong>Excel</strong> lädt alle Lieferungen als Excel-Datei herunter. Ein zweites Blatt erklärt die Spalten. Ist die Liste leer, ist die Datei gleich die Vorlage. <strong>Importieren</strong> liest eine solche Datei (oder CSV) wieder ein.</p>
+<table class="tabelle hilfe-tabelle">
+<tr><th>Spalte</th><th>Inhalt</th></tr>
+<tr><td>ID</td><td>Leer lassen für neue Lieferungen. Mit ID wird die vorhandene Lieferung geändert.</td></tr>
+<tr><td>Bezeichnung, Lieferant</td><td>Text.</td></tr>
+<tr><td>Richtung</td><td>Versorgung, Entsorgung oder Intern.</td></tr>
+<tr><td>Transportart</td><td>Name wie unter Stammdaten, z. B. FTS.</td></tr>
+<tr><td>Start, Ziel, Rückweg nach</td><td>Name des Punkts. Gibt es den Namen mehrfach: „Name (Stockwerk)“ oder „Name (Stockwerk, Kürzel)“.</td></tr>
+<tr><td>Uhrzeit, Spätestens, Rückweg Uhrzeit</td><td>HH:MM, z. B. 08:00.</td></tr>
+<tr><td>Schwankung (± Min.)</td><td>Zahl, z. B. 15.</td></tr>
+<tr><td>Ladung</td><td>z. B. „12 Wäschewagen, 2 Rollcontainer“ (Namen wie unter Wagentypen).</td></tr>
+<tr><td>Tage</td><td>täglich, Mo-Fr, Mo-Sa, Wochenende oder einzeln: Mo, Mi, Fr.</td></tr>
+<tr><td>Feiertage</td><td>nicht (Standard), auch oder nur.</td></tr>
+<tr><td>Gültig ab / bis</td><td>Datum, optional.</td></tr>
+<tr><td>Rückweg</td><td>leer (Standard), beladen, später, keiner.</td></tr>
+<tr><td>Aktiv</td><td>ja oder nein.</td></tr>
+<tr><td>Notiz</td><td>Text.</td></tr>
+</table>
+<p>Vor dem Übernehmen zeigt Logistik Map eine Vorschau: welche Zeilen neu sind, welche geändert werden und welche Fehler haben, z. B. „Start unbekannt“. Übernommen wird erst, wenn alle Zeilen in Ordnung sind. Korrigiere die markierten Zeilen in der Datei und importiere sie erneut.</p>
+</section>
+
+<section id="berechnung">
+<h2>So rechnet Logistik Map</h2>
+<p>Dieses Kapitel erklärt, was hinter Ablauf und Auswertung passiert. So kannst du die Ergebnisse einschätzen und die Stammdaten gezielt anpassen.</p>
+
+<h3 id="berechnung-fahrten">Aus Lieferungen werden Fahrten</h3>
+<p>Für den gewählten Tag nimmt das System alle aktiven Lieferungen, die an diesem Tag stattfinden. Aus jeder Lieferung entstehen Fahrten: Anzahl Wagen geteilt durch „Wagen je Fahrt“, aufgerundet. 7 Wäschewagen bei 2 Wagen je Fahrt ergeben 4 Fahrten. Alle Fahrten einer Lieferung beginnen zur selben Uhrzeit, also bei begrenztem Personal nacheinander.</p>
+<p>Lieferungen vom Vortag, die über Mitternacht laufen, werden mitgerechnet, damit Personal und Aufzüge am Morgen nicht künstlich frei sind.</p>
+
+<h3 id="berechnung-weg">Die Wegsuche</h3>
+<p>Für jede Fahrt sucht das System den <strong>schnellsten</strong> Weg durch das Netz, gemessen in Zeit, nicht in Metern. Es zählen:</p>
+<ul>
+  <li>Länge jedes Streckenstücks (aus Plan und Maßstab oder dem eingetragenen Wert) geteilt durch die Geschwindigkeit der Transportart,</li>
+  <li>Aufzugfahrten mit Warte-, Tür- und Fahrzeit, Treppen mit ihrer Zeit je Stockwerk,</li>
+  <li>Übergänge mit ihrer eingetragenen Länge.</li>
+</ul>
+<p>Ausgeschlossen werden Streckenstücke, die für die Transportart gesperrt sind, Aufzüge, die sie nicht benutzen darf, und Treppen, wenn „Kann Treppen nutzen“ nicht angehakt ist. Mit Zwischenstationen führt der Weg zwingend über diese Punkte. Wartezeiten fließen nicht in die Wegwahl ein: Das System weicht nicht von selbst auf einen anderen Aufzug aus, wenn einer voll ist. Das bildest du mit Zwischenstationen oder Szenarien nach.</p>
+
+<h3 id="berechnung-ablauf">Ablauf einer Fahrt</h3>
+<ol>
+  <li><strong>Fahrzeug bzw. Person anfordern:</strong> zur Uhrzeit der Lieferung. Ist niemand frei (Anzahl bzw. Schicht ausgeschöpft), wartet die Fahrt. Das zählt als Wartezeit <em>auf Fahrzeug</em>.</li>
+  <li><strong>Laden am Start:</strong> Ladezeit der Transportart. Hat der Startpunkt „Gleichzeitig höchstens“, wartet die Fahrt, bis ein Platz frei ist.</li>
+  <li><strong>Fahren:</strong> Streckenstück für Streckenstück. An Engstellen wird gewartet, bis Platz ist (<em>an Engstelle</em>).</li>
+  <li><strong>Aufzug:</strong> Die Fahrt reiht sich in die Schlange ein (<em>am Aufzug</em>), siehe unten.</li>
+  <li><strong>Entladen am Ziel:</strong> Entladezeit, ggf. warten auf einen freien Platz am Ziel.</li>
+  <li><strong>Rückweg</strong> je nach Einstellung. Erst danach ist die Person bzw. das Fahrzeug wieder frei.</li>
+</ol>
+
+<h3 id="berechnung-aufzug">Wie der Aufzug rechnet</h3>
+<ul>
+  <li>Jeder Aufzug ist <strong>eine</strong> Kabine. Wer wartet, steigt in der Reihenfolge der Ankunft ein.</li>
+  <li>Fahrten mit gleichem Start- und Zielstockwerk fahren gemeinsam, solange die Plätze reichen. Ein Wäschewagen (1 Platz) und ein Rollcontainer (1 Platz) passen also zusammen in eine Kabine mit 2 Plätzen.</li>
+  <li>Transportarten mit „Reserviert den Aufzug für sich allein“ (FTS) fahren immer allein und brauchen zusätzlich die Räumzeit.</li>
+  <li>Steht die Kabine schon auf dem richtigen Stockwerk, entfällt die mittlere Wartezeit auf die Kabine.</li>
+  <li>Grundlast: Im eingetragenen Zeitfenster belegen Personenfahrten die Kabine zum angegebenen Anteil der Zeit.</li>
+</ul>
+
+<h3 id="berechnung-tor">LKW am Tor</h3>
+<p>Beginnt eine Lieferung an einem Punkt der Art „Tor / Rampe (LKW)“, gilt:</p>
+<ol>
+  <li>Der LKW kommt zur Uhrzeit an und wartet, bis eines der Tore frei ist („Gleichzeitig höchstens“, leer = 1).</li>
+  <li>Er belegt das Tor für <em>Einheiten × Minuten je Einheit</em>: 10 Paletten × 2 Minuten = 20 Minuten.</li>
+  <li>Erst danach beginnen die Fahrten ins Haus, die dann wie gewohnt Personal, Aufzüge und Strecken brauchen.</li>
+</ol>
+<p>Kommen 4 LKW gleichzeitig an einem Tor mit „1“ an, wird der zweite erst nach dem ersten entladen, der dritte nach dem zweiten usw. In der Auswertung erscheint das Tor dann als Engpass mit Wartezeit.</p>
+
+<h3 id="berechnung-zahlen">Was die Kennzahlen bedeuten</h3>
+<table class="tabelle hilfe-tabelle">
+<tr><th>Kennzahl</th><th>Bedeutung</th></tr>
+<tr><td>Wartezeit</td><td>Zeit, in der eine Fahrt steht, weil etwas belegt ist: <em>auf Fahrzeug</em> (kein Personal oder Fahrzeug frei), <em>am Aufzug</em>, <em>an Engstelle</em> (Engstelle, Tor, Lade-/Entladeplatz). Lade-, Fahr- und Entladezeiten sind keine Wartezeit.</td></tr>
+<tr><td>Auslastung</td><td>Anteil der Kapazität, der in einem 5-Minuten-Schritt belegt ist. 100 % heißt: alle Plätze, alle Personen bzw. die Kabine waren die ganzen 5 Minuten belegt.</td></tr>
+<tr><td>Engpass</td><td>Eine Stelle, an der jemand mindestens 1 Minute wartet oder die zu 90 % oder mehr ausgelastet ist.</td></tr>
+<tr><td>verspätet</td><td>Fahrten, die nach „Spätestens am Ziel“ ankommen.</td></tr>
+</table>
+<div class="hilfe-tipp"><strong>Das Modell ist bewusst grob.</strong> Es kennt keine Begegnungsverkehre im Flur, keine Pausen innerhalb einer Schicht und keine Personen, die auf andere Aufzüge ausweichen. Es eignet sich, um Engpässe zu finden und Varianten zu <em>vergleichen</em>. Die absoluten Minuten sind Richtwerte. Je besser die Stammdaten, desto näher an der Wirklichkeit.</div>
+</section>
+
+<section id="ablauf">
+<h2>Ablauf auf der Karte</h2>
+<p>Im Modus <em>Ablauf</em> der Karte spielst du einen Tag ab. Jede Fahrt ist ein Punkt in der Farbe ihrer Transportart, der sich über die Strecken bewegt.</p>
+<table class="tabelle hilfe-tabelle">
+<tr><th>Bedienelement</th><th>Bedeutung</th></tr>
+<tr><td>Datum</td><td>Welcher Tag gerechnet wird. Wochentag, Feiertage und Zeitraum der Lieferungen werden berücksichtigt.</td></tr>
+<tr><td>Szenario</td><td>Ist-Zustand oder ein Szenario abspielen.</td></tr>
+<tr><td>Zeitregler</td><td>Zu einer Uhrzeit springen.</td></tr>
+<tr><td>Abspielen / Anhalten</td><td>Die Zeit laufen lassen.</td></tr>
+<tr><td>Abspieltempo</td><td>30× bis 600×: Bei 60× vergeht eine Minute in einer Sekunde.</td></tr>
+<tr><td>Welche Wege anzeigen</td><td>Linien der Fahrten: nur die gerade unterwegs sind, die der nächsten 15/30/60 Minuten oder den ganzen Tag. Je dicker die Linie, desto mehr Fahrten nutzen das Stück. Fährst du mit der Maus über eine Linie, steht die Zahl der Fahrten da.</td></tr>
+<tr><td>Filter</td><td>Nur bestimmte Startpunkte, Transportarten, Richtungen oder eine einzelne Lieferung zeigen. Gerechnet wird immer mit allen, Filter blenden nur aus.</td></tr>
+<tr><td>Karte als PDF</td><td>Das aktuelle Stockwerk mit den Wegen als PDF, z. B. für Besprechungen.</td></tr>
+</table>
+<p><strong>Zustände der Punkte:</strong> unterwegs · wartet (auf Fahrzeug, am Aufzug, an Engstelle) · im Aufzug · wird beladen · wird entladen. Die Kopfzeile zählt, wie viele auf diesem Stockwerk gerade warten. An Aufzügen ist die Warteschlange zu sehen. Ein Klick auf einen Punkt zeigt die Fahrt: Lieferung, Fahrt x von y, von/nach, geplant, los, Ankunft, zurück und wie lange und wo sie gewartet hat. Stehen mehrere an derselben Stelle, werden alle aufgelistet.</p>
+<p>Wechselt eine Fahrt das Stockwerk, verschwindet sie auf diesem und erscheint auf dem anderen. Wähl links ein anderes Stockwerk, um ihr zu folgen. Die Fußzeile zeigt Lieferungen, Fahrten, Engpässe und Lieferungen ohne Weg mit Link zur Auswertung.</p>
+</section>
+
+<section id="auswertung">
+<h2>Auswertung</h2>
+<p>Die Auswertung rechnet alle Lieferungen eines Tages durch. Oben wählst du die Ansicht (<em>Tag</em>, <em>Woche</em>, <em>Streuung</em>, <em>Mindestbedarf</em>), das Datum und optional ein Szenario.</p>
+
+<h3 id="auswertung-tag">Ansicht „Tag“</h3>
+<p><strong>Filter:</strong> Uhrzeit von–bis, Startpunkt und Transportart grenzen die angezeigten Fahrten und Kennzahlen ein. Gerechnet wird immer mit allen Fahrten des Tages. Engpässe und Auslastung gelten deshalb für den ganzen Tag. <em>Neu berechnen</em> rechnet mit dem aktuellen Stand.</p>
+<table class="tabelle hilfe-tabelle">
+<tr><th>Kennzahl</th><th>Bedeutung</th></tr>
+<tr><td>Lieferungen / Fahrten</td><td>Wie viele Lieferungen an diesem Tag stattfinden und wie viele Fahrten daraus werden.</td></tr>
+<tr><td>verspätet</td><td>Fahrten, die nach „Spätestens am Ziel“ ankommen.</td></tr>
+<tr><td>längste Wartezeit</td><td>Die längste Gesamtwartezeit einer einzelnen Fahrt.</td></tr>
+<tr><td>Engpässe</td><td>Anzahl der Stellen mit mindestens 1 Minute Wartezeit oder mindestens 90 % Auslastung.</td></tr>
+<tr><td>Wartezeit gesamt</td><td>Summe aller Wartezeiten aller Fahrten. Gut zum Vergleichen von Szenarien.</td></tr>
+</table>
+<p><strong>Engpässe:</strong> Jede Karte nennt die Stelle (Aufzug, Engstelle, Lade-/Entladepunkt, Fahrzeuge), die längste und die gesamte Wartezeit, wie viele höchstens gleichzeitig warteten, die Spitzenauslastung mit Uhrzeit und Ideen zur Abhilfe. <em>Auf der Karte zeigen</em> springt zur Stelle.</p>
+<p><strong>Auslastung im Tagesverlauf:</strong> Für jede Stelle ein Band in 5-Minuten-Schritten. Je dunkler bzw. röter, desto voller. Fahr mit der Maus darüber für den genauen Wert.</p>
+<p><strong>Fahrten:</strong> Tabelle aller Fahrten mit geplanter Zeit, Lieferung, von/nach, Losfahrt, Ankunft, Wartezeit und Rückkehr. Verspätete Fahrten sind markiert.</p>
+<p><strong>Lieferungen ohne Weg</strong> stehen oben in einem eigenen Kasten mit Grund. Sie werden nicht gerechnet.</p>
+<p><strong>Excel</strong> lädt Kennzahlen, Engpässe und Fahrten als Excel-Datei herunter, <strong>Karte als PDF</strong> die Stockwerke mit Wegen, <strong>Drucken</strong> druckt die Seite.</p>
+
+<h3 id="auswertung-woche">Ansicht „Woche“</h3>
+<p>Die Woche (Montag bis Sonntag), in der das gewählte Datum liegt. Jede Zelle ist eine Stunde: Die Zahl nennt die Fahrten, die Farbe die längste Wartezeit (grün = keine, gelb, rot = lang). Ein Klick auf eine Zelle öffnet diesen Tag in der Ansicht „Tag“. Mit Szenario steht der Ist-Wert grau daneben. So findest du schnell den kritischsten Wochentag und die kritischste Stunde.</p>
+
+<h3 id="auswertung-streuung">Ansicht „Streuung“</h3>
+<p>Der Plan-Tag rechnet mit genauen Uhrzeiten. In Wirklichkeit kommt der LKW mal früher, mal später, und das Entladen dauert unterschiedlich lange. Die Streuung rechnet den gewählten Tag deshalb viele Male mit zufälligen Abweichungen:</p>
+<ul>
+  <li>Ankunft ± <em>Schwankung</em> der Lieferung (Planwert am häufigsten),</li>
+  <li>Entladezeit am Tor zufällig zwischen <em>von</em> und <em>bis</em>,</li>
+  <li>Personenfahrten in Aufzügen nach der <em>Grundlast</em>, jedes Mal zu anderen Zeitpunkten.</li>
+</ul>
+<table class="tabelle hilfe-tabelle">
+<tr><th>Eingabe / Ergebnis</th><th>Bedeutung</th></tr>
+<tr><td>Tage</td><td>Wie viele zufällige Tage gerechnet werden. 100 ist ein guter Wert, mehr ist genauer, dauert aber länger.</td></tr>
+<tr><td>Schwelle (Min.)</td><td>Ab welcher Wartezeit ein Tag als „schlecht“ zählt, z. B. 30 Minuten.</td></tr>
+<tr><td>% der Tage …</td><td>An wie vielen der gerechneten Tage irgendwo jemand länger als die Schwelle wartet.</td></tr>
+<tr><td>längste Wartezeit an 9 von 10 Tagen höchstens</td><td>Der Wert, den die längste Wartezeit an 90 % der Tage nicht überschreitet.</td></tr>
+<tr><td>Wo es eng wird</td><td>Je Stelle: Anteil der Tage über der Schwelle, üblicher Wert (Median), Wert an 9 von 10 Tagen, schlimmster Tag und Auslastung an 9 von 10 Tagen.</td></tr>
+<tr><td>Lieferungen</td><td>Je Lieferung: an wie vielen Tagen verspätet, an wie vielen über der Schwelle, und die Wartezeit an 9 von 10 Tagen.</td></tr>
+</table>
+<p>Lesehilfe: „Tage über 30 Min. = 20 %“ heißt, an jedem fünften Tag wartet dort mindestens ein Transport länger als 30 Minuten. Ohne eingetragene Schwankung und Grundlast sind alle Tage gleich. Die Seite weist darauf hin.</p>
+
+<h3 id="auswertung-bedarf">Ansicht „Mindestbedarf“</h3>
+<p>Beantwortet die Frage: <strong>Wie viele brauche ich mindestens, damit niemand länger als X Minuten wartet?</strong> Das System probiert 1, 2, 3 … durch und nennt die kleinste Anzahl, die reicht.</p>
+<table class="tabelle hilfe-tabelle">
+<tr><th>Eingabe / Ergebnis</th><th>Bedeutung</th></tr>
+<tr><td>Was?</td><td>Eine Transportart (Anzahl Fahrzeuge bzw. Mitarbeitende), ein Tor bzw. ein Lade-/Entladepunkt (Anzahl Tore bzw. Plätze) oder eine Engstelle (wie viele gleichzeitig).</td></tr>
+<tr><td>höchstens warten (Min.)</td><td>Ziel: Niemand wartet <em>an dieser Stelle</em> länger, z. B. 15 Minuten.</td></tr>
+<tr><td>mit Streuung</td><td>Je Anzahl 30 zufällige Tage rechnen. Es reicht, wenn das Ziel an 9 von 10 Tagen erfüllt ist.</td></tr>
+<tr><td>Spalte „Anzahl“</td><td>Die ausprobierte Zahl. Bei einer Transportart heißt das: so viele Personen bzw. Fahrzeuge <strong>gleichzeitig im Einsatz</strong>, den ganzen Tag über. Das ist kein Stellenschlüssel (keine Vollzeitkräfte): Für die Stellenplanung musst du Schichten, Pausen und Ausfallzeiten dazurechnen.</td></tr>
+<tr><td>längste Wartezeit dort</td><td>Die längste Wartezeit an dieser Stelle mit dieser Anzahl. Grün = Ziel erreicht.</td></tr>
+<tr><td>Auslastung (Spitze)</td><td>Die höchste Auslastung in einem 5-Minuten-Schritt.</td></tr>
+<tr><td>verspätete Fahrten</td><td>Wie viele Fahrten mit dieser Anzahl zu spät kommen.</td></tr>
+</table>
+<p>Hat die Transportart Schichten, rechnet der Mindestbedarf trotzdem mit einer festen Anzahl über den ganzen Tag. Für die Verteilung über den Tag schau in die Auslastung der Ansicht „Tag“. Reicht auch die höchste ausprobierte Anzahl nicht, liegt der Engpass vermutlich woanders, etwa am Aufzug.</p>
+</section>
+
+<section id="szenarien">
+<h2>Szenarien</h2>
+<p>Ein Szenario ist eine Kopie des Ist-Zustands mit Änderungen, zum Beispiel: „Wäsche kommt um 7:30 statt 8:00“, „Aufzug West in Wartung“, „ein FTS mehr“, „Brandschutztür B geschlossen“. Die echten Daten bleiben unverändert, bis du ein Szenario ausdrücklich übernimmst.</p>
+
+<h3 id="szenarien-anlegen">Anlegen und bearbeiten</h3>
+<p><em>Szenario anlegen</em> → Name und Beschreibung. Im Editor änderst du nur, was anders sein soll. Geänderte Felder sind markiert, die Zahl der Abweichungen steht in der Liste.</p>
+<table class="tabelle hilfe-tabelle">
+<tr><th>Bereich</th><th>Was sich ändern lässt</th></tr>
+<tr><td>Lieferungen</td><td>Aktiv, Uhrzeit, Spätestens, Transportart.</td></tr>
+<tr><td>Aufzüge und Treppen</td><td>Außer Betrieb, Plätze, Fahrzeit je Stockwerk.</td></tr>
+<tr><td>Transportarten</td><td>Anzahl und Geschwindigkeit. Eine geänderte Anzahl gilt im Szenario den ganzen Tag, statt der Schichten.</td></tr>
+<tr><td>Rampen und Lade-/Entladepunkte</td><td>Wie viele gleichzeitig be- oder entladen werden können.</td></tr>
+<tr><td>Streckenstücke sperren</td><td>Benannte Streckenstücke sperren, z. B. eine Tür wegen Bauarbeiten. Nur Stücke mit Bezeichnung erscheinen hier, die Bezeichnung vergibst du im Karteneditor.</td></tr>
+</table>
+
+<h3 id="szenarien-vergleichen">Ansehen, vergleichen, übernehmen</h3>
+<ul>
+  <li><strong>Vergleichen:</strong> öffnet die Auswertung mit diesem Szenario. Die kleinen grauen Zahlen zeigen zum Vergleich den Ist-Zustand, darüber steht das Fazit, z. B. „Im Szenario wird insgesamt 1 h 20 min weniger gewartet. Verspätete Fahrten: 5 → 1“.</li>
+  <li><strong>Ablauf:</strong> Auch im Ablauf auf der Karte und in den Ansichten Woche, Streuung und Mindestbedarf lässt sich oben das Szenario wählen.</li>
+  <li><strong>Übernehmen:</strong> schreibt die geänderten <em>Lieferungen</em> in den Ist-Zustand, nach Rückfrage. Änderungen an Aufzügen, Transportarten, Rampen und Sperren werden <em>nicht</em> übernommen. Die trägst du bei Bedarf selbst in Stammdaten bzw. Karte ein.</li>
+</ul>
+</section>
+
+<section id="einstellungen">
+<h2>Einstellungen</h2>
+
+<h3 id="einstellungen-allgemein">Allgemein</h3>
+<table class="tabelle hilfe-tabelle">
+<tr><th>Feld</th><th>Bedeutung</th></tr>
+<tr><td>Bundesland (für Feiertage)</td><td>Gilt für das gerade geöffnete Krankenhaus. Daraus ergeben sich die gesetzlichen Feiertage. Die Liste der Feiertage des Jahres steht darunter.</td></tr>
+<tr><td>Sprache</td><td>Standardsprache für alle. Jeder kann über das Menü oben rechts eine eigene wählen.</td></tr>
+<tr><td>Abmelden nach … Stunden ohne Nutzung</td><td>Nach so vielen Stunden ohne Aktivität muss man sich neu anmelden.</td></tr>
+<tr><td>Benutzer aus dem Active Directory spätestens nach … Stunden neu anmelden</td><td>So werden geänderte AD-Gruppen bzw. gesperrte Konten spätestens dann wirksam.</td></tr>
+<tr><td>Änderungsprotokoll aufbewahren (Tage)</td><td>Ältere Einträge werden täglich gelöscht. 0 = unbegrenzt.</td></tr>
+</table>
+
+<h3 id="einstellungen-sondertage">Eigene Sondertage</h3>
+<p>Zusätzliche Tage, die wie Feiertage gelten: örtliche Feiertage, Rosenmontag, Tage mit Notbetrieb. Lieferungen mit „nicht an Feiertagen“ entfallen dort, solche mit „nur an Feiertagen“ finden statt. Sondertage gelten je Krankenhaus.</p>
+
+<h3 id="einstellungen-standorte">Krankenhäuser</h3>
+<p>Liste aller Krankenhäuser mit Inhalt (Gebäudeteile, Lieferungen): öffnen, umbenennen, löschen, neu anlegen. Siehe <a href="#/hilfe/standorte">Mehrere Krankenhäuser</a>.</p>
+
+<h3 id="einstellungen-sicherung">Sicherung</h3>
+<ul>
+  <li>Logistik Map sichert <strong>täglich</strong> die Datenbank und <strong>einmal pro Woche</strong> zusätzlich alle PDF-Pläne, im Datenordner unter „sicherungen“.</li>
+  <li><strong>Automatische Sicherungen behalten:</strong> wie viele aufbewahrt werden.</li>
+  <li><strong>Jetzt sichern</strong> und <strong>Sicherung herunterladen</strong> enthalten immer alles (Datenbank und Pläne). Bewahr eine heruntergeladene Sicherung zusätzlich an einem anderen Ort auf.</li>
+  <li><strong>Sicherung einspielen:</strong> ersetzt <em>alle</em> Daten aller Krankenhäuser durch den Stand der Sicherung. Der jetzige Stand wird vorher automatisch gesichert. Fehlen Pläne in einer reinen Datenbanksicherung, nennt Logistik Map sie. Sie müssen dann neu hochgeladen werden.</li>
+</ul>
+
+<h3 id="einstellungen-updates">Updates</h3>
+<p><em>Jetzt prüfen</em> fragt bei GitHub nach einer neuen Version. <em>Update installieren</em> lädt sie herunter und installiert sie. Logistik Map ist dabei etwa eine Minute nicht erreichbar, die Daten bleiben erhalten. Hat der Server kein Internet, installierst du das Update von Hand: neuen Installer herunterladen und auf dem Server ausführen.</p>
+
+<h3 id="einstellungen-ad">Anmeldung über Active Directory</h3>
+<table class="tabelle hilfe-tabelle">
+<tr><th>Feld</th><th>Bedeutung</th></tr>
+<tr><td>Einschalten</td><td>Mitarbeitende melden sich mit ihrem Windows-Konto an. Lokale Benutzer funktionieren weiterhin.</td></tr>
+<tr><td>Server</td><td>z. B. ldaps://dc01.klinik.local, mehrere durch Komma getrennt.</td></tr>
+<tr><td>Domäne</td><td>Wird an den Benutzernamen angehängt: benutzer@domäne.</td></tr>
+<tr><td>Suchbasis (Base DN)</td><td>Wo nach Benutzern und Gruppen gesucht wird, z. B. DC=klinik,DC=local.</td></tr>
+<tr><td>Gruppen → Rollen</td><td>Welche AD-Gruppe welche Rolle bekommt. Die erste passende Zeile gilt, also die mächtigste Rolle nach oben.</td></tr>
+<tr><td>Rolle ohne passende Gruppe</td><td>Was Benutzer ohne passende Gruppe bekommen, oder „kein Zugang“.</td></tr>
+<tr><td>Anmeldung testen</td><td>Mit einem echten Konto prüfen, ob Anmeldung und Gruppen-Zuordnung funktionieren.</td></tr>
+</table>
+
+<h3 id="einstellungen-https">HTTPS</h3>
+<p>Für eine verschlüsselte Verbindung braucht Logistik Map ein Zertifikat und den privaten Schlüssel als PEM-Dateien auf dem Server, am besten von eurer IT ausgestellt. Trag beide Pfade ein, speichere und starte neu. Beide Felder leer lassen schaltet HTTPS aus.</p>
+
+<h3 id="einstellungen-protokoll">Änderungsprotokoll</h3>
+<p>Über <em>Änderungsprotokoll ansehen</em>: jede Änderung mit Zeitpunkt, Benutzer, Objekt und Aktion, filterbar nach Benutzer und Objektart. Nur für Administratoren.</p>
+</section>
+
+<section id="benutzer">
+<h2>Benutzer und Rollen</h2>
+
+<h3 id="benutzer-rechte">Rechte</h3>
+<table class="tabelle hilfe-tabelle">
+<tr><th>Recht</th><th>Erlaubt</th></tr>
+<tr><td>Ansehen</td><td>Karte, Lieferungen, Ablauf und Auswertung ansehen, Exporte herunterladen.</td></tr>
+<tr><td>Lieferungen &amp; Szenarien</td><td>Lieferungen anlegen, ändern, importieren, Szenarien pflegen und übernehmen.</td></tr>
+<tr><td>Gebäude, Karte &amp; Stammdaten</td><td>Pläne hochladen, Gebäude und Stockwerke, Strecken und Punkte zeichnen, Stammdaten ändern.</td></tr>
+<tr><td>Verwaltung</td><td>Benutzer und Rollen, Einstellungen, Krankenhäuser, Sicherung, Updates, Active Directory, Protokoll.</td></tr>
+</table>
+
+<h3 id="benutzer-rollen">Rollen</h3>
+<p>Eine Rolle bündelt Rechte. Mitgeliefert sind <strong>Administrator</strong> (alles), <strong>Planer</strong> (Ansehen + Lieferungen &amp; Szenarien) und <strong>Betrachter</strong> (nur Ansehen). Diese lassen sich nicht ändern. Eigene Rollen legst du mit beliebiger Kombination an, z. B. „Kartenpflege“ mit Ansehen und Gebäude, Karte &amp; Stammdaten.</p>
+
+<h3 id="benutzer-anlegen">Benutzer</h3>
+<table class="tabelle hilfe-tabelle">
+<tr><th>Feld</th><th>Bedeutung</th></tr>
+<tr><td>Benutzername</td><td>Zum Anmelden.</td></tr>
+<tr><td>Anzeigename</td><td>Erscheint oben rechts und im Protokoll.</td></tr>
+<tr><td>Rolle</td><td>Siehe oben. Bei Benutzern aus dem Active Directory wird sie bei jeder Anmeldung aus den Gruppen gesetzt.</td></tr>
+<tr><td>Passwort</td><td>Mindestens 8 Zeichen. Beim Bearbeiten leer lassen = unverändert.</td></tr>
+<tr><td>Aktiv</td><td>Deaktivierte Benutzer können sich nicht mehr anmelden, bleiben aber im Protokoll erhalten.</td></tr>
+</table>
+<p>Jeder kann sein eigenes Passwort über das Menü oben rechts ändern.</p>
+</section>
+
+<section id="anleitungen">
+<h2>Schritt-für-Schritt-Anleitungen</h2>
+
+<h3 id="anleitung-lkw">LKW-Anlieferung über drei Tore ins Lager und auf die Station</h3>
+<ol>
+  <li>Karte → Stockwerk mit dem Wirtschaftshof → Bearbeiten.</li>
+  <li><em>Strecken zeichnen</em>: Strecke von der Rampe durch den Wareneingang ins Lager und weiter zum Aufzug. Rechtsklick beendet die Linie.</li>
+  <li><em>Punkt setzen</em> an der Rampe, Art <em>Tor / Rampe (LKW)</em>, Name „Rampe“, <em>Gleichzeitig höchstens</em> 3, Entladen je Palette z. B. 2 bis 4 Minuten.</li>
+  <li>Punkt „Lager“ (Start-/Zielpunkt) und den Aufzug (Aufzug/Treppe) auf die Strecke setzen. Auf dem Stationsstockwerk denselben Aufzug setzen, den Flur zeichnen und den Punkt „B25“ setzen.</li>
+  <li>Lieferungen: „Um 08:00 kommen 10 Paletten von Rampe nach Lager, danach bleibt dort / LKW fährt weg“.</li>
+  <li>Weiterverteilung: „Um 09:00 kommen 2 Rollcontainer von Lager nach B25, danach leer zurück“.</li>
+  <li>Auswertung → Tag: Wartet der LKW am Tor? Wartet die Verteilung am Aufzug?</li>
+</ol>
+
+<h3 id="anleitung-bett">Bettentausch: schmutzig hin, sauber zurück</h3>
+<ol>
+  <li>Punkte „Station B25“ und „Bettenaufbereitung“ setzen, Wagentyp „Bett“ (Platzbedarf 2) prüfen.</li>
+  <li>Lieferung: Richtung <em>Intern</em>, Start Station B25, Ziel Bettenaufbereitung, Ladung 1 Bett.</li>
+  <li>Rückweg: <em>beladen zurück</em>, Rückweg nach Station B25. Das saubere Bett fährt zurück.</li>
+  <li>In der Schnellzeile geht das direkt mit „danach: beladen zurück (z. B. sauberes Bett)“.</li>
+</ol>
+
+<h3 id="anleitung-personal">Wie viele Mitarbeitende im Transportdienst brauche ich?</h3>
+<ol>
+  <li>Alle Lieferungen eines typischen Tages erfassen, Stammdaten (Geschwindigkeit, Lade- und Entladezeiten, Aufzüge) prüfen.</li>
+  <li>Auswertung → <em>Mindestbedarf</em> → Was? „Materialtransportdienst“, höchstens warten z. B. 10 Minuten → Berechnen.</li>
+  <li>Ergebnis z. B. „4 Fahrzeuge bzw. Mitarbeiter reichen“, also 4 Personen gleichzeitig im Einsatz.</li>
+  <li>Mit „mit Streuung“ wiederholen, um Schwankungen abzusichern.</li>
+  <li>In der Ansicht „Tag“ unter Auslastung ansehen, <em>wann</em> diese 4 gebraucht werden, und daraus Schichten bilden (Stammdaten → Transportart → Schichten).</li>
+</ol>
+
+<h3 id="anleitung-wartung">Was passiert, wenn ein Aufzug ausfällt?</h3>
+<ol>
+  <li>Szenarien → <em>Szenario anlegen</em>, Name „Aufzug West in Wartung“.</li>
+  <li>Bei Aufzüge und Treppen: Aufzug West <em>außer Betrieb</em> anhaken.</li>
+  <li><em>Vergleichen</em>: Wie viel länger wird gewartet, welche Lieferungen haben keinen Weg mehr?</li>
+  <li>Im Szenario Uhrzeiten verschieben, bis es passt. Gefällt das Ergebnis, die Lieferungen mit <em>Übernehmen</em> in den Ist-Zustand schreiben.</li>
+</ol>
+
+<h3 id="anleitung-fts">Ein FTS soll bestimmte Flure nicht befahren</h3>
+<p>Siehe <a href="#/hilfe/editor-strecken">Streckenstücke</a>: Strecke anklicken, „Gesperrt für: FTS“, „ganze Strecke“ anhaken. Soll ein FTS einen bestimmten Aufzug nicht nehmen, hake beim Aufzug unter „Nur für diese Transportarten“ alle anderen Transportarten an. Soll es nur einen bestimmten Aufzug nehmen, trag diesen als Zwischenstation ein.</p>
+</section>
+
+<section id="probleme">
+<h2>Probleme lösen</h2>
+<table class="tabelle hilfe-tabelle">
+<tr><th>Problem</th><th>Ursache und Lösung</th></tr>
+<tr><td>„Es gibt keinen Weg von … nach …“</td><td>Irgendwo ist das Netz unterbrochen. „Erste Schritte“ nennt das Stockwerk. Dort <em>Lücken prüfen</em> und auf orange offene Enden achten. Ist der Weg nur für eine Transportart gesperrt, steht „Weg gesperrt“ da.</td></tr>
+<tr><td>„… hängt an keiner Strecke“</td><td>Der Punkt liegt neben der Strecke. Ihn im Modus „Auswählen“ auf die Strecke ziehen oder <em>Lücken prüfen</em> verwenden.</td></tr>
+<tr><td>„Stockwerk ist mit dem übrigen Netz nicht verbunden“</td><td>Es fehlt ein Aufzug, eine Treppe oder ein Übergang. Prüf, ob der Aufzug auf beiden Stockwerken derselbe ist (gleicher Name in der Auswahl).</td></tr>
+<tr><td>„Aufzug ist nur auf einem Stockwerk eingezeichnet“</td><td>Auf den anderen Stockwerken einen Punkt „Aufzug/Treppe“ setzen und denselben Aufzug wählen.</td></tr>
+<tr><td>„… darf … nicht benutzen“</td><td>Der Aufzug ist unter Stammdaten auf andere Transportarten beschränkt. Freigeben oder eine andere Transportart wählen.</td></tr>
+<tr><td>Fahrzeiten sind unrealistisch lang oder kurz</td><td>Maßstab mit <em>Strecke messen</em> an einer bekannten Wand prüfen. Geschwindigkeit der Transportart prüfen.</td></tr>
+<tr><td>Niemand wartet je auf Personal</td><td>Die Anzahl der Transportart steht auf 0 (unbegrenzt) und es gibt keine Schichten.</td></tr>
+<tr><td>Die Wartezeit am Aufzug ist sehr hoch</td><td>Grundlast und mittlere Wartezeit zählen eventuell doppelt. Plätze und Platzbedarf der Wagen prüfen. Ein FTS reserviert die Kabine allein.</td></tr>
+<tr><td>Eine Lieferung erscheint an einem Tag nicht</td><td>Wochentage, Feiertage („nicht an Feiertagen“), Gültig ab/bis, Ausnahmen und „Aktiv“ prüfen.</td></tr>
+<tr><td>Der Plan bleibt grau oder „wartet“</td><td>Große Pläne brauchen einige Minuten. Bei „Fehler“: <em>Neu aufbereiten</em>, sonst die PDF neu speichern (z. B. aus dem Planungsprogramm erneut exportieren).</td></tr>
+<tr><td>Upload bricht ab</td><td>Meist begrenzt ein Proxy im Netz die Größe. Dann direkt am Server im Browser hochladen.</td></tr>
+<tr><td>Ich sehe nach einem Update noch die alte Oberfläche</td><td><kbd>Strg</kbd> + <kbd>F5</kbd> drücken.</td></tr>
+<tr><td>Ich sehe plötzlich andere Gebäude</td><td>Oben ist ein anderes Krankenhaus gewählt.</td></tr>
+</table>
+</section>

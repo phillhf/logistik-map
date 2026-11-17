@@ -8,6 +8,10 @@ Wege und Lieferungen einzeichnen und sehen, wo es eng wird.
 
 ## So arbeitest du damit
 
+Eine ausführliche Anleitung steckt im Programm: Menüpunkt **Hilfe** oder **?** oben rechts, das
+die Hilfe zur gerade offenen Seite öffnet. Dort sind jede Seite und jeder Parameter erklärt,
+dazu, wie die Simulation rechnet, Schritt-für-Schritt-Anleitungen und Fehlersuche – mit Suche.
+
 Nach der Installation öffnet sich die Seite **Erste Schritte**. Sie führt durch die Einrichtung,
 prüft selbst, was erledigt ist, und springt mit „Beheben“ an die Stelle, an der etwas fehlt –
 zum Beispiel zu einem Punkt, der an keinem Weg hängt, oder zu einer Lieferung, für die es keinen

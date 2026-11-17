@@ -147,6 +147,7 @@ export async function bedarfZeigen(inhalt, { datum, szenario, stamm }) {
       r.empfehlung
         ? h("p.bedarf-ergebnis.gut", t("bedarf.ergebnis", { anzahl: r.empfehlung, einheit, name, minuten: r.ziel }))
         : h("p.bedarf-ergebnis.schlecht", t("bedarf.reicht_nicht", { anzahl: r.punkte.at(-1)?.anzahl, einheit, name, minuten: r.ziel })),
+      art === "transportart" ? h("p.hinweis", t("bedarf.anzahl_hinweis")) : null,
       ta?.schichten?.length ? h("p.hinweis", t("bedarf.schichten_hinweis")) : null,
       r.laeufe ? h("p.hinweis", t("bedarf.streuung_hinweis", { laeufe: r.laeufe })) : null,
       h(

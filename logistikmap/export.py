@@ -17,7 +17,7 @@ SPALTEN = [
 ]
 HINWEISE = [
     ("ID", "Leer lassen für neue Lieferungen. Mit ID wird die vorhandene Lieferung aktualisiert."),
-    ("Richtung", "Versorgung oder Entsorgung"),
+    ("Richtung", "Versorgung, Entsorgung oder Intern"),
     ("Transportart", "Name wie unter Stammdaten, z. B. FTS"),
     ("Start / Ziel / Rückweg nach", "Name des Punkts. Gibt es den Namen mehrfach: „Name (Stockwerk)“ oder „Name (Stockwerk, Kürzel)“"),
     ("Uhrzeit / Spätestens", "HH:MM, z. B. 08:00"),

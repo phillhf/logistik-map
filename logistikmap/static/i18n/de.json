@@ -24,7 +24,8 @@
     "auswertung": "Auswertung",
     "stammdaten": "Stammdaten",
     "szenarien": "Szenarien",
-    "protokoll": "Protokoll"
+    "protokoll": "Protokoll",
+    "hilfe": "Hilfe"
   },
   "start": {
     "titel": "Erste Schritte",
@@ -64,7 +65,7 @@
     "zahlen": {
       "gebaeude": "Gebäudeteile: {teile} · Stockwerke: {stockwerke}",
       "plaene": "Mit Plan: {mit_plan} von {stockwerke}",
-      "karte": "Wegstücke: {wege} · Start-/Zielpunkte: {punkte} · Aufzüge/Treppen: {aufzuege}",
+      "karte": "Streckenstücke: {wege} · Start-/Zielpunkte: {punkte} · Aufzüge/Treppen: {aufzuege}",
       "stammdaten": "Transportarten: {transportarten} · Wagentypen: {wagentypen} · Aufzüge/Treppen: {aufzuege}",
       "lieferungen": "Aktive Lieferungen: {lieferungen}"
     },
@@ -98,7 +99,7 @@
           "LKW-Tore an der Rampe als Punkt der Art „Tor / Rampe (LKW)“, bei „Gleichzeitig höchstens“ die Anzahl der Tore.",
           "Aufzüge und Treppen als Punkt: auf jedem Stockwerk, auf dem sie halten, und dort jeweils denselben Aufzug wählen.",
           "Übergänge zwischen Gebäudeteilen, falls es welche gibt.",
-          "Jeder Punkt muss an einem Weg hängen. Räume und Bereiche sind optional."
+          "Jeder Punkt muss an einer Strecke hängen. Räume und Bereiche sind optional."
         ],
         "knopf": "Karte bearbeiten"
       },
@@ -123,12 +124,12 @@
       "plan_fehler": "{stockwerk}: Der Plan konnte nicht aufbereitet werden ({fehler}).",
       "plan_laeuft": "{stockwerk}: Der Plan wird gerade aufbereitet.",
       "massstab_fehlt": "{stockwerk}: Der Maßstab fehlt.",
-      "keine_wege": "{stockwerk}: Es sind noch keine Wege eingezeichnet.",
-      "punkt_ohne_weg": "„{name}“ ({stockwerk}) hängt an keinem Weg.",
+      "keine_wege": "{stockwerk}: Es sind noch keine Strecken eingezeichnet.",
+      "punkt_ohne_weg": "„{name}“ ({stockwerk}) hängt an keiner Strecke.",
       "uebergang_offen": "Der Übergang „{name}“ ({stockwerk}) führt noch in kein anderes Stockwerk.",
       "aufzug_ein_halt": "„{aufzug}“ ist nur auf {stockwerk} eingezeichnet. Setze ihn auf jedem Stockwerk, auf dem er hält.",
       "stockwerk_getrennt": "{stockwerk} ist mit dem übrigen Netz nicht verbunden. Es fehlt ein Aufzug, eine Treppe oder ein Übergang.",
-      "punkt_getrennt": "„{name}“ ({stockwerk}) liegt an einem Wegstück, das nicht mit dem übrigen Netz verbunden ist.",
+      "punkt_getrennt": "„{name}“ ({stockwerk}) liegt an einer Strecke, die nicht mit dem übrigen Netz verbunden ist.",
       "zu_wenig_punkte": "Es gibt erst {anzahl} Start- oder Zielpunkte, mindestens 2 sind nötig.",
       "keine_transportart": "Es gibt keine Transportart.",
       "anzahl_unbegrenzt": "„{name}“: Die Anzahl ist unbegrenzt und es gibt keine Schichten. So werden fehlende Fahrzeuge oder fehlendes Personal nicht als Engpass sichtbar.",
@@ -232,7 +233,7 @@
       "fehler": "Fehler"
     },
     "plan_gewechselt_titel": "Neuer Plan zugewiesen",
-    "plan_gewechselt": "Auf „{name}“ sind schon Wege, Punkte oder Räume eingezeichnet. Liegt der neue Plan anders (verschoben, anderer Maßstab), richte sie mit dem Werkzeug „Ausrichten“ im Bearbeiten-Modus aus.",
+    "plan_gewechselt": "Auf „{name}“ sind schon Strecken, Punkte oder Räume eingezeichnet. Liegt der neue Plan anders (verschoben, anderer Maßstab), richte sie mit dem Werkzeug „Ausrichten“ im Bearbeiten-Modus aus.",
     "jetzt_ausrichten": "Jetzt ausrichten"
   },
   "dokumente": {
@@ -359,7 +360,7 @@
     "regel_ungueltig": "Die Regel ist ungültig ({feld}).",
     "datum_ungueltig": "Ungültiges Datum.",
     "knoten_unbekannt": "Ein Punkt der Lieferung existiert nicht mehr.",
-    "kein_weg": "Kein Weg von „{start}“ nach „{ziel}“. Fehlt ein Wegstück, ist ein Weg gesperrt oder der Aufzug für diese Transportart nicht erlaubt?",
+    "kein_weg": "Kein Weg von „{start}“ nach „{ziel}“. Fehlt ein Streckenstück, ist eine Strecke gesperrt oder der Aufzug für diese Transportart nicht erlaubt?",
     "massstab_fehlt": "Auf {stockwerke} fehlt der Maßstab.",
     "transportart_fehlt": "Die Transportart gibt es nicht mehr.",
     "kein_zugang_verzeichnis": "Anmeldung erfolgreich, aber für dein Konto ist in Logistik Map keine Rolle hinterlegt. Bitte wende dich an die Administration.",
@@ -418,12 +419,12 @@
     "bis_leer": "(fest)"
   },
   "kante": {
-    "titel": "Wegstück",
-    "weg": "Wegstück",
+    "titel": "Streckenstück",
+    "weg": "Streckenstück",
     "name": "Bezeichnung",
     "name_hilfe": "z. B. Flur Ost, Brandschutztür",
     "laenge": "Länge in Metern",
-    "laenge_hilfe": "Leer = aus dem Plan berechnet. Nur ausfüllen, wenn der Weg länger ist als die gerade Linie.",
+    "laenge_hilfe": "Leer = aus dem Plan berechnet. Nur ausfüllen, wenn der echte Weg länger ist als die gezeichnete Linie.",
     "kapazitaet": "Gleichzeitig höchstens",
     "kapazitaet_hilfe": "Engstelle: Wie viele Wagen passen gleichzeitig durch? Leer = unbegrenzt.",
     "gesperrt": "Gesperrt für",
@@ -467,7 +468,7 @@
     "punkt_neu": "Neuer Punkt",
     "raum_neu": "Neuer Raum",
     "bereich_neu": "Neuer Bereich",
-    "mit_weg_verbinden": "Mit dem nächsten Weg verbinden",
+    "mit_weg_verbinden": "Mit der nächsten Strecke verbinden",
     "kein_weg_in_der_naehe": "Keine Strecke in der Nähe – bitte mit „Strecken zeichnen“ anschließen.",
     "kein_aufzug": "– kein –",
     "aufzug_neu": "+ neuer Aufzug",
@@ -506,9 +507,9 @@
       "punkt_verschoben": "Punkt verschoben",
       "punkt_geaendert": "Punkt geändert",
       "punkt_geloescht": "Punkt gelöscht",
-      "weg": "Weg gezeichnet",
-      "weg_geaendert": "Wegstück geändert",
-      "weg_geloescht": "Wegstück gelöscht",
+      "weg": "Strecke gezeichnet",
+      "weg_geaendert": "Streckenstück geändert",
+      "weg_geloescht": "Streckenstück gelöscht",
       "ausrichten": "Ausrichten"
     },
     "fremde_aenderung": "{benutzer} hat dieses Stockwerk gerade geändert – die Karte wurde neu geladen.",
@@ -666,7 +667,7 @@
     "wagen_pro_fahrt": "Wagen je Fahrt",
     "wagen_pro_fahrt_hilfe": "Wie viele Wagen ein Fahrzeug oder eine Person auf einmal bewegt.",
     "anzahl": "Anzahl Fahrzeuge / Personen",
-    "anzahl_hilfe": "0 = unbegrenzt. Sonst warten Fahrten, bis ein Fahrzeug frei ist (auch nach der Rückfahrt).",
+    "anzahl_hilfe": "Wie viele Personen bzw. Fahrzeuge gleichzeitig im Einsatz sind – keine Stellen. Jede Fahrt belegt eine bis zur Rückkehr; sind alle unterwegs, wartet die nächste. 0 = unbegrenzt (dann wird fehlendes Personal nie sichtbar).",
     "unbegrenzt": "unbegrenzt",
     "aufzug": "Aufzug",
     "aufzug_exklusiv": "Reserviert den Aufzug für sich allein (FTS: Personal muss aussteigen)",
@@ -717,10 +718,10 @@
     "filter": {
       "alle_starts": "Alle Startpunkte",
       "alle_transportarten": "Alle Transportarten",
-      "alle_richtungen": "Versorgung und Entsorgung",
+      "alle_richtungen": "Alle Richtungen",
       "alle_lieferungen": "Alle Lieferungen"
     },
-    "fahrten_hier": "{anzahl} Fahrten über dieses Wegstück",
+    "fahrten_hier": "{anzahl} Fahrten über dieses Streckenstück",
     "zustand": {
       "faehrt": "unterwegs",
       "wartet": "wartet",
@@ -831,7 +832,7 @@
   "recht_hilfe": {
     "ansehen": "Karte, Lieferungen, Ablauf und Auswertung ansehen, Exporte herunterladen.",
     "lieferungen": "Lieferungen anlegen, ändern, importieren; Szenarien pflegen und übernehmen.",
-    "bearbeiten": "Pläne hochladen, Gebäude und Stockwerke, Wege und Punkte zeichnen, Stammdaten ändern.",
+    "bearbeiten": "Pläne hochladen, Gebäude und Stockwerke, Strecken und Punkte zeichnen, Stammdaten ändern.",
     "verwalten": "Benutzer und Rollen, Einstellungen, Sicherung, Updates, Anmeldung über Active Directory, Protokoll."
   },
   "rolle": {
@@ -922,7 +923,7 @@
       "geloescht": "gelöscht",
       "plan": "Plan zugewiesen",
       "massstab": "Maßstab festgelegt",
-      "teilen": "Weg geteilt",
+      "teilen": "Strecke geteilt",
       "rueckgaengig": "rückgängig gemacht",
       "ausrichten": "an neuen Plan ausgerichtet",
       "uebernehmen": "übernommen",
@@ -935,7 +936,7 @@
     "objekt": {
       "lieferungen": "Lieferung",
       "knoten": "Punkt",
-      "kanten": "Wegstück",
+      "kanten": "Streckenstück",
       "flaechen": "Fläche",
       "stockwerke": "Stockwerk",
       "gebaeudeteile": "Gebäudeteil",
@@ -1009,11 +1010,11 @@
     "ausser_betrieb": "außer Betrieb",
     "fahrzeit": "s/Etage",
     "rampen": "Rampen und Lade-/Entladepunkte",
-    "rampen_hilfe": "Wie viele Wagen gleichzeitig be- oder entladen werden können (leer = unbegrenzt).",
-    "engstellen": "Wegstücke sperren",
-    "engstellen_hilfe": "Benannte Wegstücke und Engstellen, z. B. eine Tür, die wegen Bauarbeiten geschlossen ist.",
+    "rampen_hilfe": "Wie viele Wagen gleichzeitig be- oder entladen werden können bzw. wie viele LKW-Tore es gibt. Leer = unbegrenzt, bei Toren leer = 1.",
+    "engstellen": "Streckenstücke sperren",
+    "engstellen_hilfe": "Benannte Streckenstücke und Engstellen, z. B. eine Tür, die wegen Bauarbeiten geschlossen ist.",
     "gesperrt": "gesperrt",
-    "keine_engstellen": "Noch keine benannten Wegstücke. Gib Wegstücken im Karteneditor eine Bezeichnung, um sie hier sperren zu können."
+    "keine_engstellen": "Noch keine benannten Streckenstücke. Gib Streckenstücken im Karteneditor eine Bezeichnung, um sie hier sperren zu können."
   },
   "zeit": {
     "vortag": "Vortag"
@@ -1089,10 +1090,20 @@
     "reicht_nicht": "Auch mit {anzahl} ({einheit}) wartet bei „{name}“ jemand länger als {minuten} Min. Dann liegt der Engpass vermutlich woanders (z. B. Aufzug oder Fahrzeuge) – schau unter „Tag“ nach.",
     "schichten_hinweis": "Diese Transportart hat einen Schichtplan. Für die Rechnung gilt den ganzen Tag dieselbe Anzahl.",
     "streuung_hinweis": "Mit Streuung: je Anzahl {laeufe} Tage gerechnet, gezeigt ist der Wert, der an 9 von 10 Tagen nicht überschritten wird.",
-    "anzahl": "Anzahl",
+    "anzahl": "Anzahl {einheit}",
     "wartezeit": "längste Wartezeit dort",
     "auslastung": "Auslastung (Spitze)",
     "verspaetet": "verspätete Fahrten",
-    "reicht": "reicht"
+    "reicht": "reicht",
+    "anzahl_hinweis": "„Anzahl“ heißt hier: so viele gleichzeitig im Einsatz, den ganzen Tag über. Das ist kein Stellenschlüssel – Schichten, Pausen und Ausfallzeiten kommen für die Stellenplanung noch dazu."
+  },
+  "hilfe": {
+    "titel": "Hilfe",
+    "suchen": "In der Hilfe suchen …",
+    "inhalt": "Inhalt",
+    "treffer": "{anzahl} Fundstellen – Enter springt zur ersten",
+    "keine_treffer": "Nichts gefunden.",
+    "nicht_gefunden": "Die Hilfe konnte nicht geladen werden.",
+    "zu_dieser_seite": "Hilfe zu dieser Seite"
   }
 }

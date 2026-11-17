@@ -14,6 +14,9 @@ Holidays are calculated for all German federal states.
 
 ## Features
 
+- **Built-in manual** (menu “Help”, or “?” at the top for the page you are on): every page and
+  every parameter explained, how the simulation calculates, step-by-step guides and
+  troubleshooting, with search.
 - **Variation and minimum needed**: calculate a day many times with random arrival and unloading
   times and passenger load in lifts; find the smallest number of gates, vehicles or staff that keeps
   waiting below a limit.

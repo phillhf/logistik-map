@@ -24,7 +24,8 @@
     "auswertung": "Analysis",
     "stammdaten": "Master data",
     "szenarien": "Scenarios",
-    "protokoll": "Audit log"
+    "protokoll": "Audit log",
+    "hilfe": "Help"
   },
   "start": {
     "titel": "Getting started",
@@ -666,7 +667,7 @@
     "wagen_pro_fahrt": "Trolleys per trip",
     "wagen_pro_fahrt_hilfe": "How many trolleys one vehicle or person moves at once.",
     "anzahl": "Number of vehicles / staff",
-    "anzahl_hilfe": "0 = unlimited. Otherwise trips wait until a vehicle is free (also after the return trip).",
+    "anzahl_hilfe": "How many people or vehicles are on duty at the same time – not positions. Each trip occupies one until it returns; if all are busy, the next one waits. 0 = unlimited (missing staff never shows up then).",
     "unbegrenzt": "unlimited",
     "aufzug": "Lift",
     "aufzug_exklusiv": "Reserves the lift exclusively (AGV: staff must leave the car)",
@@ -717,7 +718,7 @@
     "filter": {
       "alle_starts": "All start points",
       "alle_transportarten": "All transport types",
-      "alle_richtungen": "Supply and disposal",
+      "alle_richtungen": "All directions",
       "alle_lieferungen": "All deliveries"
     },
     "fahrten_hier": "{anzahl} trips via this path segment",
@@ -1009,7 +1010,7 @@
     "ausser_betrieb": "out of service",
     "fahrzeit": "s/floor",
     "rampen": "Ramps and loading points",
-    "rampen_hilfe": "How many trolleys can be loaded or unloaded at the same time (empty = unlimited).",
+    "rampen_hilfe": "How many trolleys can be loaded or unloaded at once, or how many truck gates there are. Empty = unlimited, for gates empty = 1.",
     "engstellen": "Block path segments",
     "engstellen_hilfe": "Named path segments and bottlenecks, e.g. a door closed for construction work.",
     "gesperrt": "blocked",
@@ -1089,10 +1090,20 @@
     "reicht_nicht": "Even with {anzahl} ({einheit}) someone waits at “{name}” longer than {minuten} min. The bottleneck is probably elsewhere (e.g. lift or vehicles) – check the “Day” view.",
     "schichten_hinweis": "This transport type has a shift plan. For this calculation the same number applies all day.",
     "streuung_hinweis": "With variation: {laeufe} days per number, shown is the value not exceeded on 9 of 10 days.",
-    "anzahl": "Number",
+    "anzahl": "Number of {einheit}",
     "wartezeit": "longest wait there",
     "auslastung": "Utilisation (peak)",
     "verspaetet": "late trips",
-    "reicht": "enough"
+    "reicht": "enough",
+    "anzahl_hinweis": "“Number” means: this many on duty at the same time, all day. It is not a staffing ratio – shifts, breaks and absences must be added for staff planning."
+  },
+  "hilfe": {
+    "titel": "Help",
+    "suchen": "Search help …",
+    "inhalt": "Contents",
+    "treffer": "{anzahl} matches – Enter jumps to the first",
+    "keine_treffer": "Nothing found.",
+    "nicht_gefunden": "The help could not be loaded.",
+    "zu_dieser_seite": "Help for this page"
   }
 }

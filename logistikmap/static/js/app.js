@@ -5,6 +5,7 @@ import { api, darf, formularDialog, h, leeren, melden, spracheLaden, t, ueberset
 import { zeigeBenutzer } from "./benutzer.js";
 import { zeigeEinstellungen } from "./einstellungen.js";
 import { zeigeGebaeude } from "./gebaeude.js";
+import { KAPITEL_JE_SEITE, zeigeHilfe } from "./hilfe.js";
 import { zeigeAuswertung } from "./auswertung.js";
 import { zeigeKarte } from "./karte.js";
 import { zeigeLieferungen } from "./lieferungen.js";
@@ -25,6 +26,7 @@ const SEITEN = [
   { pfad: "szenarien", recht: "ansehen", zeigen: zeigeSzenarien },
   { pfad: "benutzer", recht: "verwalten", zeigen: zeigeBenutzer },
   { pfad: "einstellungen", recht: "ansehen", zeigen: zeigeEinstellungen },
+  { pfad: "hilfe", recht: "ansehen", zeigen: zeigeHilfe },
   { pfad: "protokoll", recht: "verwalten", zeigen: zeigeProtokoll, versteckt: true },
 ];
 
@@ -116,6 +118,17 @@ function kopfAufbauen() {
     SEITEN.filter((s) => darf(s.recht) && !s.versteckt).map((s) => h("a", { href: `#/${s.pfad}`, "data-pfad": s.pfad }, t(`nav.${s.pfad}`)))
   );
   standortKopf(kopf);
+  // „?“: Hilfe genau zu der Seite, auf der man gerade ist
+  if (!document.getElementById("hilfe-knopf")) {
+    const hilfe = h("a", { id: "hilfe-knopf", href: "#/hilfe", title: t("hilfe.zu_dieser_seite"), "aria-label": t("hilfe.zu_dieser_seite") }, "?");
+    hilfe.addEventListener("click", (e) => {
+      const pfad = location.hash.replace(/^#\/?/, "").split("/")[0];
+      if (pfad === "hilfe") return;
+      e.preventDefault();
+      location.hash = `#/hilfe/${KAPITEL_JE_SEITE[pfad] || ""}`;
+    });
+    kopf.querySelector(".benutzermenue").before(hilfe);
+  }
   const knopf = document.getElementById("benutzer-knopf");
   const liste = document.getElementById("benutzer-liste");
   knopf.textContent = zustand.benutzer.anzeigename;

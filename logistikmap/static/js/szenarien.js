@@ -105,7 +105,7 @@ async function editor(wurzel, id, darfAendern) {
   }
   const a = szenario.aenderungen;
   // Lade- und Entladepunkte: Start-/Zielpunkte und alles mit Kapazität
-  const rampen = punkte.filter((p) => ["start", "ziel", "punkt"].includes(p.art) || p.kapazitaet);
+  const rampen = punkte.filter((p) => ["start", "ziel", "punkt", "tor"].includes(p.art) || p.kapazitaet);
   const name = h("input", { value: szenario.name, maxlength: 150, disabled: !darfAendern });
   const beschreibung = h("textarea", { rows: 2, disabled: !darfAendern }, szenario.beschreibung);
   const eingaben = []; // {art, id, feld, el, ist}
@@ -229,7 +229,7 @@ async function editor(wurzel, id, darfAendern) {
                     h(
                       "tr",
                       h("td", p.name, h("small", `${p.kuerzel || p.gebaeudeteil} · ${p.stockwerk}`)),
-                      h("td", feld("knoten", p, "kapazitaet", h("input", { type: "number", min: 0, value: p.kapazitaet ?? "", placeholder: "∞", style: { width: "80px" } }), p.kapazitaet ?? 0))
+                      h("td", feld("knoten", p, "kapazitaet", h("input", { type: "number", min: 0, value: p.kapazitaet ?? "", placeholder: p.art === "tor" ? "1" : "∞", style: { width: "80px" } }), p.kapazitaet ?? 0))
                     )
                   )
                 )

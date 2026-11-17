@@ -1,5 +1,25 @@
 # Änderungen
 
+## [0.9.0] - 2026-11-17
+
+Neu: **Hilfe – eine ausführliche Anleitung im Programm.**
+
+- Menüpunkt **Hilfe** mit Inhaltsverzeichnis und Suche (Fundstellen werden markiert, Enter
+  springt zur ersten). Der Knopf **?** oben rechts öffnet die Hilfe genau zu der Seite, auf der
+  man gerade ist.
+- Inhalt: Überblick und Begriffe, die Einrichtung Schritt für Schritt, jede Seite mit jedem Feld
+  und seiner Bedeutung (typische Werte für Geschwindigkeit, Aufzugzeiten usw.), wie die
+  Simulation rechnet (Fahrten, Wegsuche, Aufzug, LKW am Tor, Kennzahlen), Anleitungen für
+  häufige Aufgaben (LKW über drei Tore, Bettentausch, Personalbedarf, Aufzugsausfall, FTS-Sperre)
+  und eine Tabelle zur Fehlersuche. Auf Deutsch und Englisch.
+- Einheitliche Begriffe: Gezeichnetes heißt überall **Strecke** bzw. **Streckenstück** (vorher
+  teils „Weg“ oder „Wegstück“); „Weg“ ist der Weg, den das System für eine Lieferung findet.
+- „Anzahl“ bei Transportarten und im Mindestbedarf ist jetzt klar erklärt: so viele gleichzeitig
+  im Einsatz, keine Stellen.
+- Szenarien: Tore ohne eingetragene Anzahl fehlten in der Liste „Rampen und Lade-/Entladepunkte“.
+- Ablauf: Richtungsfilter heißt „Alle Richtungen“ (umfasst auch „Intern“), Excel-Hinweis nennt
+  „Intern“.
+
 ## [0.8.0] - 2026-11-16
 
 Neu: **Streuung, Mindestbedarf und Grundlast der Aufzüge.**

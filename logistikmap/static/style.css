@@ -495,3 +495,59 @@ main.seite-start { max-width: 920px; }
 .tabelle td.schlecht { color: #c92a2a; }
 .von-bis { display: flex; align-items: center; gap: 6px; }
 .von-bis input { flex: 1; min-width: 0; }
+
+/* ------------------------------------------------------------ Hilfe */
+#hilfe-knopf {
+  display: inline-flex; align-items: center; justify-content: center; width: 28px; height: 28px; flex: none;
+  border-radius: 50%; border: 2px solid rgba(255, 255, 255, 0.7); color: #fff; text-decoration: none; font-weight: 700;
+}
+#hilfe-knopf:hover { background: rgba(255, 255, 255, 0.15); }
+main.seite-hilfe { max-width: 1200px; }
+.hilfe { display: grid; grid-template-columns: 280px 1fr; gap: 24px; align-items: start; }
+.hilfe-seite {
+  position: sticky; top: calc(var(--kopf) + 20px); max-height: calc(100vh - var(--kopf) - 40px); overflow-y: auto;
+  background: var(--flaeche); border: 1px solid var(--linie); border-radius: var(--radius); padding: 14px;
+}
+.hilfe-seite h2 { margin-bottom: 10px; }
+.hilfe-seite input[type="search"] { width: 100%; margin-bottom: 8px; }
+.hilfe-treffer { margin: 0 0 8px; }
+.hilfe-verzeichnis ol { list-style: none; margin: 0; padding: 0; }
+.hilfe-verzeichnis > ol > li { margin-bottom: 6px; }
+.hilfe-verzeichnis > ol > li > a { font-weight: 600; }
+.hilfe-verzeichnis ol ol { padding-left: 12px; margin-top: 2px; }
+.hilfe-verzeichnis a { display: block; padding: 3px 6px; border-radius: 5px; text-decoration: none; color: var(--text); font-size: 0.9rem; }
+.hilfe-verzeichnis ol ol a { color: var(--gedimmt); font-size: 0.85rem; }
+.hilfe-verzeichnis a:hover, .hilfe-verzeichnis a.aktiv { background: var(--blau-hell); color: var(--blau-dunkel); }
+.hilfe-haupt { min-width: 0; }
+.hilfe-text { line-height: 1.6; }
+.hilfe-text section {
+  background: var(--flaeche); border: 1px solid var(--linie); border-radius: var(--radius); box-shadow: var(--schatten);
+  padding: 20px 24px; margin-bottom: 20px;
+}
+.hilfe-text section, .hilfe-text h3 { scroll-margin-top: calc(var(--kopf) + 16px); }
+.hilfe-text h2 { font-size: 1.35rem; margin-bottom: 10px; color: var(--blau-dunkel); }
+.hilfe-text h3 { font-size: 1.05rem; margin: 22px 0 6px; padding-top: 4px; }
+.hilfe-text p, .hilfe-text ul, .hilfe-text ol { margin: 0 0 10px; }
+.hilfe-text li { margin-bottom: 4px; }
+.hilfe-text .hilfe-tabelle { width: 100%; margin: 6px 0 14px; font-size: 0.92rem; }
+.hilfe-text .hilfe-tabelle td:first-child { font-weight: 600; width: 28%; }
+.hilfe-text .hilfe-tabelle td { vertical-align: top; }
+.hilfe-tipp, .hilfe-achtung { border-radius: var(--radius); padding: 10px 14px; margin: 10px 0 14px; font-size: 0.93rem; }
+.hilfe-tipp { background: var(--blau-hell); border-left: 4px solid var(--blau); }
+.hilfe-achtung { background: #fff6e0; border-left: 4px solid var(--gelb); }
+.hilfe-formel { font-family: ui-monospace, Consolas, monospace; background: var(--hintergrund); border: 1px solid var(--linie); border-radius: 6px; padding: 8px 12px; overflow-x: auto; }
+.hilfe-text kbd { font-family: inherit; font-size: 0.85em; border: 1px solid var(--linie); border-bottom-width: 2px; border-radius: 4px; padding: 0 5px; background: var(--hintergrund); }
+mark.hilfe-fund { background: #ffe066; border-radius: 2px; }
+.hilfe-ziel { animation: hilfe-blinken 2s ease-out; }
+@keyframes hilfe-blinken { 0%, 30% { background: #fff3bf; } 100% { background: transparent; } }
+@media (max-width: 860px) {
+  .hilfe { grid-template-columns: 1fr; }
+  .hilfe-seite { position: static; max-height: none; }
+  .hilfe-text section { padding: 16px; }
+  .hilfe-text .hilfe-tabelle td:first-child { width: auto; }
+}
+@media print {
+  #kopf, .hilfe-seite { display: none !important; }
+  .hilfe { display: block; }
+  .hilfe-text section { box-shadow: none; break-inside: auto; }
+}
