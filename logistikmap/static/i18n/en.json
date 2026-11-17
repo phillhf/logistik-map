@@ -146,7 +146,8 @@
   "menue": {
     "passwort_aendern": "Change password",
     "abmelden": "Sign out",
-    "sprache": "Language"
+    "sprache": "Language",
+    "navigation": "Menu"
   },
   "anmeldung": {
     "titel": "Sign in",
@@ -872,7 +873,8 @@
     "keine_verbindung": "GitHub cannot be reached (no internet connection from the server?). Updates can also be installed manually.",
     "wirklich": "Install version {version} now? Logistik Map will be unavailable for about a minute.",
     "laeuft": "The update is being installed. The page will reload afterwards …",
-    "zeitueberschreitung": "The update is taking unusually long. Please reload the page later or check update.log in the data folder."
+    "zeitueberschreitung": "The update is taking unusually long. Please reload the page later or check update.log in the data folder.",
+    "nav": "Update {version} available"
   },
   "ldap": {
     "titel": "Sign-in via Active Directory",

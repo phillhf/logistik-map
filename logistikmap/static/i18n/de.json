@@ -146,7 +146,8 @@
   "menue": {
     "passwort_aendern": "Passwort ändern",
     "abmelden": "Abmelden",
-    "sprache": "Sprache"
+    "sprache": "Sprache",
+    "navigation": "Menü"
   },
   "anmeldung": {
     "titel": "Anmelden",
@@ -872,7 +873,8 @@
     "keine_verbindung": "GitHub ist nicht erreichbar (keine Internetverbindung vom Server?). Updates können auch von Hand installiert werden.",
     "wirklich": "Version {version} jetzt installieren? Logistik Map ist dabei etwa eine Minute nicht erreichbar.",
     "laeuft": "Das Update wird installiert. Die Seite lädt danach neu …",
-    "zeitueberschreitung": "Das Update dauert ungewöhnlich lange. Bitte die Seite später neu laden oder das Protokoll update.log im Datenordner prüfen."
+    "zeitueberschreitung": "Das Update dauert ungewöhnlich lange. Bitte die Seite später neu laden oder das Protokoll update.log im Datenordner prüfen.",
+    "nav": "Update {version} verfügbar"
   },
   "ldap": {
     "titel": "Anmeldung über Active Directory",

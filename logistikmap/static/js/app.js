@@ -57,6 +57,7 @@ async function start() {
       if (!e.fertig) startSeite = "start";
     } catch {}
   }
+  updateHinweis();
   // Nach einem Update die neue Oberfläche laden, statt mit dem alten Stand weiterzuarbeiten
   setInterval(versionPruefen, 60000);
   document.addEventListener("visibilitychange", () => document.visibilityState === "visible" && versionPruefen());
@@ -118,6 +119,19 @@ function kopfAufbauen() {
     SEITEN.filter((s) => darf(s.recht) && !s.versteckt).map((s) => h("a", { href: `#/${s.pfad}`, "data-pfad": s.pfad }, t(`nav.${s.pfad}`)))
   );
   standortKopf(kopf);
+  // Handy: Menü hinter „☰“, klappt unter dem Kopf auf
+  if (!document.getElementById("menue-knopf")) {
+    const menue = h("button.knopf-flach", { id: "menue-knopf", type: "button", "aria-label": t("menue.navigation"), "aria-expanded": "false" }, h("span", "☰"), h("span.nav-marke", { hidden: true }));
+    menue.addEventListener("click", (e) => {
+      e.stopPropagation();
+      menueOeffnen(!kopf.classList.contains("menue-offen"));
+    });
+    kopf.prepend(menue);
+    document.addEventListener("click", (e) => {
+      if (!e.target.closest("#navigation")) menueOeffnen(false);
+    });
+    window.addEventListener("hashchange", () => menueOeffnen(false));
+  }
   // „?“: Hilfe genau zu der Seite, auf der man gerade ist
   if (!document.getElementById("hilfe-knopf")) {
     const hilfe = h("a", { id: "hilfe-knopf", href: "#/hilfe", title: t("hilfe.zu_dieser_seite"), "aria-label": t("hilfe.zu_dieser_seite") }, "?");
@@ -155,6 +169,32 @@ function kopfAufbauen() {
       spracheWaehlen();
     }
   };
+}
+
+function menueOeffnen(offen) {
+  const kopf = document.getElementById("kopf");
+  kopf.classList.toggle("menue-offen", offen);
+  document.getElementById("menue-knopf")?.setAttribute("aria-expanded", String(offen));
+}
+
+/** Administratoren: Hinweis im Menü, wenn eine neue Version bereitsteht (Server fragt höchstens alle 10 Min. bei GitHub) */
+async function updateHinweis() {
+  if (!darf("verwalten")) return;
+  let u;
+  try {
+    u = await api("update");
+  } catch {
+    return;
+  }
+  const nav = document.getElementById("navigation");
+  nav.querySelector(".nav-update")?.remove();
+  if (!u.verfuegbar) return;
+  nav.append(h("a.nav-update", { href: "#/einstellungen/update", "data-pfad": "update" }, "⬆ " + t("update.nav", { version: u.neueste })));
+  const marke = document.querySelector("#menue-knopf .nav-marke");
+  if (marke) {
+    marke.textContent = "1";
+    marke.hidden = false;
+  }
 }
 
 async function spracheWaehlen() {

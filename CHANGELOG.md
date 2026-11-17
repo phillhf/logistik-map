@@ -1,5 +1,20 @@
 # Änderungen
 
+## [0.9.1] - 2026-11-17
+
+Neu: **Handytauglich.**
+
+- Auf dem Handy stecken die Menüpunkte hinter **☰** oben links (vorher war das Menü auf schmalen
+  Bildschirmen gar nicht zu sehen). Krankenhaus-Auswahl, **?** und Benutzermenü passen in die
+  Kopfzeile.
+- **Update-Hinweis:** Steht eine neue Version bereit, sehen Administratoren im Menü
+  „⬆ Update … verfügbar“ (auf dem Handy mit Marke am ☰). Ein Tipp führt direkt zu
+  Einstellungen → Updates – kein langes Scrollen mehr.
+- Keine Seite schiebt sich mehr seitlich aus dem Bildschirm: Breite Tabellen wischt man in sich,
+  „Gebäude & Pläne“ passt in die Breite.
+- Fingergerechte Knöpfe und Eingabefelder (keine automatische Vergrößerung beim Antippen auf dem
+  iPhone), Dialoge in voller Breite, Meldungen über die ganze Breite unten.
+
 ## [0.9.0] - 2026-11-17
 
 Neu: **Hilfe – eine ausführliche Anleitung im Programm.**

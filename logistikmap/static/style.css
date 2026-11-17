@@ -82,6 +82,7 @@ input:focus, select:focus { outline: 2px solid var(--blau-hell); border-color: v
 main { padding: 20px; max-width: 1400px; margin: 0 auto; }
 .spalten { display: grid; grid-template-columns: minmax(0, 2fr) minmax(300px, 1fr); gap: 20px; align-items: start; }
 .spalten.gleich { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); }
+.spalten > * { min-width: 0; }
 .karte-box { background: var(--flaeche); border: 1px solid var(--linie); border-radius: var(--radius); box-shadow: var(--schatten); padding: 18px; }
 .karte-box.schmal { max-width: 900px; }
 .karte-box h3 { margin: 18px 0 6px; }
@@ -550,4 +551,44 @@ mark.hilfe-fund { background: #ffe066; border-radius: 2px; }
   #kopf, .hilfe-seite { display: none !important; }
   .hilfe { display: block; }
   .hilfe-text section { box-shadow: none; break-inside: auto; }
+}
+
+/* ------------------------------------------------------------ Handy */
+#menue-knopf { display: none; color: #fff; font-size: 1.35rem; padding: 2px 10px; position: relative; }
+#menue-knopf:hover { background: rgba(255, 255, 255, 0.12); }
+#menue-knopf .nav-marke { position: absolute; top: 0; right: 0; background: var(--gelb); color: #1d2430; border-radius: 9px; padding: 0 5px; font-size: 0.7rem; font-weight: 700; }
+#navigation a.nav-update { background: var(--gelb); color: #1d2430; font-weight: 600; }
+#update { scroll-margin-top: calc(var(--kopf) + 12px); }
+
+@media (max-width: 760px) {
+  #kopf { gap: 6px; padding: 0 6px; }
+  #menue-knopf { display: inline-flex; }
+  .marke { display: none; }
+  #standort-wahl { flex: 1; min-width: 0; max-width: none; }
+  #navigation {
+    display: none; position: absolute; top: var(--kopf); left: 0; right: 0; flex-direction: column; gap: 2px;
+    background: var(--blau-dunkel); padding: 8px; max-height: calc(100dvh - var(--kopf)); overflow-y: auto;
+    box-shadow: 0 10px 24px rgba(0, 0, 0, 0.3);
+  }
+  #kopf.menue-offen #navigation { display: flex; }
+  #navigation a { padding: 12px 14px; font-size: 1.05rem; }
+  #benutzer-knopf { max-width: 96px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; display: block; padding: 7px 6px; }
+  .aufklapp button { padding: 12px 12px; }
+
+  main { padding: 10px; }
+  .karte-box { padding: 14px; }
+  .box-kopf h2 { font-size: 1.05rem; }
+  /* Tabellen scrollen in sich, statt die ganze Seite zu verbreitern */
+  .tabelle { display: block; overflow-x: auto; -webkit-overflow-scrolling: touch; }
+  .tabellenrahmen .tabelle { display: table; }
+  /* Fingergerecht; 16 px verhindert das automatische Hineinzoomen auf dem iPhone */
+  .knopf, .knopf-flach { min-height: 40px; }
+  input, select, textarea { font-size: 16px; min-height: 40px; }
+  input[type="checkbox"], input[type="radio"] { min-height: 0; width: 20px; height: 20px; }
+  .dialog, .dialog.gross { width: calc(100vw - 16px); max-height: calc(100dvh - 16px); padding: 16px; }
+  .dialog-knoepfe { flex-wrap: wrap; }
+  .dialog-knoepfe > * { flex: 1 1 auto; justify-content: center; }
+  #meldungen { left: 10px; right: 10px; bottom: 10px; }
+  .meldung { max-width: none; }
+  .knopfreihe.filter > * { flex: 1 1 auto; }
 }

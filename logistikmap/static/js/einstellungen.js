@@ -4,7 +4,7 @@
 import { api, bestaetigen, darf, dateiWaehlen, datumText, fehlerMelden, groesse, h, herunterladen, hochladen, leeren, melden, t, zahl, zustand } from "./basis.js";
 import { standortBox } from "./standorte.js";
 
-export function zeigeEinstellungen(wurzel) {
+export function zeigeEinstellungen(wurzel, rest = []) {
   const allgemein = h("div");
   const feiertagBox = h("div");
   const titel = h("h2");
@@ -39,6 +39,8 @@ export function zeigeEinstellungen(wurzel) {
       verwalten ? h("div.spalten.gleich", ldapBox(), httpsBox()) : null
     )
   );
+  // #/einstellungen/update (Hinweis im Menü): direkt zu den Updates
+  if (rest[0] === "update") requestAnimationFrame(() => document.getElementById("update")?.scrollIntoView({ block: "start" }));
 
   async function laden() {
     try {
@@ -239,7 +241,7 @@ export function zeigeEinstellungen(wurzel) {
   // ---------------------------------------------------------------- Update
   function updateBox() {
     const inhalt = h("div");
-    const box = h("section.karte-box", h("div.box-kopf", h("h2", t("update.titel")), h("button.knopf-flach", { type: "button", onclick: () => pruefen(true) }, t("update.pruefen"))), inhalt);
+    const box = h("section.karte-box", { id: "update" }, h("div.box-kopf", h("h2", t("update.titel")), h("button.knopf-flach", { type: "button", onclick: () => pruefen(true) }, t("update.pruefen"))), inhalt);
 
     async function pruefen(neu = false) {
       leeren(inhalt, h("p.gedimmt", t("allgemein.laedt")));
