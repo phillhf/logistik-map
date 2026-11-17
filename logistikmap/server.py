@@ -18,7 +18,7 @@ from datetime import date
 from pathlib import Path
 
 from fastapi import Depends, FastAPI, File, HTTPException, Request, Response, UploadFile
-from fastapi.responses import FileResponse, JSONResponse
+from fastapi.responses import FileResponse, HTMLResponse, JSONResponse
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel, Field
 
@@ -1069,6 +1069,23 @@ def erstelle_app(pfade: Pfade, kacheln_starten: bool = True) -> FastAPI:
 
     # ---------------------------------------------------------------- Oberfläche
     statisch = static_ordner()
+    # Skripte und Stile unter einer Adresse mit Versionsnummer ausliefern. Ein Zwischenspeicher
+    # davor (z. B. Cloudflare) hält .js/.css sonst stundenlang fest, auch bei "no-cache" –
+    # nach einem Update sähe man dann noch die alte Oberfläche.
+    stand = re.sub(r"[^0-9A-Za-z.]", "", __version__)
+    index_html = re.sub(
+        r'(href|src)="((?:vendor|js)/[^"]+|style\.css)"',
+        lambda m: f'{m.group(1)}="v/{stand}/{m.group(2)}"',
+        (statisch / "index.html").read_text(encoding="utf-8"),
+    )
+
+    def startseite() -> HTMLResponse:
+        return HTMLResponse(index_html, headers={"Cache-Control": "no-cache"})
+
+    @app.get("/", include_in_schema=False)
+    @app.get("/index.html", include_in_schema=False)
+    async def index():
+        return startseite()
 
     @app.exception_handler(404)
     async def nicht_gefunden(request: Request, exc):
@@ -1077,7 +1094,7 @@ def erstelle_app(pfade: Pfade, kacheln_starten: bool = True) -> FastAPI:
             if not isinstance(detail, dict):
                 detail = {"code": "nicht_gefunden"}
             return JSONResponse({"detail": detail}, status_code=404)
-        return FileResponse(statisch / "index.html")
+        return startseite()
 
     @app.middleware("http")
     async def oberflaeche_nicht_veraltet(request: Request, call_next):
@@ -1094,5 +1111,6 @@ def erstelle_app(pfade: Pfade, kacheln_starten: bool = True) -> FastAPI:
             antwort.headers["Cache-Control"] = "no-cache"
         return antwort
 
+    app.mount(f"/v/{stand}", StaticFiles(directory=statisch), name="static_versioniert")
     app.mount("/", StaticFiles(directory=statisch, html=True), name="static")
     return app

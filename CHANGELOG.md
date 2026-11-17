@@ -1,5 +1,12 @@
 # Änderungen
 
+## [0.9.2] - 2026-11-17
+
+Behoben: **Nach einem Update erschien teils noch die alte Oberfläche.** Steht ein Zwischenspeicher
+wie Cloudflare vor dem Server, hielt er Skripte und Stile stundenlang fest – so kam z. B. das neue
+Handy-Menü aus 0.9.1 gar nicht an. Skripte und Stile kommen jetzt unter einer Adresse mit
+Versionsnummer, jedes Update ist damit sofort sichtbar.
+
 ## [0.9.1] - 2026-11-17
 
 Neu: **Handytauglich.**
