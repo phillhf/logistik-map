@@ -671,7 +671,7 @@ def erstelle_app(pfade: Pfade, kacheln_starten: bool = True) -> FastAPI:
             return None
         p = db.eins(
             """SELECT p.id, p.dokument_id, d.dateiname, p.seite, p.breite, p.hoehe, p.max_zoom,
-                      p.status, p.fortschritt, p.fehler
+                      p.status, p.fortschritt, p.fehler, p.erstellt
                  FROM plaene p JOIN dokumente d ON d.id = p.dokument_id WHERE p.id = ?""",
             (plan_id,),
         )
@@ -1107,8 +1107,10 @@ def erstelle_app(pfade: Pfade, kacheln_starten: bool = True) -> FastAPI:
         # Abgelehnte Änderungen protokollieren, damit sich Fehler im Betrieb nachvollziehen lassen
         if request.url.path.startswith("/api/") and request.method != "GET" and antwort.status_code >= 400 and antwort.status_code != 401:
             log.warning("%s %s → %d (%s Bytes)", request.method, request.url.path, antwort.status_code, request.headers.get("content-length", "?"))
-        if not request.url.path.startswith("/api/") and "cache-control" not in antwort.headers:
-            antwort.headers["Cache-Control"] = "no-cache"
+        if "cache-control" not in antwort.headers:
+            # API-Antworten (auch Excel/PDF-Exporte) nie zwischenspeichern: Ein vorgeschalteter
+            # Zwischenspeicher wie Cloudflare legt .xlsx/.pdf sonst ab und gibt sie an andere weiter.
+            antwort.headers["Cache-Control"] = "private, no-store" if request.url.path.startswith("/api/") else "no-cache"
         return antwort
 
     app.mount(f"/v/{stand}", StaticFiles(directory=statisch), name="static_versioniert")

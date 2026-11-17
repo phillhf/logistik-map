@@ -1,5 +1,20 @@
 # Änderungen
 
+## [0.9.3] - 2026-11-17
+
+Behoben:
+
+- **Exporte (Excel, Karten-PDF) wurden nicht gegen Zwischenspeichern geschützt.** Steht Cloudflare
+  vor dem Server, konnte es eine heruntergeladene Datei ablegen und an andere weitergeben – auch an
+  einen anderen Standort oder an Abgemeldete. Alle Antworten der Schnittstelle sind jetzt
+  ausdrücklich „nicht speichern“.
+- **Karte zeigte manchmal den falschen Plan.** Nach dem Entfernen eines Plans bekam der nächste
+  dieselbe Nummer, der Browser zeigte dann bis zu 7 Tage die alten Kacheln. Jeder neu erzeugte
+  Plan hat jetzt eine eigene Adresse.
+- Dateinamen von Exporten mit Umlauten (z. B. Stockwerk „Süd“) kommen korrekt an.
+- Die Sperre nach Fehlanmeldungen räumt alte Einträge auf, auch wenn Bots laufend neue
+  Benutzernamen probieren.
+
 ## [0.9.2] - 2026-11-17
 
 Behoben: **Nach einem Update erschien teils noch die alte Oberfläche.** Steht ein Zwischenspeicher

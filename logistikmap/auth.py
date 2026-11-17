@@ -118,6 +118,11 @@ class Anmeldebremse:
 
     def fehlschlag(self, *schluessel: str) -> None:
         with self._sperre:
+            if len(self._fehler) > 5000:
+                # Vom Internet aus erreichbar: Bots probieren laufend neue Namen – alte Einträge
+                # aufräumen, sonst wächst die Liste unbegrenzt.
+                jetzt = time.monotonic()
+                self._fehler = {k: v for k, v in self._fehler.items() if v and jetzt - v[-1] < self.SPERRZEIT}
             for s in schluessel:
                 self._fehler.setdefault(s, []).append(time.monotonic())
 

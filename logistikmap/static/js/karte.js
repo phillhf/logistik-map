@@ -255,7 +255,9 @@ export function zeigeKarte(wurzel, [stockwerkParam, modusParam, ...rest]) {
     ctx.karte = karte;
     rechtsZiehen(karte);
     window.__logistikKarte = ctx; // für die Oberflächentests (Planpunkte → Bildschirm)
-    L.tileLayer(`/api/plaene/${plan.id}/kacheln/{z}/{x}/{y}.png`, {
+    // ?v= ändert sich bei jedem neu erzeugten Plan – sonst zeigt der Browser bis zu 7 Tage alte Kacheln
+    // (Plan-Nummern werden nach dem Löschen wieder vergeben).
+    L.tileLayer(`/api/plaene/${plan.id}/kacheln/{z}/{x}/{y}.png?v=${encodeURIComponent(plan.erstellt || "")}`, {
       tileSize: 256,
       minZoom: 0,
       maxNativeZoom: plan.max_zoom,

@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import copy
 import json
+from urllib.parse import quote
 import random
 import math
 import re
@@ -1148,7 +1149,10 @@ def registrieren(app: FastAPI, db: Datenbank, fehler, ansehen, bearbeiten, liefe
         return {"punkte": punkte(None), "stamm": stammdaten(), "lieferungen": [lieferung_lesen(r) for r in db.alle("SELECT * FROM lieferungen WHERE standort_id = ? ORDER BY uhrzeit, name", (ort(),))]}
 
     def datei_antwort(daten: bytes, name: str, art: str) -> Response:
-        return Response(daten, media_type=art, headers={"Content-Disposition": f'attachment; filename="{name}"'})
+        # Umlaute & Co. im Namen (z. B. Stockwerk „Süd“) als filename* – im Kopf sind nur einfache Zeichen erlaubt
+        einfach = re.sub(r'[^A-Za-z0-9._-]', "_", name)
+        return Response(daten, media_type=art, headers={
+            "Content-Disposition": f"attachment; filename=\"{einfach}\"; filename*=UTF-8''{quote(name)}"})
 
     XLSX = "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
 

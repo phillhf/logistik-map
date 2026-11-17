@@ -335,5 +335,5 @@ class KachelDienst:
         if plan_id in self._abgebrochen:
             shutil.rmtree(ziel, ignore_errors=True)
             return
-        self.db.ausfuehren("UPDATE plaene SET status = 'fertig', fortschritt = 1 WHERE id = ?", (plan_id,))
+        self.db.ausfuehren("UPDATE plaene SET status = 'fertig', fortschritt = 1, erstellt = datetime('now') WHERE id = ?", (plan_id,))
         log.info("Plan %s fertig (%s)", plan_id, ziel)

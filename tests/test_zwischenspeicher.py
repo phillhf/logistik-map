@@ -22,3 +22,18 @@ def test_versionierte_dateien_werden_ausgeliefert(client):
         assert client.get("/" + adresse).status_code == 200, adresse
     # Module laden einander relativ – das landet ebenfalls unter der Versionsadresse
     assert client.get(f"/v/{__version__}/js/hilfe.js").status_code == 200
+
+
+def test_api_antworten_werden_nicht_zwischengespeichert(admin):
+    """Ohne Kopf legt Cloudflare .xlsx/.pdf ab und gibt sie an andere (auch Abgemeldete) weiter."""
+    for pfad in ("/api/status", "/api/export/lieferungen.xlsx"):
+        r = admin.get(pfad)
+        assert r.status_code == 200
+        assert "no-store" in r.headers["cache-control"]
+        assert "private" in r.headers["cache-control"]
+
+
+def test_dateiname_mit_umlauten(admin):
+    r = admin.get("/api/export/lieferungen.xlsx")
+    kopf = r.headers["content-disposition"]
+    assert kopf.startswith("attachment; filename=\"lieferungen-") and "filename*=UTF-8''" in kopf
