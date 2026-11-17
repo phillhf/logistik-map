@@ -90,3 +90,44 @@ def test_grundlast_im_aufzug(haus):
     assert all(r.get("personenfahrten", 0) == 0 for r in sa["ressourcen"] if r["typ"] == "aufzug")
     # ungültige Uhrzeit
     assert c.put(f"/api/aufzuege/{haus['aufzug']}", json={**auf, "grundlast": [{"von": "7 Uhr", "bis": "10:00", "prozent": 50}]}).status_code == 400
+
+
+def _warten(c, rid, grenze=30):
+    ende = time.time() + grenze
+    while time.time() < ende:
+        r = c.get(f"/api/rechnungen/{rid}").json()
+        if r["status"] != "laeuft":
+            return r
+        time.sleep(0.05)
+    raise AssertionError("Rechnung wurde nicht fertig")
+
+
+def test_rechnung_im_hintergrund(haus):
+    """Streuung und Mindestbedarf laufen im Hintergrund – gleiches Ergebnis wie direkt, mit Fortschritt."""
+    c = haus["c"]
+    tor(haus, von=1, bis=3)
+    lkw(haus, 3, streuung=30)
+    direkt = c.get(f"/api/simulation/streuung?datum={FREITAG}&laeufe=50&schwelle=10").json()
+    rid = c.post("/api/rechnungen", json={"art": "streuung", "parameter": {"datum": FREITAG, "laeufe": 50, "schwelle": 10}}).json()["id"]
+    r = _warten(c, rid)
+    assert r["status"] == "fertig" and r["fortschritt"] == 1
+    assert r["ergebnis"]["ressourcen"] == direkt["ressourcen"]
+
+    rid = c.post("/api/rechnungen", json={"art": "bedarf", "parameter": {"art": "knoten", "id": haus["rampe"], "ziel": 10, "datum": FREITAG}}).json()["id"]
+    assert _warten(c, rid)["ergebnis"]["empfehlung"] is not None
+
+    # Fehler kommen als Code zurück, fremde/unbekannte Nummern gibt es nicht
+    rid = c.post("/api/rechnungen", json={"art": "bedarf", "parameter": {"art": "quatsch", "id": 1}}).json()["id"]
+    r = _warten(c, rid)
+    assert r["status"] == "fehler" and r["fehler"]["code"] == "art_ungueltig"
+    assert c.get("/api/rechnungen/unbekannt").status_code == 404
+    assert c.post("/api/rechnungen", json={"art": "quatsch"}).status_code == 422
+
+
+def test_rechnung_abbrechen(haus):
+    c = haus["c"]
+    tor(haus, von=1, bis=3)
+    lkw(haus, 3, streuung=30)
+    rid = c.post("/api/rechnungen", json={"art": "streuung", "parameter": {"datum": FREITAG, "laeufe": 500}}).json()["id"]
+    assert c.delete(f"/api/rechnungen/{rid}").status_code == 200
+    assert _warten(c, rid)["status"] in ("abgebrochen", "fertig")

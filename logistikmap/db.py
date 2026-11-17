@@ -247,6 +247,14 @@ MIGRATIONEN: list[str] = [
     ALTER TABLE knoten ADD COLUMN minuten_je_einheit_bis REAL;
     ALTER TABLE aufzuege ADD COLUMN grundlast TEXT NOT NULL DEFAULT '[]'
     """,
+    # 9 – Zugriff je Standort: ohne Eintrag sieht ein Benutzer alle Krankenhäuser
+    """
+    CREATE TABLE benutzer_standorte (
+        benutzer_id INTEGER NOT NULL REFERENCES benutzer(id) ON DELETE CASCADE,
+        standort_id INTEGER NOT NULL REFERENCES standorte(id) ON DELETE CASCADE,
+        PRIMARY KEY (benutzer_id, standort_id)
+    )
+    """,
 ]
 
 # Stammdaten für einen neuen Standort (wie bei der Erstinstallation)

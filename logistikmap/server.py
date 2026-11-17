@@ -64,6 +64,7 @@ class BenutzerNeu(BaseModel):
     anzeigename: str = Field(default="", max_length=100)
     passwort: str
     rolle: str
+    standorte: list[int] = []  # leer = alle Krankenhäuser
 
 
 class BenutzerAenderung(BaseModel):
@@ -71,6 +72,7 @@ class BenutzerAenderung(BaseModel):
     rolle: str | None = None
     aktiv: bool | None = None
     passwort: str | None = None
+    standorte: list[int] | None = None  # [] = alle Krankenhäuser
 
 
 class IchAenderung(BaseModel):
@@ -240,12 +242,25 @@ def erstelle_app(pfade: Pfade, kacheln_starten: bool = True) -> FastAPI:
     protokoll_einrichten(app, db)
 
     # ---------------------------------------------------------------- Standort der Anfrage
+    # Adressen der Form /api/<art>/<nummer>…: das Objekt muss zu einem erlaubten Standort gehören
+    OBJEKT_ADRESSE = re.compile(r"^/api/(gebaeudeteile|stockwerke|plaene|dokumente|transportarten|wagentypen|aufzuege|"
+                                r"flaechen|knoten|kanten|lieferungen|szenarien|sondertage|export/karte)/(\d+)")
+
     @app.middleware("http")
     async def standort_setzen(request: Request, call_next):
-        token = standort.setzen(standort.gueltig(db, request.cookies.get(standort.COOKIE)))
+        sitzung = request.cookies.get(auth.SITZUNG_COOKIE)
+        erlaubt = standort.erlaubte_fuer(db, auth._token_hash(sitzung) if sitzung else None)
+        token = standort.setzen(standort.gueltig(db, request.cookies.get(standort.COOKIE), erlaubt))
+        token_e = standort.erlaubt_setzen(erlaubt)
         try:
+            m = OBJEKT_ADRESSE.match(request.url.path)
+            if erlaubt is not None and m:
+                tabelle = "stockwerke" if m.group(1) == "export/karte" else m.group(1)
+                if not standort.darf(db, tabelle, int(m.group(2))):
+                    return JSONResponse({"detail": {"code": "nicht_gefunden"}}, status_code=404)
             return await call_next(request)
         finally:
+            standort._erlaubt.reset(token_e)
             standort._aktuell.reset(token)
 
     def ort() -> int:
@@ -440,10 +455,24 @@ def erstelle_app(pfade: Pfade, kacheln_starten: bool = True) -> FastAPI:
 
     @app.get("/api/benutzer")
     def benutzer_liste(_: dict = Depends(verwalten)):
-        return db.alle(
+        rows = db.alle(
             """SELECT b.id, b.benutzername, b.anzeigename, b.aktiv, b.erstellt, b.quelle, r.schluessel AS rolle
                  FROM benutzer b JOIN rollen r ON r.id = b.rolle_id ORDER BY b.benutzername"""
         )
+        zuordnung: dict[int, list[int]] = {}
+        for z in db.alle("SELECT benutzer_id, standort_id FROM benutzer_standorte ORDER BY standort_id"):
+            zuordnung.setdefault(z["benutzer_id"], []).append(z["standort_id"])
+        for r in rows:
+            r["standorte"] = zuordnung.get(r["id"], [])
+        return rows
+
+    def standorte_setzen(con, bid: int, ids: list[int]) -> None:
+        vorhanden = {r[0] for r in con.execute("SELECT id FROM standorte").fetchall()}
+        if any(i not in vorhanden for i in ids):
+            raise fehler(400, "standort_unbekannt")
+        con.execute("DELETE FROM benutzer_standorte WHERE benutzer_id = ?", (bid,))
+        for i in sorted(set(ids)):
+            con.execute("INSERT INTO benutzer_standorte (benutzer_id, standort_id) VALUES (?, ?)", (bid, i))
 
     @app.post("/api/benutzer")
     def benutzer_anlegen(daten: BenutzerNeu, _: dict = Depends(verwalten)):
@@ -452,10 +481,12 @@ def erstelle_app(pfade: Pfade, kacheln_starten: bool = True) -> FastAPI:
         rid = rolle_id(daten.rolle)
         if db.eins("SELECT 1 FROM benutzer WHERE benutzername = ?", (name,)):
             raise fehler(409, "benutzername_vergeben")
-        bid = db.ausfuehren(
-            "INSERT INTO benutzer (benutzername, anzeigename, passwort_hash, rolle_id) VALUES (?, ?, ?, ?)",
-            (name, daten.anzeigename.strip() or name, auth.passwort_hash(daten.passwort), rid),
-        )
+        with db.transaktion() as con:
+            bid = con.execute(
+                "INSERT INTO benutzer (benutzername, anzeigename, passwort_hash, rolle_id) VALUES (?, ?, ?, ?)",
+                (name, daten.anzeigename.strip() or name, auth.passwort_hash(daten.passwort), rid),
+            ).lastrowid
+            standorte_setzen(con, bid, daten.standorte)
         return {"id": bid}
 
     @app.put("/api/benutzer/{bid}")
@@ -479,6 +510,8 @@ def erstelle_app(pfade: Pfade, kacheln_starten: bool = True) -> FastAPI:
                 con.execute("UPDATE benutzer SET aktiv = ? WHERE id = ?", (int(daten.aktiv), bid))
                 if not daten.aktiv:
                     con.execute("DELETE FROM sitzungen WHERE benutzer_id = ?", (bid,))
+            if daten.standorte is not None:
+                standorte_setzen(con, bid, daten.standorte)
             if daten.passwort is not None:
                 con.execute("UPDATE benutzer SET passwort_hash = ? WHERE id = ?", (auth.passwort_hash(daten.passwort), bid))
                 if bid != ich["id"]:
@@ -717,7 +750,7 @@ def erstelle_app(pfade: Pfade, kacheln_starten: bool = True) -> FastAPI:
 
     @app.post("/api/stockwerke")
     def stockwerk_anlegen(daten: Stockwerk, _: dict = Depends(bearbeiten)):
-        if db.eins("SELECT 1 FROM gebaeudeteile WHERE id = ?", (daten.gebaeudeteil_id,)) is None:
+        if db.eins("SELECT 1 FROM gebaeudeteile WHERE id = ?", (daten.gebaeudeteil_id,)) is None or not standort.darf(db, "gebaeudeteile", daten.gebaeudeteil_id):
             raise fehler(404, "nicht_gefunden")
         return {
             "id": db.ausfuehren(
@@ -742,7 +775,8 @@ def erstelle_app(pfade: Pfade, kacheln_starten: bool = True) -> FastAPI:
     @app.put("/api/stockwerke/{sid}")
     def stockwerk_aendern(sid: int, daten: StockwerkAenderung, _: dict = Depends(bearbeiten)):
         stockwerk_holen(sid)
-        if daten.gebaeudeteil_id is not None and db.eins("SELECT 1 FROM gebaeudeteile WHERE id = ?", (daten.gebaeudeteil_id,)) is None:
+        if daten.gebaeudeteil_id is not None and (db.eins("SELECT 1 FROM gebaeudeteile WHERE id = ?", (daten.gebaeudeteil_id,)) is None
+                                                  or not standort.darf(db, "gebaeudeteile", daten.gebaeudeteil_id)):
             raise fehler(404, "nicht_gefunden")
         with db.transaktion() as con:
             if daten.name is not None:
@@ -770,7 +804,8 @@ def erstelle_app(pfade: Pfade, kacheln_starten: bool = True) -> FastAPI:
 
     # ---------------------------------------------------------------- Standorte
     def standort_liste() -> list[dict]:
-        rows = db.alle("SELECT id, name FROM standorte ORDER BY name COLLATE NOCASE, id")
+        erlaubt = standort.erlaubt()
+        rows = [r for r in db.alle("SELECT id, name FROM standorte ORDER BY name COLLATE NOCASE, id") if erlaubt is None or r["id"] in erlaubt]
         for r in rows:
             r["gebaeudeteile"] = db.eins("SELECT COUNT(*) AS n FROM gebaeudeteile WHERE standort_id = ?", (r["id"],))["n"]
             r["lieferungen"] = db.eins("SELECT COUNT(*) AS n FROM lieferungen WHERE standort_id = ?", (r["id"],))["n"]
@@ -785,7 +820,8 @@ def erstelle_app(pfade: Pfade, kacheln_starten: bool = True) -> FastAPI:
 
     @app.post("/api/standorte/{sid}/waehlen")
     def standort_waehlen(sid: int, response: Response, _: dict = Depends(ansehen)):
-        if db.eins("SELECT 1 FROM standorte WHERE id = ?", (sid,)) is None:
+        erlaubt = standort.erlaubt()
+        if db.eins("SELECT 1 FROM standorte WHERE id = ?", (sid,)) is None or (erlaubt is not None and sid not in erlaubt):
             raise fehler(404, "nicht_gefunden")
         standort_cookie(response, sid)
         return {"ok": True}
@@ -837,6 +873,13 @@ def erstelle_app(pfade: Pfade, kacheln_starten: bool = True) -> FastAPI:
             raise fehler(404, "nicht_gefunden")
         if db.eins("SELECT COUNT(*) AS n FROM standorte")["n"] <= 1:
             raise fehler(409, "letzter_standort")
+        # Wer nur diesem Krankenhaus zugeordnet ist, sähe danach plötzlich alle – erst die Zuordnung ändern lassen
+        nur_hier = db.alle(
+            """SELECT b.benutzername FROM benutzer b JOIN benutzer_standorte z ON z.benutzer_id = b.id
+                WHERE z.standort_id = ? AND NOT EXISTS (SELECT 1 FROM benutzer_standorte y WHERE y.benutzer_id = b.id AND y.standort_id <> ?)
+                ORDER BY b.benutzername""", (sid, sid))
+        if nur_hier:
+            raise fehler(409, "standort_benutzer", namen=", ".join(r["benutzername"] for r in nur_hier))
         plaene = {r["plan_id"] for r in db.alle(
             """SELECT s.plan_id FROM stockwerke s JOIN gebaeudeteile g ON g.id = s.gebaeudeteil_id
                 WHERE g.standort_id = ? AND s.plan_id IS NOT NULL""", (sid,))}
@@ -864,7 +907,7 @@ def erstelle_app(pfade: Pfade, kacheln_starten: bool = True) -> FastAPI:
     def plan_zuweisen(sid: int, daten: PlanZuweisung, _: dict = Depends(bearbeiten)):
         s = stockwerk_holen(sid)
         dok = db.eins("SELECT * FROM dokumente WHERE id = ?", (daten.dokument_id,))
-        if dok is None:
+        if dok is None or not standort.darf(db, "dokumente", daten.dokument_id):
             raise fehler(404, "nicht_gefunden")
         seiten = json.loads(dok["seiten"])
         if daten.seite > len(seiten):

@@ -588,7 +588,13 @@ export function starteEditor(ctx) {
     let arbeitet = false;
     const vorschau = L.polyline([], { color: "#f08c00", weight: 3, dashArray: "6 6", interactive: false }).addTo(karte);
     karte.getContainer().classList.add("fadenkreuz");
-    ctx.hinweis(t("editor.hilfe.weg"), [[t("karte.werkzeug_beenden"), () => wechseln("auswahl")]]);
+    // Knöpfe statt Rechtsklick/Esc – damit geht es auch mit dem Finger (Tablet, Handy)
+    const hinweisWeg = () =>
+      ctx.hinweis(t("editor.hilfe.weg"), [
+        ...(letzter !== null ? [[t("editor.strecke_absetzen"), () => ende()]] : []),
+        [t("karte.werkzeug_beenden"), () => wechseln("auswahl")],
+      ]);
+    hinweisWeg();
 
     async function klick(latlng) {
       if (arbeitet) return;
@@ -613,7 +619,9 @@ export function starteEditor(ctx) {
           return neu;
         });
 
+        const neuAngesetzt = letzter === null;
         letzter = id;
+        if (neuAngesetzt) hinweisWeg();
         await ctx.netzLaden();
       } catch (e) {
         fehlerMelden(e);
@@ -630,9 +638,10 @@ export function starteEditor(ctx) {
       vorschau.setLatLngs([ll(von.x, von.y), fang ? ll(fang.x, fang.y) : ll(p.x, p.y)]);
     };
     const ende = () => {
-      if (letzter === null) wechseln("auswahl");
+      if (letzter === null) return wechseln("auswahl");
       letzter = null;
       vorschau.setLatLngs([]);
+      hinweisWeg();
     };
     const tasteWeg = (e) => e.key === "Escape" && ende();
     karte.on("click", mapKlick).on("mousemove", bewegen).on("dblclick", ende);
@@ -752,7 +761,13 @@ export function starteEditor(ctx) {
     const form = L.polygon([], { color: "#f08c00", weight: 2, dashArray: "6 4", fillOpacity: 0.1, interactive: false }).addTo(karte);
     const ecken = L.layerGroup().addTo(karte);
     karte.getContainer().classList.add("fadenkreuz");
-    ctx.hinweis(t(rechteck ? "editor.hilfe.rechteck" : "editor.hilfe.vieleck"), [[t("karte.werkzeug_beenden"), () => wechseln("auswahl")]]);
+    const hinweisF = () =>
+      ctx.hinweis(t(rechteck ? "editor.hilfe.rechteck" : "editor.hilfe.vieleck"), [
+        ...(!rechteck && punkte.length >= 3 ? [[t("editor.flaeche_fertig"), () => fertig()]] : []),
+        ...(punkte.length ? [[t("editor.punkt_zurueck"), () => letzterZurueck()]] : []),
+        [t("karte.werkzeug_beenden"), () => wechseln("auswahl")],
+      ]);
+    hinweisF();
 
     const zeichne = (maus) => {
       let pp = [...punkte];
@@ -786,6 +801,13 @@ export function starteEditor(ctx) {
       punkte.length = 0;
       ecken.clearLayers();
       form.setLatLngs([]);
+      hinweisF();
+    };
+    const letzterZurueck = () => {
+      punkte.pop();
+      ecken.getLayers().at(-1)?.remove();
+      zeichne();
+      hinweisF();
     };
 
     const klick = (e) => {
@@ -795,6 +817,7 @@ export function starteEditor(ctx) {
       L.circleMarker(e.latlng, { radius: 4, color: "#f08c00", fillOpacity: 1, interactive: false }).addTo(ecken);
       zeichne();
       if (rechteck && punkte.length === 2) fertig();
+      else if (punkte.length <= 3) hinweisF(); // Knöpfe „zurück“/„fertig“ erscheinen
     };
     const bewegen = (e) => {
       if (!punkte.length) return;
@@ -811,11 +834,7 @@ export function starteEditor(ctx) {
     };
     const tasteF = (e) => {
       if (e.key === "Escape") punkte.length ? zuruecksetzen() : wechseln("auswahl");
-      if (e.key === "Backspace" && punkte.length) {
-        punkte.pop();
-        ecken.getLayers().at(-1)?.remove();
-        zeichne();
-      }
+      if (e.key === "Backspace" && punkte.length) letzterZurueck();
     };
     karte.on("click", klick).on("mousemove", bewegen).on("dblclick", doppel);
     document.addEventListener("keydown", tasteF);

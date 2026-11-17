@@ -72,3 +72,42 @@ def test_nur_verwalter_legen_standorte_an(client, admin):
     client.post("/api/anmelden", json={"benutzername": "plan", "passwort": "geheim-12345"})
     assert client.post("/api/standorte", json={"name": "X"}).status_code == 403
     assert client.get("/api/standorte").status_code == 200
+
+
+def test_zugriff_je_krankenhaus(haus, app):
+    """Ein Benutzer, der nur Klinik Nord sehen darf, kommt an das erste Haus nicht heran – auch nicht über Nummern."""
+    from fastapi.testclient import TestClient
+
+    c = haus["c"]
+    lid = lieferung(haus)
+    sid1 = c.get("/api/standorte").json()["aktuell"]
+    sid2 = c.post("/api/standorte", json={"name": "Klinik Nord", "wechseln": False}).json()["id"]
+    r = c.post("/api/benutzer", json={"benutzername": "nord", "passwort": "geheim123", "rolle": "planer", "standorte": [sid2]})
+    assert r.status_code == 200, r.text
+    bid = r.json()["id"]
+    assert next(b for b in c.get("/api/benutzer").json() if b["id"] == bid)["standorte"] == [sid2]
+
+    n = TestClient(app)  # ohne „with“: sonst schließt das Ende die gemeinsame Datenbank
+    assert n.post("/api/anmelden", json={"benutzername": "nord", "passwort": "geheim123"}).status_code == 200
+    st = n.get("/api/standorte").json()
+    assert st["aktuell"] == sid2 and [s["id"] for s in st["standorte"]] == [sid2]
+    assert n.get("/api/lieferungen").json() == []
+    # erstes Haus: weder wählen noch über Nummern lesen oder ändern
+    assert n.post(f"/api/standorte/{sid1}/waehlen").status_code == 404
+    n.cookies.set("lm_standort", str(sid1))
+    assert n.get("/api/standorte").json()["aktuell"] == sid2
+    assert n.get(f"/api/stockwerke/{haus['ug']}").status_code == 404
+    assert n.get(f"/api/lieferungen/{lid}/weg").status_code == 404
+    assert n.delete(f"/api/lieferungen/{lid}").status_code == 404
+    assert n.get(f"/api/export/karte/{haus['ug']}.pdf").status_code == 404
+    neu = {"name": "x", "transportart_id": haus["ta"]["FTS"]["id"], "start_id": haus["rampe"], "ziel_id": haus["lager"],
+           "uhrzeit": "08:00", "richtung": "versorgung", "regel": {"wochentage": [1]}, "rueckweg": {"modus": "keiner"}}
+    assert n.post("/api/lieferungen", json=neu).status_code == 404
+
+    # Admin sieht weiter alles; ohne Zuordnung sieht der Benutzer wieder alle Häuser
+    assert c.get(f"/api/lieferungen/{lid}/weg").status_code == 200
+    # Haus löschen geht nicht, solange jemand nur dort zugeordnet ist
+    r = c.delete(f"/api/standorte/{sid2}")
+    assert r.status_code == 409 and r.json()["detail"]["namen"] == "nord"
+    assert c.put(f"/api/benutzer/{bid}", json={"standorte": []}).status_code == 200
+    assert c.delete(f"/api/standorte/{sid2}").status_code == 200

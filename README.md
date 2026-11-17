@@ -21,7 +21,8 @@ Holidays are calculated for all German federal states.
   times and passenger load in lifts; find the smallest number of gates, vehicles or staff that keeps
   waiting below a limit.
 - **Several hospitals** in one installation: switch at the top, each with its own buildings,
-  plans, paths, master data, deliveries and analyses; users are shared.
+  plans, paths, master data, deliveries and analyses; users are shared, and each user can be
+  limited to certain hospitals.
 - **Getting started** page that guides you through the setup in the right order, checks by
   itself what is missing (a floor without scale, a point not attached to a path, a delivery
   without a route – and where the network breaks) and jumps straight to the place to fix it.

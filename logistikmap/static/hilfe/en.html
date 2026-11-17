@@ -85,7 +85,7 @@
 
 <section id="standorte">
 <h2>Several hospitals</h2>
-<p>One installation can manage several hospitals. Each hospital is completely separate: its own building sections, plans, paths, master data (transport types, cart types, lifts), deliveries, scenarios, special days, federal state and analyses. Only users, roles and sign-in are shared.</p>
+<p>One installation can manage several hospitals. Each hospital is completely separate: its own building sections, plans, paths, master data (transport types, cart types, lifts), deliveries, scenarios, special days, federal state and analyses. Only users, roles and sign-in are shared. Which users see which hospitals is set under <a href="#/hilfe/benutzer-standorte">Access per hospital</a>.</p>
 
 <h3 id="standorte-anlegen">Adding a new hospital</h3>
 <ol>
@@ -98,7 +98,7 @@
 <h3 id="standorte-wechseln">Switching, renaming, deleting</h3>
 <ul>
   <li><strong>Switch:</strong> choose the hospital in the selection at the top. The choice applies to your browser; other users stay in theirs.</li>
-  <li><strong>Rename and delete:</strong> under Settings → Hospitals. Deleting removes everything of that hospital and can only be undone from a backup. The last remaining hospital cannot be deleted.</li>
+  <li><strong>Rename and delete:</strong> under Settings → Hospitals. Deleting removes everything of that hospital and can only be undone from a backup. The last remaining hospital cannot be deleted. If a user is assigned <em>only</em> to this hospital, the message names them: change their assignment under Users first, then delete. Otherwise they would suddenly see all hospitals.</li>
 </ul>
 </section>
 
@@ -176,17 +176,20 @@
 <table class="tabelle hilfe-tabelle">
 <tr><th>Tool</th><th>What it does</th></tr>
 <tr><td>Select</td><td>Click an element to edit it in the side panel. Points can be dragged. If you drag a point onto a path point (corner, junction, open end), both are merged into one point; “Undo” restores the previous state. <kbd>Del</kbd> deletes the selected element.</td></tr>
-<tr><td>Draw paths</td><td>Click at every corner. Where you cross or click an existing path, a junction is created automatically. A <strong>right-click</strong> ends the current line, a second right-click ends the tool.</td></tr>
+<tr><td>Draw paths</td><td>Click at every corner. Where you cross or click an existing path, a junction is created automatically. A <strong>right-click</strong> or the <em>Lift pen</em> button ends the current line, a second right-click ends the tool.</td></tr>
 <tr><td>Add point</td><td>Clicking the spot adds a new point (gate, store, ward, lift …). If it is on a path, it is attached right away. Then the point form opens.</td></tr>
 <tr><td>Delete path</td><td>Clicking a path deletes the piece up to the next junction or point. Named points stay; delete them with “Select”.</td></tr>
 <tr><td>Room ▭</td><td>Draw a rectangular room: click two opposite corners.</td></tr>
-<tr><td>Room (polygon)</td><td>Click the corners. A click on the first point or a double-click closes the shape; <kbd>Backspace</kbd> removes the last point.</td></tr>
+<tr><td>Room (polygon)</td><td>Click the corners. A click on the first point, a double-click or the <em>Finish area</em> button closes the shape. <kbd>Backspace</kbd> or <em>Undo last point</em> removes the last point.</td></tr>
 <tr><td>Area</td><td>Like Room (polygon), but for larger zones (e.g. “Ward B2”) that contain several rooms.</td></tr>
 <tr><td>Align</td><td>After a plan change, move all elements of the floor onto the new plan. See <a href="#/hilfe/editor-ausrichten">Align</a>.</td></tr>
 <tr><td>Set scale</td><td>Asks whether you want to type it in or measure. See <a href="#/hilfe/karte-massstab">Scale</a>.</td></tr>
 <tr><td>Undo</td><td>Reverts the last change on this floor, also several times in a row (<kbd>Ctrl</kbd> + <kbd>Z</kbd>).</td></tr>
 <tr><td>⇢ Check gaps (number)</td><td>Goes through open path ends and unconnected points one by one. The number says how many places are left to check. See <a href="#/hilfe/editor-luecken">Check gaps</a>.</td></tr>
 </table>
+
+<h3 id="editor-tablet">Drawing on a tablet or phone</h3>
+<p>Everything that needs a right-click, <kbd>Esc</kbd> or <kbd>Del</kbd> on a PC is also available as a button in the hint bar above the map: <em>Lift pen</em>, <em>Finish area</em>, <em>Undo last point</em>, <em>Done</em>. Move the map with one finger, zoom with two. Delete with the button in the side panel of the selected element. For larger networks a PC with a mouse is still more comfortable because points are placed more precisely.</p>
 
 <h3 id="editor-zeichnen">Drawing paths properly</h3>
 <ul>
@@ -479,6 +482,7 @@
 <tr><td>Play / Pause</td><td>Let time run.</td></tr>
 <tr><td>Playback speed</td><td>30× to 600×: at 60× one minute passes in one second.</td></tr>
 <tr><td>Which routes to show</td><td>Lines of the trips: only those on the way now, those of the next 15/30/60 minutes or the whole day. The thicker the line, the more trips use the segment. Hovering over a line shows the number of trips.</td></tr>
+<tr><td>Colour by</td><td>How dots and lines are coloured: by <strong>transport type</strong> (colour from master data), by <strong>delivery</strong> (each delivery its own colour, good for following a round) or by <strong>direction</strong> (supply green, disposal brown, internal blue). Below the filters a legend shows which colour means what. Your browser remembers the choice.</td></tr>
 <tr><td>Filters</td><td>Only show certain start points, transport types, directions or a single delivery. All trips are always calculated; filters only hide.</td></tr>
 <tr><td>Map as PDF</td><td>The current floor with the routes as PDF, e.g. for meetings.</td></tr>
 </table>
@@ -527,6 +531,8 @@
 </table>
 <p>How to read: “Days over 30 min = 20 %” means that on every fifth day at least one transport waits there longer than 30 minutes. Without entered variation and base load all days are the same; the page points this out.</p>
 
+<p id="auswertung-hintergrund"><strong>Calculating in the background:</strong> Spread and minimum needed run on the server in the background. A bar shows the progress, <em>Cancel</em> stops the calculation. Leaving the page also ends it, and starting a new one replaces your running one. This way even large hospitals with many hundred trips do not run into a timeout, even with a cache such as Cloudflare in front of the server.</p>
+
 <h3 id="auswertung-bedarf">“Minimum needed” view</h3>
 <p>Answers the question: <strong>how many do I need at least so that nobody waits longer than X minutes?</strong> The system tries 1, 2, 3 … and names the smallest number that is enough.</p>
 <table class="tabelle hilfe-tabelle">
@@ -539,7 +545,7 @@
 <tr><td>Utilisation (peak)</td><td>The highest utilisation in a 5-minute step.</td></tr>
 <tr><td>late trips</td><td>How many trips are late with this number.</td></tr>
 </table>
-<p>If the transport type has shifts, minimum needed still calculates with a fixed number all day. For the distribution over the day look at the utilisation in the “Day” view. If even the highest number tried is not enough, the bottleneck is probably elsewhere, e.g. at the lift.</p>
+<p>If the transport type has shifts, minimum needed still calculates with a fixed number all day. For the distribution over the day look at the utilisation in the “Day” view. If even the highest number tried is not enough, the bottleneck is probably elsewhere, e.g. at the lift. The calculation runs in the background like spread (<a href="#/hilfe/auswertung-hintergrund">see above</a>).</p>
 </section>
 
 <section id="szenarien">
@@ -639,6 +645,15 @@
 <tr><td>Active</td><td>Deactivated users can no longer sign in but remain in the audit log.</td></tr>
 </table>
 <p>Everyone can change their own password via the menu at the top right.</p>
+
+<h3 id="benutzer-standorte">Access per hospital</h3>
+<p>If there are several hospitals, the user dialog has a <strong>Hospitals</strong> field:</p>
+<ul>
+  <li><strong>Nothing ticked</strong> (default): the user sees all hospitals.</li>
+  <li><strong>Some ticked:</strong> the user sees only those. The others are missing from the selection at the top, and direct links or exports do not reach their data either. The user list then shows “Only: …”.</li>
+  <li><strong>Administrators</strong> (right “Administration”) always see all hospitals regardless of the ticks, as they manage hospitals, backups and updates.</li>
+</ul>
+<p>The rights from the role apply equally in every permitted hospital. Example: a planner ticked only for “Clinic North” may maintain deliveries there and does not see Clinic South at all. Users from Active Directory appear in the list after their first sign-in; from then on you can assign hospitals to them too.</p>
 </section>
 
 <section id="anleitungen">

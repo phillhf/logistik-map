@@ -1,5 +1,21 @@
 # Änderungen
 
+## [0.10.0] - 2026-11-17
+
+Neu:
+
+- **Zugriff je Krankenhaus.** Im Benutzer-Dialog lässt sich anhaken, welche Krankenhäuser jemand
+  sehen darf (nichts angehakt = alle, Administratoren sehen immer alle). Andere Häuser fehlen dann
+  in der Auswahl und sind auch über direkte Links und Exporte nicht erreichbar.
+- **Streuung und Mindestbedarf rechnen im Hintergrund** – mit Fortschrittsbalken und „Abbrechen“.
+  Auch große Häuser laufen so nicht mehr in eine Zeitüberschreitung (z. B. hinter Cloudflare).
+- **Zeichnen am Tablet und Handy:** Knöpfe „Strecke absetzen“, „Fläche fertig“ und „Letzten Punkt
+  zurück“ statt Rechtsklick und Tasten. Auf dem Handy bekommt die Karte deutlich mehr Platz,
+  die Werkzeuge lassen sich seitlich wischen.
+- **Ablauf: Farbe nach Transportart, Lieferung oder Richtung**, mit Legende. So lässt sich eine
+  einzelne Tour gut verfolgen.
+- Hilfe um alle neuen Funktionen ergänzt.
+
 ## [0.9.3] - 2026-11-17
 
 Behoben:

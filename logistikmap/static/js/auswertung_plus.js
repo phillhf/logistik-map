@@ -1,12 +1,42 @@
 // Auswertung: „Streuung“ (viele Tage mit Zufall) und „Mindestbedarf“ (wie viele reichen?)
 
-import { api, dauer, fehlerMelden, h, leeren, punktName, t, zahl } from "./basis.js";
+import { api, ApiFehler, dauer, fehlerMelden, h, leeren, punktName, t, zahl } from "./basis.js";
 
 const prozent = (x) => `${zahl(x * 100, 0)} %`;
 
 function balken(anteil) {
   const klasse = anteil >= 0.25 ? "schlecht" : anteil >= 0.05 ? "mittel" : "gut";
   return h("div.anteil", h("div.balken", h("div", { class: klasse, style: { width: `${Math.round(anteil * 100)}%` } })), h("span", prozent(anteil)));
+}
+
+/**
+ * Lange Rechnung im Hintergrund starten und den Stand mit Balken und „Abbrechen“ in `ziel` zeigen.
+ * Liefert das Ergebnis, oder null nach Abbruch. Hintergrund: Ein Zwischenspeicher wie Cloudflare
+ * bricht Anfragen nach 100 s ab – so bleibt jede Anfrage kurz.
+ */
+async function imHintergrund(art, parameter, ziel, text) {
+  const { id } = await api("rechnungen", { methode: "POST", daten: { art, parameter } });
+  const fortschritt = h("progress", { max: 1, value: 0 });
+  const anteil = h("span.gedimmt", "0 %");
+  let abgebrochen = false;
+  const abbrechen = h("button.knopf-flach", { type: "button", onclick: () => {
+    abgebrochen = true;
+    api(`rechnungen/${id}`, { methode: "DELETE" }).catch(() => {});
+  } }, t("allgemein.abbrechen"));
+  leeren(ziel, h("div.rechnung-stand", h("p.gedimmt", text), h("div.knopfreihe", fortschritt, anteil, abbrechen)));
+  for (;;) {
+    await new Promise((ok) => setTimeout(ok, 600));
+    if (!ziel.isConnected) {
+      api(`rechnungen/${id}`, { methode: "DELETE" }).catch(() => {}); // Seite verlassen: Rechnung beenden
+      return null;
+    }
+    const r = await api(`rechnungen/${id}`);
+    fortschritt.value = r.fortschritt;
+    anteil.textContent = prozent(r.fortschritt);
+    if (r.status === "fertig") return r.ergebnis;
+    if (r.status === "abgebrochen" || (abgebrochen && r.status !== "laeuft")) return null;
+    if (r.status === "fehler") throw new ApiFehler(400, r.fehler);
+  }
 }
 
 /** Streuung: Tag N-mal mit Zufall rechnen, je Engpass „an X % der Tage über der Schwelle“. */
@@ -37,8 +67,10 @@ export async function streuungZeigen(inhalt, { datum, szenario, stamm }) {
     knopf.disabled = true;
     leeren(ergebnis, h("p.gedimmt", t("streuung.rechnet", { anzahl: laeufe.value })));
     try {
-      const r = await api(`simulation/streuung?datum=${datum}&laeufe=${laeufe.value}&schwelle=${schwelle.value}${szenario ? `&szenario=${szenario}` : ""}`);
-      zeigen(r);
+      const r = await imHintergrund("streuung", { datum, laeufe: Number(laeufe.value), schwelle: Number(schwelle.value), szenario: szenario || null },
+        ergebnis, t("streuung.rechnet", { anzahl: laeufe.value }));
+      if (r) zeigen(r);
+      else leeren(ergebnis);
     } catch (e) {
       fehlerMelden(e);
       leeren(ergebnis);
@@ -129,8 +161,11 @@ export async function bedarfZeigen(inhalt, { datum, szenario, stamm }) {
     knopf.disabled = true;
     leeren(ergebnis, h("p.gedimmt", t("bedarf.rechnet")));
     try {
-      const r = await api(`simulation/bedarf?art=${art}&id=${id}&ziel=${ziel.value}&datum=${datum}&laeufe=${mitStreuung.checked ? 30 : 0}${szenario ? `&szenario=${szenario}` : ""}`);
-      zeigen(r, wahl.selectedOptions[0].textContent, art);
+      const name = wahl.selectedOptions[0].textContent;
+      const r = await imHintergrund("bedarf", { art, id: Number(id), ziel: Number(ziel.value), datum, laeufe: mitStreuung.checked ? 30 : 0, szenario: szenario || null },
+        ergebnis, t("bedarf.rechnet"));
+      if (r) zeigen(r, name, art);
+      else leeren(ergebnis);
     } catch (e) {
       fehlerMelden(e);
       leeren(ergebnis);

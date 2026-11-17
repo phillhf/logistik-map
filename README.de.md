@@ -39,7 +39,8 @@ Weg gibt. Die Reihenfolge:
 **Mehrere Krankenhäuser:** Oben neben „Logistik Map“ wählst du das Krankenhaus. Über
 „＋ Neues Krankenhaus …“ legst du ein weiteres an. Jedes hat eigene Gebäude, Pläne, Strecken,
 Stammdaten, Lieferungen und Auswertungen; Benutzer und Anmeldung sind gemeinsam. Verwaltet
-(umbenennen, löschen) werden die Häuser unter Einstellungen.
+(umbenennen, löschen) werden die Häuser unter Einstellungen. Unter Benutzer lässt sich je
+Benutzer festlegen, welche Häuser er sehen darf.
 
 Wie gerechnet wird, steht in [KONZEPT.md](KONZEPT.md).
 

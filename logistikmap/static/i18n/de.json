@@ -262,7 +262,10 @@
     "du": "du",
     "aus_verzeichnis": "Active Directory",
     "aus_verzeichnis_hilfe": "Meldet sich mit dem Windows-Passwort an. Die Rolle kommt aus den AD-Gruppen.",
-    "rolle_aus_verzeichnis": "Wird bei der nächsten Anmeldung wieder aus den AD-Gruppen gesetzt."
+    "rolle_aus_verzeichnis": "Wird bei der nächsten Anmeldung wieder aus den AD-Gruppen gesetzt.",
+    "standorte": "Krankenhäuser",
+    "standorte_hilfe": "Nichts angehakt = Zugriff auf alle Krankenhäuser. Administratoren sehen immer alle.",
+    "nur_standorte": "Nur: {namen}"
   },
   "rollen": {
     "admin": "Administrator",
@@ -394,7 +397,10 @@
     "unbekannt": "Fehler {status} vom Server: {text}",
     "upload_reihenfolge": "Der Upload ist durcheinandergeraten. Bitte die Datei noch einmal hochladen.",
     "letzter_standort": "Das letzte Krankenhaus lässt sich nicht löschen.",
-    "name_fehlt": "Bitte einen Namen eingeben."
+    "name_fehlt": "Bitte einen Namen eingeben.",
+    "standort_benutzer": "Für {namen} ist das das einzige freigegebene Krankenhaus. Erst unter Benutzer die Zuordnung ändern, dann löschen.",
+    "standort_unbekannt": "Dieses Krankenhaus gibt es nicht (mehr). Bitte die Seite neu laden.",
+    "zu_viele_rechnungen": "Gerade laufen schon mehrere lange Berechnungen. Bitte kurz warten und noch einmal versuchen."
   },
   "knoten": {
     "art": {
@@ -457,10 +463,10 @@
     },
     "hilfe": {
       "auswahl": "Klicke ein Element an, um es zu bearbeiten. Punkte lassen sich verschieben; auf einen anderen Punkt gezogen, werden beide verbunden. Entf löscht.",
-      "weg": "Zeichne alle Strecken, auf denen Ware fahren kann – den besten Weg sucht das System selbst. Klick an jeder Ecke; wo du eine Strecke kreuzt oder anklickst, entsteht eine Kreuzung. Rechtsklick beendet die Linie, ein zweiter Rechtsklick das Werkzeug. Karte verschieben: rechte Maustaste gedrückt halten und ziehen.",
+      "weg": "Zeichne alle Strecken, auf denen Ware fahren kann – den besten Weg sucht das System selbst. Klick (oder Tipp) an jeder Ecke; wo du eine Strecke kreuzt oder anklickst, entsteht eine Kreuzung. Rechtsklick oder „Strecke absetzen“ beendet die Linie. Karte verschieben: rechte Maustaste gedrückt halten und ziehen, am Tablet mit dem Finger.",
       "punkt": "Klicke auf die Stelle für den Punkt (Tor, Lager, Station, Aufzug …). Rechtsklick beendet das Werkzeug.",
       "rechteck": "Klicke zwei gegenüberliegende Ecken des Raums an.",
-      "vieleck": "Klicke die Ecken an. Klick auf den ersten Punkt oder Doppelklick schließt die Fläche. Rücktaste nimmt den letzten Punkt zurück.",
+      "vieleck": "Klicke (oder tippe) die Ecken an. Klick auf den ersten Punkt, Doppelklick oder „Fläche fertig“ schließt die Fläche. Rücktaste oder „Letzten Punkt zurück“ nimmt den letzten Punkt zurück.",
       "ausrichten_alt": "Neuer Planstand? Klicke einen eingezeichneten Punkt oder eine Ecke an ({anzahl} Paare, mindestens 2, besser 3 weit auseinander).",
       "ausrichten_neu": "Jetzt die Stelle anklicken, an der dieser Punkt auf dem neuen Plan liegt.",
       "radierer": "Klick auf eine Strecke löscht das Stück bis zur nächsten Kreuzung oder zum nächsten Punkt. „Rückgängig“ holt es zurück. Rechtsklick beendet das Werkzeug."
@@ -528,7 +534,10 @@
     "pruefen_ja": "Ja, verbinden",
     "pruefen_nein": "Nein",
     "pruefen_nein_hilfe": "Bei „Nein“ bleibt alles, wie es ist, und diese Stelle wird nicht mehr gemeldet.",
-    "pruefen_beenden": "Prüfung beenden"
+    "pruefen_beenden": "Prüfung beenden",
+    "strecke_absetzen": "Strecke absetzen",
+    "flaeche_fertig": "Fläche fertig",
+    "punkt_zurueck": "Letzten Punkt zurück"
   },
   "aufzug": {
     "art": {
@@ -750,7 +759,14 @@
       "engstelle": "an Engstelle"
     },
     "weitere_hier": "Hier stehen noch {anzahl} weitere:",
-    "pdf": "Karte als PDF"
+    "pdf": "Karte als PDF",
+    "farbe_nach": "Farbe nach",
+    "farbe": {
+      "transportart": "Transportart",
+      "lieferung": "Lieferung",
+      "richtung": "Richtung"
+    },
+    "legende_mehr": "+ {anzahl} weitere"
   },
   "auswertung": {
     "titel": "Auswertung",

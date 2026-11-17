@@ -2,15 +2,21 @@
 
 from __future__ import annotations
 
+import contextvars
 import copy
 import json
+import logging
+import secrets
+import threading
+import time
 from urllib.parse import quote
 import random
 import math
 import re
 from datetime import date
+from typing import Literal
 
-from fastapi import Depends, FastAPI, File, Request, UploadFile
+from fastapi import Depends, FastAPI, File, HTTPException, Request, UploadFile
 from fastapi.responses import Response
 from pydantic import BaseModel, Field
 
@@ -21,6 +27,8 @@ from .feiertage import feiertage
 from .netz import KNOTEN_ARTEN, Netz, WegFehler
 from .regeln import RegelFehler, gilt_am, normalisieren
 from .simulation import Simulation
+
+log = logging.getLogger(__name__)
 
 UHRZEIT = re.compile(r"^([01]\d|2[0-3]):[0-5]\d$")
 FARBE = re.compile(r"^(#[0-9a-fA-F]{6})?$")
@@ -143,6 +151,11 @@ class Szenario(BaseModel):
     name: str = Field(min_length=1, max_length=150)
     beschreibung: str = Field(default="", max_length=2000)
     aenderungen: dict = {}
+
+
+class RechnungAuftrag(BaseModel):
+    art: Literal["streuung", "bedarf"]
+    parameter: dict = {}
 
 
 class Passpaar(BaseModel):
@@ -301,7 +314,7 @@ def registrieren(app: FastAPI, db: Datenbank, fehler, ansehen, bearbeiten, liefe
     lieferungen_recht = lieferungen_recht or bearbeiten
     def holen(tabelle: str, rid: int) -> dict:
         row = db.eins(f"SELECT * FROM {tabelle} WHERE id = ?", (rid,))
-        if row is None:
+        if row is None or not standort.darf(db, tabelle, rid):  # anderes Krankenhaus, das der Benutzer nicht sehen darf
             raise fehler(404, "nicht_gefunden")
         return row
 
@@ -1024,18 +1037,33 @@ def registrieren(app: FastAPI, db: Datenbank, fehler, ansehen, bearbeiten, liefe
                 "max_wartezeit_p90": quantil([e["zusammenfassung"]["max_wartezeit"] for e in ergebnisse], 0.9),
                 "ressourcen": res, "lieferungen": lief}
 
-    def mehrfach(v: dict, laeufe: int) -> list[dict]:
-        return [tag_rechnen(v, random.Random(seed)) for seed in range(laeufe)]
+    def mehrfach(v: dict, laeufe: int, schritt=None) -> list[dict]:
+        ergebnisse = []
+        for seed in range(laeufe):
+            ergebnisse.append(tag_rechnen(v, random.Random(seed)))
+            if schritt:
+                schritt()
+        return ergebnisse
+
+    def streuung_rechnen(datum: str | None, szenario: int | None, laeufe: int, schwelle: float, fortschritt=None) -> dict:
+        laeufe = max(5, min(laeufe, 500))
+        v = tag_vorbereiten(tag_lesen(datum), szenario_laden(szenario))
+        zaehler = [0]
+
+        def schritt():
+            zaehler[0] += 1
+            if fortschritt:
+                fortschritt(zaehler[0] / laeufe)
+
+        ergebnis = streuung_auswerten(mehrfach(v, laeufe, schritt), schwelle * 60)
+        ergebnis.update({"datum": v["tag"].isoformat(), "szenario": szenario})
+        return ergebnis
 
     @app.get("/api/simulation/streuung")
     def streuung(datum: str | None = None, szenario: int | None = None, laeufe: int = 100, schwelle: float = 30,
                  _: dict = Depends(ansehen)):
         """Rechnet den Tag viele Male mit zufälligen Abweichungen (Ankunft, Entladen, Personen im Aufzug)."""
-        laeufe = max(5, min(laeufe, 500))
-        v = tag_vorbereiten(tag_lesen(datum), szenario_laden(szenario))
-        ergebnis = streuung_auswerten(mehrfach(v, laeufe), schwelle * 60)
-        ergebnis.update({"datum": v["tag"].isoformat(), "szenario": szenario})
-        return ergebnis
+        return streuung_rechnen(datum, szenario, laeufe, schwelle)
 
     # ---------------------------------------------------------------- Mindestbedarf
     BEDARF_ARTEN = {"transportart": ("transportarten", "fahrzeuge"), "knoten": ("knoten", "knoten"), "kante": ("kanten", "kante")}
@@ -1045,6 +1073,10 @@ def registrieren(app: FastAPI, db: Datenbank, fehler, ansehen, bearbeiten, liefe
                laeufe: int = 0, max_anzahl: int = 20, _: dict = Depends(ansehen)):
         """Kleinste Anzahl (Fahrzeuge/Personen, Tore, gleichzeitig auf einer Engstelle), bei der dort
         niemand länger als ziel Minuten wartet. Mit laeufe > 0 zählt der 90-%-Wert über so viele Tage."""
+        return bedarf_rechnen(art, id, ziel, datum, szenario, laeufe, max_anzahl)
+
+    def bedarf_rechnen(art: str, id: int, ziel: float, datum: str | None, szenario: int | None,
+                       laeufe: int, max_anzahl: int, fortschritt=None) -> dict:
         if art not in BEDARF_ARTEN:
             raise fehler(400, "art_ungueltig")
         tabelle, typ = BEDARF_ARTEN[art]
@@ -1060,6 +1092,9 @@ def registrieren(app: FastAPI, db: Datenbank, fehler, ansehen, bearbeiten, liefe
             aend.setdefault(tabelle, {}).setdefault(str(id), {}).update(werte)
             v = tag_vorbereiten(tag, aend)
             ergebnisse = mehrfach(v, laeufe) if laeufe else [tag_rechnen(v)]
+            if fortschritt:
+                # Wie weit es geht, ist offen (bis zur Empfehlung + 1) – grob nach der Obergrenze schätzen
+                fortschritt(min(0.95, n / max(2, min(max_anzahl, (empfehlung or n) + 4))))
             warte = [next((r["max_wartezeit"] for r in e["ressourcen"] if r["typ"] == typ and r["id"] == id), 0.0) for e in ergebnisse]
             spitze = [next((r["spitze"] for r in e["ressourcen"] if r["typ"] == typ and r["id"] == id), 0.0) for e in ergebnisse]
             wert = quantil(warte, 0.9) if laeufe else warte[0]
@@ -1092,6 +1127,84 @@ def registrieren(app: FastAPI, db: Datenbank, fehler, ansehen, bearbeiten, liefe
             tage.append({"datum": e["datum"], "wochentag": e["wochentag"], "feiertag": e["feiertag"], "zusammenfassung": e["zusammenfassung"],
                          "stunden": {str(h): v for h, v in sorted(stunden.items())}, "fehler": len(e["fehler"])})
         return {"von": start.isoformat(), "szenario": szenario, "tage": tage}
+
+    # ---------------------------------------------------------------- Rechnungen im Hintergrund
+    # Streuung und Mindestbedarf rechnen einen Tag hunderte Male. Ein Zwischenspeicher wie Cloudflare
+    # bricht Anfragen nach 100 s ab – deshalb im Hintergrund rechnen, die Seite fragt den Stand ab.
+    rechnungen: dict[str, dict] = {}
+    rechnungen_sperre = threading.Lock()
+
+    def rechnungen_aufraeumen() -> None:
+        jetzt = time.time()
+        with rechnungen_sperre:
+            for rid, r in list(rechnungen.items()):
+                if r["status"] != "laeuft" and jetzt - r["zeit"] > 3600:
+                    rechnungen.pop(rid, None)
+
+    @app.post("/api/rechnungen")
+    def rechnung_starten(d: RechnungAuftrag, ich: dict = Depends(ansehen)):
+        rechnungen_aufraeumen()
+        with rechnungen_sperre:
+            eigene = [r for r in rechnungen.values() if r["benutzer"] == ich["id"] and r["status"] == "laeuft"]
+            for r in eigene:  # neue Rechnung ersetzt eine noch laufende desselben Benutzers
+                r["abbruch"] = True
+            if sum(1 for r in rechnungen.values() if r["status"] == "laeuft" and not r["abbruch"]) >= 4:
+                raise fehler(429, "zu_viele_rechnungen")
+            rid = secrets.token_hex(8)
+            job = {"benutzer": ich["id"], "status": "laeuft", "fortschritt": 0.0, "ergebnis": None, "fehler": None,
+                   "abbruch": False, "zeit": time.time()}
+            rechnungen[rid] = job
+
+        class Abgebrochen(Exception):
+            pass
+
+        def fortschritt(anteil: float) -> None:
+            job["fortschritt"] = round(min(1.0, anteil), 3)
+            if job["abbruch"]:
+                raise Abgebrochen
+
+        def laufen():
+            try:
+                p = dict(d.parameter)
+                p["szenario"] = int(p["szenario"]) if p.get("szenario") else None
+                if d.art == "streuung":
+                    e = streuung_rechnen(p.get("datum"), p.get("szenario"), int(p.get("laeufe", 100)), float(p.get("schwelle", 30)), fortschritt)
+                else:
+                    e = bedarf_rechnen(str(p.get("art", "")), int(p.get("id", 0)), float(p.get("ziel", 15)), p.get("datum"), p.get("szenario"),
+                                       int(p.get("laeufe", 0)), int(p.get("max_anzahl", 20)), fortschritt)
+                job.update(ergebnis=e, fortschritt=1.0, status="fertig")
+            except Abgebrochen:
+                job["status"] = "abgebrochen"
+            except HTTPException as ex:
+                job.update(status="fehler", fehler=ex.detail)
+            except (TypeError, ValueError):
+                job.update(status="fehler", fehler={"code": "allgemein"})
+            except Exception:
+                log.exception("Rechnung %s fehlgeschlagen", d.art)
+                job.update(status="fehler", fehler={"code": "allgemein"})
+            finally:
+                job["zeit"] = time.time()
+
+        # Standort und Zugriffsrechte der Anfrage mitnehmen
+        kontext = contextvars.copy_context()
+        threading.Thread(target=kontext.run, args=(laufen,), daemon=True, name=f"rechnung-{rid}").start()
+        return {"id": rid}
+
+    def rechnung_holen(rid: str, ich: dict) -> dict:
+        r = rechnungen.get(rid)
+        if r is None or r["benutzer"] != ich["id"]:
+            raise fehler(404, "nicht_gefunden")
+        return r
+
+    @app.get("/api/rechnungen/{rid}")
+    def rechnung_stand(rid: str, ich: dict = Depends(ansehen)):
+        r = rechnung_holen(rid, ich)
+        return {"status": r["status"], "fortschritt": r["fortschritt"], "ergebnis": r["ergebnis"], "fehler": r["fehler"]}
+
+    @app.delete("/api/rechnungen/{rid}")
+    def rechnung_abbrechen(rid: str, ich: dict = Depends(ansehen)):
+        rechnung_holen(rid, ich)["abbruch"] = True
+        return {"ok": True}
 
     # ---------------------------------------------------------------- Szenarien
     def szenario_lesen(row: dict) -> dict:

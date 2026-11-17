@@ -84,7 +84,7 @@
 
 <section id="standorte">
 <h2>Mehrere Krankenhäuser</h2>
-<p>Eine Installation kann mehrere Krankenhäuser verwalten. Jedes Krankenhaus ist vollständig getrennt: eigene Gebäudeteile, Pläne, Strecken, Stammdaten (Transportarten, Wagentypen, Aufzüge), Lieferungen, Szenarien, Sondertage, Bundesland und Auswertungen. Gemeinsam sind nur die Benutzer, die Rollen und die Anmeldung.</p>
+<p>Eine Installation kann mehrere Krankenhäuser verwalten. Jedes Krankenhaus ist vollständig getrennt: eigene Gebäudeteile, Pläne, Strecken, Stammdaten (Transportarten, Wagentypen, Aufzüge), Lieferungen, Szenarien, Sondertage, Bundesland und Auswertungen. Gemeinsam sind nur die Benutzer, die Rollen und die Anmeldung. Welche Benutzer welche Häuser sehen, legst du unter <a href="#/hilfe/benutzer-standorte">Zugriff je Krankenhaus</a> fest.</p>
 
 <h3 id="standorte-anlegen">Neues Krankenhaus anlegen</h3>
 <ol>
@@ -97,7 +97,7 @@
 <h3 id="standorte-wechseln">Wechseln, umbenennen, löschen</h3>
 <ul>
   <li><strong>Wechseln:</strong> Krankenhaus oben in der Auswahl anklicken. Die Wahl gilt für deinen Browser, andere Benutzer bleiben in ihrem Haus.</li>
-  <li><strong>Umbenennen und löschen:</strong> unter Einstellungen → Krankenhäuser. Beim Löschen wird alles dieses Hauses entfernt. Das lässt sich nur über eine Sicherung zurückholen. Das letzte verbliebene Krankenhaus kann nicht gelöscht werden.</li>
+  <li><strong>Umbenennen und löschen:</strong> unter Einstellungen → Krankenhäuser. Beim Löschen wird alles dieses Hauses entfernt. Das lässt sich nur über eine Sicherung zurückholen. Das letzte verbliebene Krankenhaus kann nicht gelöscht werden. Ist ein Benutzer <em>nur</em> diesem Haus zugeordnet, nennt die Meldung seinen Namen: Erst seine Zuordnung unter Benutzer ändern, dann löschen. Sonst sähe er danach plötzlich alle Häuser.</li>
 </ul>
 </section>
 
@@ -175,17 +175,20 @@
 <table class="tabelle hilfe-tabelle">
 <tr><th>Werkzeug</th><th>Was es tut</th></tr>
 <tr><td>Auswählen</td><td>Element anklicken, um es im Seitenfenster zu bearbeiten. Punkte lassen sich ziehen. Ziehst du einen Punkt auf einen Wegpunkt (Ecke, Kreuzung, offenes Ende), werden beide zu einem Punkt vereint. „Rückgängig“ holt den alten Stand zurück. <kbd>Entf</kbd> löscht das gewählte Element.</td></tr>
-<tr><td>Strecken zeichnen</td><td>An jeder Ecke klicken. Wo du eine vorhandene Strecke kreuzt oder anklickst, entsteht automatisch eine Kreuzung. <strong>Rechtsklick</strong> beendet die aktuelle Linie, ein zweiter Rechtsklick das Werkzeug.</td></tr>
+<tr><td>Strecken zeichnen</td><td>An jeder Ecke klicken. Wo du eine vorhandene Strecke kreuzt oder anklickst, entsteht automatisch eine Kreuzung. <strong>Rechtsklick</strong> oder der Knopf <em>Strecke absetzen</em> beendet die aktuelle Linie, ein zweiter Rechtsklick das Werkzeug.</td></tr>
 <tr><td>Punkt setzen</td><td>Klick auf die Stelle setzt einen neuen Punkt (Tor, Lager, Station, Aufzug …). Liegt er auf einer Strecke, hängt er sofort daran. Danach öffnet sich das Formular des Punkts.</td></tr>
 <tr><td>Strecke löschen</td><td>Klick auf eine Strecke löscht das Stück bis zur nächsten Kreuzung oder zum nächsten Punkt. Benannte Punkte bleiben stehen, die löschst du unter „Auswählen“.</td></tr>
 <tr><td>Raum ▭</td><td>Rechteckigen Raum zeichnen: zwei gegenüberliegende Ecken anklicken.</td></tr>
-<tr><td>Raum (Vieleck)</td><td>Ecken anklicken. Ein Klick auf den ersten Punkt oder ein Doppelklick schließt die Fläche, <kbd>Rücktaste</kbd> nimmt den letzten Punkt zurück.</td></tr>
+<tr><td>Raum (Vieleck)</td><td>Ecken anklicken. Ein Klick auf den ersten Punkt, ein Doppelklick oder der Knopf <em>Fläche fertig</em> schließt die Fläche. <kbd>Rücktaste</kbd> oder <em>Letzten Punkt zurück</em> nimmt den letzten Punkt zurück.</td></tr>
 <tr><td>Bereich</td><td>Wie Raum (Vieleck), aber für größere Zonen (z. B. „Station B2“), die mehrere Räume enthalten.</td></tr>
 <tr><td>Ausrichten</td><td>Nach einem Planwechsel alle Elemente des Stockwerks auf den neuen Plan schieben. Siehe <a href="#/hilfe/editor-ausrichten">Ausrichten</a>.</td></tr>
 <tr><td>Maßstab festlegen</td><td>Fragt, ob du eintippen oder abmessen willst. Siehe <a href="#/hilfe/karte-massstab">Maßstab</a>.</td></tr>
 <tr><td>Rückgängig</td><td>Nimmt die letzte Änderung auf diesem Stockwerk zurück, auch mehrfach hintereinander (<kbd>Strg</kbd> + <kbd>Z</kbd>).</td></tr>
 <tr><td>⇢ Lücken prüfen (Zahl)</td><td>Geht offene Streckenenden und Punkte ohne Anschluss einzeln durch. Die Zahl sagt, wie viele Stellen noch zu prüfen sind. Siehe <a href="#/hilfe/editor-luecken">Lücken prüfen</a>.</td></tr>
 </table>
+
+<h3 id="editor-tablet">Am Tablet oder Handy zeichnen</h3>
+<p>Alles, wofür man am PC Rechtsklick, <kbd>Esc</kbd> oder <kbd>Entf</kbd> braucht, gibt es auch als Knopf in der Hinweiszeile über der Karte: <em>Strecke absetzen</em>, <em>Fläche fertig</em>, <em>Letzten Punkt zurück</em>, <em>Beenden</em>. Die Karte verschiebst du mit einem Finger, zoomen geht mit zwei Fingern. Gelöscht wird über den Knopf im Seitenfenster des gewählten Elements. Für größere Netze ist ein PC mit Maus trotzdem bequemer, weil Punkte genauer sitzen.</p>
 
 <h3 id="editor-zeichnen">Strecken richtig zeichnen</h3>
 <ul>
@@ -478,6 +481,7 @@
 <tr><td>Abspielen / Anhalten</td><td>Die Zeit laufen lassen.</td></tr>
 <tr><td>Abspieltempo</td><td>30× bis 600×: Bei 60× vergeht eine Minute in einer Sekunde.</td></tr>
 <tr><td>Welche Wege anzeigen</td><td>Linien der Fahrten: nur die gerade unterwegs sind, die der nächsten 15/30/60 Minuten oder den ganzen Tag. Je dicker die Linie, desto mehr Fahrten nutzen das Stück. Fährst du mit der Maus über eine Linie, steht die Zahl der Fahrten da.</td></tr>
+<tr><td>Farbe nach</td><td>Wie Punkte und Linien eingefärbt sind: nach <strong>Transportart</strong> (Farbe aus den Stammdaten), nach <strong>Lieferung</strong> (jede Lieferung eine eigene Farbe, gut um eine Tour zu verfolgen) oder nach <strong>Richtung</strong> (Versorgung grün, Entsorgung braun, Intern blau). Unter dem Filter steht, welche Farbe wofür steht. Die Wahl merkt sich dein Browser.</td></tr>
 <tr><td>Filter</td><td>Nur bestimmte Startpunkte, Transportarten, Richtungen oder eine einzelne Lieferung zeigen. Gerechnet wird immer mit allen, Filter blenden nur aus.</td></tr>
 <tr><td>Karte als PDF</td><td>Das aktuelle Stockwerk mit den Wegen als PDF, z. B. für Besprechungen.</td></tr>
 </table>
@@ -525,6 +529,7 @@
 <tr><td>Lieferungen</td><td>Je Lieferung: an wie vielen Tagen verspätet, an wie vielen über der Schwelle, und die Wartezeit an 9 von 10 Tagen.</td></tr>
 </table>
 <p>Lesehilfe: „Tage über 30 Min. = 20 %“ heißt, an jedem fünften Tag wartet dort mindestens ein Transport länger als 30 Minuten. Ohne eingetragene Schwankung und Grundlast sind alle Tage gleich. Die Seite weist darauf hin.</p>
+<p id="auswertung-hintergrund"><strong>Rechnen im Hintergrund:</strong> Streuung und Mindestbedarf laufen auf dem Server im Hintergrund. Ein Balken zeigt, wie weit die Rechnung ist, mit <em>Abbrechen</em> stoppst du sie. Verlässt du die Seite, wird die Rechnung ebenfalls beendet. Startest du eine neue, ersetzt sie deine laufende. So kommt auch bei großen Häusern mit vielen hundert Fahrten keine Zeitüberschreitung, selbst wenn ein Zwischenspeicher wie Cloudflare vor dem Server steht.</p>
 
 <h3 id="auswertung-bedarf">Ansicht „Mindestbedarf“</h3>
 <p>Beantwortet die Frage: <strong>Wie viele brauche ich mindestens, damit niemand länger als X Minuten wartet?</strong> Das System probiert 1, 2, 3 … durch und nennt die kleinste Anzahl, die reicht.</p>
@@ -538,7 +543,7 @@
 <tr><td>Auslastung (Spitze)</td><td>Die höchste Auslastung in einem 5-Minuten-Schritt.</td></tr>
 <tr><td>verspätete Fahrten</td><td>Wie viele Fahrten mit dieser Anzahl zu spät kommen.</td></tr>
 </table>
-<p>Hat die Transportart Schichten, rechnet der Mindestbedarf trotzdem mit einer festen Anzahl über den ganzen Tag. Für die Verteilung über den Tag schau in die Auslastung der Ansicht „Tag“. Reicht auch die höchste ausprobierte Anzahl nicht, liegt der Engpass vermutlich woanders, etwa am Aufzug.</p>
+<p>Hat die Transportart Schichten, rechnet der Mindestbedarf trotzdem mit einer festen Anzahl über den ganzen Tag. Für die Verteilung über den Tag schau in die Auslastung der Ansicht „Tag“. Reicht auch die höchste ausprobierte Anzahl nicht, liegt der Engpass vermutlich woanders, etwa am Aufzug. Die Rechnung läuft im Hintergrund wie bei der Streuung (<a href="#/hilfe/auswertung-hintergrund">siehe oben</a>).</p>
 </section>
 
 <section id="szenarien">
@@ -638,6 +643,15 @@
 <tr><td>Aktiv</td><td>Deaktivierte Benutzer können sich nicht mehr anmelden, bleiben aber im Protokoll erhalten.</td></tr>
 </table>
 <p>Jeder kann sein eigenes Passwort über das Menü oben rechts ändern.</p>
+
+<h3 id="benutzer-standorte">Zugriff je Krankenhaus</h3>
+<p>Gibt es mehrere Krankenhäuser, steht im Benutzer-Dialog das Feld <strong>Krankenhäuser</strong>:</p>
+<ul>
+  <li><strong>Nichts angehakt</strong> (Standard): Der Benutzer sieht alle Krankenhäuser.</li>
+  <li><strong>Einzelne angehakt:</strong> Der Benutzer sieht nur diese. Die anderen fehlen in der Auswahl oben, und auch über direkte Links oder Exporte kommt er nicht an ihre Daten. In der Benutzerliste steht dann „Nur: …“.</li>
+  <li><strong>Administratoren</strong> (Recht „Verwaltung“) sehen immer alle Häuser, egal was angehakt ist, denn sie verwalten ja Krankenhäuser, Sicherung und Updates.</li>
+</ul>
+<p>Die Rechte aus der Rolle gelten in jedem freigegebenen Haus gleich. Beispiel: Planer mit Haken nur bei „Klinik Nord“ darf dort Lieferungen pflegen und sieht das Klinikum Süd gar nicht. Benutzer aus dem Active Directory erscheinen nach der ersten Anmeldung in der Liste. Ab dann kannst du auch ihnen Häuser zuordnen.</p>
 </section>
 
 <section id="anleitungen">

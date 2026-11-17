@@ -7,6 +7,7 @@ export function zeigeBenutzer(wurzel) {
   const rollenBox = h("div");
   let rollen = [];
   let rechte = [];
+  let standorte = [];
   wurzel.append(
     h(
       "div.stapel",
@@ -31,8 +32,9 @@ export function zeigeBenutzer(wurzel) {
 
   async function laden() {
     try {
-      const [liste, r] = await Promise.all([api("benutzer"), api("rollen")]);
+      const [liste, r, st] = await Promise.all([api("benutzer"), api("rollen"), api("standorte")]);
       rollen = r.rollen;
+      standorte = st.standorte;
       rechte = r.rechte;
       zeigeBenutzerListe(liste);
       zeigeRollen();
@@ -62,7 +64,14 @@ export function zeigeBenutzer(wurzel) {
                   b.quelle === "ldap" ? h("span.marke-klein.grau", { title: t("benutzer.aus_verzeichnis_hilfe") }, t("benutzer.aus_verzeichnis")) : null
                 ),
                 h("td", b.anzeigename),
-                h("td", rollenName(b.rolle), b.aktiv ? null : h("span.marke-klein.grau", t("benutzer.deaktiviert"))),
+                h(
+                  "td",
+                  rollenName(b.rolle),
+                  b.aktiv ? null : h("span.marke-klein.grau", t("benutzer.deaktiviert")),
+                  b.standorte?.length && standorte.length > 1
+                    ? h("div.gedimmt.klein", t("benutzer.nur_standorte", { namen: b.standorte.map((id) => standorte.find((s) => s.id === id)?.name ?? id).join(", ") }))
+                    : null
+                ),
                 h(
                   "td.aktionen",
                   h("button.knopf-flach", { type: "button", onclick: () => dialog(b) }, t("allgemein.bearbeiten")),
@@ -135,25 +144,34 @@ export function zeigeBenutzer(wurzel) {
   async function dialog(b) {
     const neu = !b;
     const rollenOptionen = rollen.map((r) => [r.schluessel, rollenName(r.schluessel)]);
+    // Zugriff je Krankenhaus – nur sinnvoll, wenn es mehrere gibt
+    const standortFeld = standorte.length > 1
+      ? [{ name: "standorte", label: t("benutzer.standorte"), typ: "mehrfach", wert: (b?.standorte || []).map(String),
+           optionen: standorte.map((s) => [String(s.id), s.name]), hilfe: t("benutzer.standorte_hilfe") }]
+      : [];
     const felder = neu
       ? [
           { name: "benutzername", label: t("benutzer.benutzername"), pflicht: true, attr: { autocomplete: "off" } },
           { name: "anzeigename", label: t("benutzer.anzeigename") },
           { name: "rolle", label: t("benutzer.rolle"), typ: "auswahl", optionen: rollenOptionen, wert: "betrachter" },
           { name: "passwort", label: t("benutzer.passwort"), typ: "password", pflicht: true, attr: { autocomplete: "new-password", minlength: 8 } },
+          ...standortFeld,
         ]
       : [
           { name: "anzeigename", label: t("benutzer.anzeigename"), wert: b.anzeigename },
           { name: "rolle", label: t("benutzer.rolle"), typ: "auswahl", optionen: rollenOptionen, wert: b.rolle, hilfe: b.quelle === "ldap" ? t("benutzer.rolle_aus_verzeichnis") : null },
           { name: "aktiv", label: t("benutzer.aktiv"), typ: "haken", wert: !!b.aktiv },
+          ...standortFeld,
           ...(b.quelle === "ldap" ? [] : [{ name: "passwort", label: t("benutzer.passwort_neu_optional"), typ: "password", attr: { autocomplete: "new-password" } }]),
         ];
     const ok = await formularDialog({
       titel: neu ? t("benutzer.neu") : `${t("benutzer.bearbeiten")}: ${b.benutzername}`,
       felder,
       speichern: (w) => {
-        if (neu) return api("benutzer", { methode: "POST", daten: w });
+        const auswahl = standortFeld.length ? (w.standorte || []).map(Number) : undefined;
+        if (neu) return api("benutzer", { methode: "POST", daten: { ...w, standorte: auswahl ?? [] } });
         const daten = { anzeigename: w.anzeigename, rolle: w.rolle, aktiv: w.aktiv };
+        if (auswahl) daten.standorte = auswahl;
         if (w.passwort) daten.passwort = w.passwort;
         return api(`benutzer/${b.id}`, { methode: "PUT", daten });
       },

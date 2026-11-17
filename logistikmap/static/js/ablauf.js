@@ -59,6 +59,24 @@ function stockwerkZur(fahrt, zeit) {
   return null;
 }
 
+// Gut unterscheidbare Farben für „Farbe nach Lieferung“ (der Reihe nach vergeben)
+const LIEFERUNG_FARBEN = ["#1971c2", "#e8590c", "#2f9e44", "#c2255c", "#7048e8", "#0c8599", "#e67700", "#5c940d", "#ae3ec9", "#f03e3e", "#495057", "#a61e4d"];
+const RICHTUNG_FARBEN = { versorgung: "#2f9e44", entsorgung: "#9c6644", intern: "#1971c2" };
+
+function gemerkt(schluessel, standard) {
+  try {
+    return localStorage.getItem(schluessel) || standard;
+  } catch {
+    return standard;
+  }
+}
+
+function merken(schluessel, wert) {
+  try {
+    localStorage.setItem(schluessel, wert);
+  } catch {}
+}
+
 export async function starteAblauf(ctx) {
   const { karte, unten, stockwerk } = ctx;
   const sid = stockwerk.id;
@@ -71,6 +89,8 @@ export async function starteAblauf(ctx) {
   let tempo = 60;
   let fenster = "30";
   let filter = { start: "", transportart: "", richtung: "", lieferung: "" };
+  let farbeNach = gemerkt("lm_ablauf_farbe", "transportart"); // transportart | lieferung | richtung
+  let lieferungFarbe = new Map(); // lieferung_id → Farbe
   let animation = null;
   let letzterFrame = 0;
   const marker = new Map(); // fahrt.id → circleMarker
@@ -83,6 +103,7 @@ export async function starteAblauf(ctx) {
   const tempoWahl = h("select", { title: t("ablauf.tempo") }, TEMPI.map((x) => h("option", { value: x, selected: x === tempo }, `${x}×`)));
   const fensterWahl = h("select", { title: t("ablauf.anzeige") }, FENSTER.map(([w, k]) => h("option", { value: w, selected: w === fenster }, t(k))));
   const filterLeiste = h("div.filterleiste");
+  const legende = h("div.ablauf-legende");
   const info = h("div.ablaufinfo");
 
   const szenarioWahl = await szenarioAuswahl(szenario, async (wert) => {
@@ -102,6 +123,7 @@ export async function starteAblauf(ctx) {
       fensterWahl
     ),
     filterLeiste,
+    legende,
     info
   );
   unten.hidden = false;
@@ -187,8 +209,22 @@ export async function starteAblauf(ctx) {
         optionen.map(([w, text]) => h("option", { value: w, selected: String(w) === filter[name] }, text))
       );
     const lieferungen = [...new Map(sim.fahrten.map((f) => [f.lieferung_id, f])).values()];
+    lieferungFarbe = new Map(lieferungen.map((f, i) => [f.lieferung_id, LIEFERUNG_FARBEN[i % LIEFERUNG_FARBEN.length]]));
+    const farbWahl = h(
+      "select",
+      {
+        title: t("ablauf.farbe_nach"),
+        onchange: (e) => {
+          farbeNach = e.target.value;
+          merken("lm_ablauf_farbe", farbeNach);
+          zeichnen();
+        },
+      },
+      ["transportart", "lieferung", "richtung"].map((w) => h("option", { value: w, selected: w === farbeNach }, t(`ablauf.farbe.${w}`)))
+    );
     leeren(
       filterLeiste,
+      h("label.inline", t("ablauf.farbe_nach"), farbWahl),
       auswahl("start", startIds.map((id) => [id, punktName(ctx.punkte.find((p) => p.id === id))]), t("ablauf.filter.alle_starts")),
       auswahl("transportart", ctx.stamm.transportarten.map((x) => [x.id, x.name]), t("ablauf.filter.alle_transportarten")),
       auswahl("richtung", [["versorgung", t("richtung.versorgung")], ["entsorgung", t("richtung.entsorgung")], ["intern", t("richtung.intern")]], t("ablauf.filter.alle_richtungen")),
@@ -215,7 +251,35 @@ export async function starteAblauf(ctx) {
   }
 
   function farbe(f) {
+    if (farbeNach === "lieferung") return lieferungFarbe.get(f.lieferung_id) || "#495057";
+    if (farbeNach === "richtung") return RICHTUNG_FARBEN[f.richtung] || "#495057";
     return ctx.stamm.transportarten.find((x) => x.id === f.transportart_id)?.farbe || "#d9480f";
+  }
+
+  /** Welche Farbe wofür steht – für die sichtbaren Fahrten. */
+  let legendeStand = "";
+  function legendeZeigen(fahrten) {
+    // läuft bei jedem Bild der Wiedergabe – nur neu aufbauen, wenn sich etwas ändert
+    const stand = farbeNach + ":" + [...new Set(fahrten.map((f) => f.lieferung_id))].join(",");
+    if (stand === legendeStand) return;
+    legendeStand = stand;
+    let eintraege;
+    if (farbeNach === "lieferung") {
+      eintraege = [...new Map(fahrten.map((f) => [f.lieferung_id, [farbe(f), `${uhr(f.geplant)} ${f.name}`]])).values()];
+    } else if (farbeNach === "richtung") {
+      eintraege = [...new Set(fahrten.map((f) => f.richtung))].map((r) => [RICHTUNG_FARBEN[r] || "#495057", t(`richtung.${r}`)]);
+    } else {
+      eintraege = [...new Set(fahrten.map((f) => f.transportart_id))].map((id) => {
+        const ta = ctx.stamm.transportarten.find((x) => x.id === id);
+        return [ta?.farbe || "#d9480f", ta?.name || "?"];
+      });
+    }
+    const zuViele = eintraege.length > 14;
+    leeren(
+      legende,
+      eintraege.slice(0, 14).map(([c, text]) => h("span.legende-eintrag", h("i", { style: { background: c } }), text)),
+      zuViele ? h("span.gedimmt", t("ablauf.legende_mehr", { anzahl: eintraege.length - 14 })) : null
+    );
   }
 
   function zeichnen() {
@@ -224,6 +288,7 @@ export async function starteAblauf(ctx) {
     if (!sim) return;
     const fahrten = sim.fahrten.filter(passt);
     const sichtbar = fahrten.filter(imFenster);
+    legendeZeigen(sichtbar);
 
     // ---- Warenflüsse: Kanten nach Anzahl Fahrten im Fenster
     ctx.ebenen.overlay.clearLayers();

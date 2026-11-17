@@ -254,6 +254,13 @@ label.inline { display: inline-flex; align-items: center; gap: 6px; color: var(-
 .zeitregler { flex: 1; min-width: 200px; accent-color: var(--blau); }
 .filterleiste { display: flex; gap: 8px; flex-wrap: wrap; }
 .filterleiste select { font-size: 0.85rem; padding: 4px 8px; max-width: 240px; }
+.filterleiste label.inline { display: inline-flex; align-items: center; gap: 6px; font-size: 0.85rem; }
+.ablauf-legende { display: flex; flex-wrap: wrap; gap: 4px 14px; font-size: 0.8rem; margin: 6px 0; }
+.ablauf-legende:empty { display: none; }
+.legende-eintrag { display: inline-flex; align-items: center; gap: 6px; }
+.legende-eintrag i { width: 12px; height: 12px; border-radius: 50%; display: inline-block; flex: none; }
+.rechnung-stand progress { width: min(320px, 60vw); }
+.rechnung-stand .knopfreihe { align-items: center; }
 .ablaufinfo { display: flex; gap: 14px; flex-wrap: wrap; color: var(--gedimmt); font-size: 0.85rem; }
 .wegfolge a { text-decoration: none; }
 .marke-zahl { background: var(--rot); color: #fff; border-radius: 10px; font-size: 0.72rem; padding: 0 7px; margin-left: auto; margin-right: 6px; }
@@ -591,4 +598,14 @@ mark.hilfe-fund { background: #ffe066; border-radius: 2px; }
   #meldungen { left: 10px; right: 10px; bottom: 10px; }
   .meldung { max-width: none; }
   .knopfreihe.filter > * { flex: 1 1 auto; }
+
+  /* Karte: Platz für die Karte statt für Listen – Stockwerke und Werkzeuge kompakt, seitlich wischbar */
+  main.seite-karte { height: calc(100dvh - var(--kopf)); }
+  main.seite-karte .seitenleiste { max-height: 96px; padding: 6px 8px; }
+  .kartenkopf { padding: 6px 10px; gap: 6px 10px; }
+  .kartenkopf h2 { font-size: 1rem; }
+  .werkzeugleiste { flex-wrap: nowrap; overflow-x: auto; -webkit-overflow-scrolling: touch; padding: 6px 10px; scrollbar-width: thin; }
+  .werkzeugleiste > * { flex: none; }
+  .werkzeugleiste button { padding: 8px 12px; }
+  .kartenhinweis button { min-height: 40px; }
 }

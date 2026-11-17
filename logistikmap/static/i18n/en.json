@@ -262,7 +262,10 @@
     "du": "you",
     "aus_verzeichnis": "Active Directory",
     "aus_verzeichnis_hilfe": "Signs in with the Windows password. The role comes from the AD groups.",
-    "rolle_aus_verzeichnis": "Is set again from the AD groups at the next sign-in."
+    "rolle_aus_verzeichnis": "Is set again from the AD groups at the next sign-in.",
+    "standorte": "Hospitals",
+    "standorte_hilfe": "Nothing ticked = access to all hospitals. Administrators always see all.",
+    "nur_standorte": "Only: {namen}"
   },
   "rollen": {
     "admin": "Administrator",
@@ -394,7 +397,10 @@
     "unbekannt": "Error {status} from the server: {text}",
     "upload_reihenfolge": "The upload got out of order. Please upload the file again.",
     "letzter_standort": "The last hospital cannot be deleted.",
-    "name_fehlt": "Please enter a name."
+    "name_fehlt": "Please enter a name.",
+    "standort_benutzer": "This is the only hospital {namen} may access. Change the assignment under Users first, then delete.",
+    "standort_unbekannt": "This hospital does not exist (anymore). Please reload the page.",
+    "zu_viele_rechnungen": "Several long calculations are already running. Please wait a moment and try again."
   },
   "knoten": {
     "art": {
@@ -457,10 +463,10 @@
     },
     "hilfe": {
       "auswahl": "Click an element to edit it. Points can be moved; dropped onto another point, both are joined. Delete removes.",
-      "weg": "Draw every path where goods can move – the system finds the best route itself. Click at every corner; where you cross or click a path, a junction is created. Right-click ends the line, a second right-click ends the tool. Move the map: hold the right mouse button and drag.",
+      "weg": "Draw every route goods can travel on – the system finds the best way itself. Click (or tap) at every corner; where you cross or click a route, a junction is created. Right-click or “Lift pen” ends the line. Move the map: hold the right mouse button and drag, on a tablet with your finger.",
       "punkt": "Click where the point goes (gate, store, ward, lift …). Right-click ends the tool.",
       "rechteck": "Click two opposite corners of the room.",
-      "vieleck": "Click the corners. Clicking the first point or double-clicking closes the area. Backspace removes the last point.",
+      "vieleck": "Click (or tap) the corners. Clicking the first point, double-clicking or “Finish area” closes the area. Backspace or “Undo last point” removes the last point.",
       "ausrichten_alt": "New version of the plan? Click a drawn point or corner ({anzahl} pairs, at least 2, better 3 far apart).",
       "ausrichten_neu": "Now click where this point is on the new plan.",
       "radierer": "Clicking a path deletes the piece up to the next junction or point. “Undo” brings it back. Right-click ends the tool."
@@ -528,7 +534,10 @@
     "pruefen_ja": "Yes, connect",
     "pruefen_nein": "No",
     "pruefen_nein_hilfe": "With “No” nothing changes and this spot is not reported again.",
-    "pruefen_beenden": "End check"
+    "pruefen_beenden": "End check",
+    "strecke_absetzen": "Lift pen",
+    "flaeche_fertig": "Finish area",
+    "punkt_zurueck": "Undo last point"
   },
   "aufzug": {
     "art": {
@@ -750,7 +759,14 @@
       "engstelle": "at a bottleneck"
     },
     "weitere_hier": "{anzahl} more are here:",
-    "pdf": "Map as PDF"
+    "pdf": "Map as PDF",
+    "farbe_nach": "Colour by",
+    "farbe": {
+      "transportart": "Transport type",
+      "lieferung": "Delivery",
+      "richtung": "Direction"
+    },
+    "legende_mehr": "+ {anzahl} more"
   },
   "auswertung": {
     "titel": "Analysis",
