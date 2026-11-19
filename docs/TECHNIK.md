@@ -1,6 +1,6 @@
-# Logistik Map – Informationen für die IT
+# Logistik Map – Technik und Betrieb
 
-Diese Seite fasst zusammen, was für die Freigabe und den Betrieb im Unternehmensnetz wichtig ist:
+Diese Seite beschreibt den technischen Aufbau und den Betrieb im eigenen Netz:
 Systemvoraussetzungen, Netzwerk, Daten, Sicherheit und Wartung. Alle Angaben beziehen sich auf die
 [neueste Version](https://github.com/phillhf/logistik-map/releases/latest) und lassen sich im
 Quellcode dieses Repositorys nachprüfen.
@@ -156,7 +156,7 @@ Der Dienst läuft als **LocalSystem**. Das ist für das Update auf Knopfdruck n�
 
 Wer das nicht möchte, kann den Dienst in der Diensteverwaltung unter einem eigenen Konto laufen
 lassen. Das Konto braucht Schreibrechte auf `C:\ProgramData\Logistik Map`. Updates werden dann
-von der IT per Setup eingespielt. Daten und Einstellungen bleiben bei jedem Update erhalten.
+per Setup eingespielt. Daten und Einstellungen bleiben bei jedem Update erhalten.
 
 ## Sicherung und Wiederherstellung
 
@@ -191,8 +191,9 @@ Alle unter `C:\ProgramData\Logistik Map\`.
 
   Beide Werte müssen übereinstimmen (Groß-/Kleinschreibung spielt keine Rolle).
 - Das Setup ist **nicht mit einem Code-Signing-Zertifikat signiert**. Windows SmartScreen kann
-  deshalb beim ersten Start warnen. Für die Freigabe eignet sich die Prüfsumme, oder die IT
-  signiert das Setup mit dem eigenen Zertifikat bzw. gibt es per Hash in AppLocker oder Intune frei.
+  deshalb beim ersten Start warnen. Die Echtheit lässt sich über die Prüfsumme kontrollieren;
+  alternativ lässt sich das Setup mit einem eigenen Zertifikat signieren oder per Hash in AppLocker
+  oder Intune zulassen.
 - Mitgelieferte Bibliotheken und ihre Lizenzen stehen nach der Installation in
   `THIRD_PARTY_LICENSES.txt` im Programmordner. Der verwendete Dienst-Rahmen WinSW wird beim Bau
   nur mit fest hinterlegter Prüfsumme übernommen.

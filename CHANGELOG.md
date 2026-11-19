@@ -11,8 +11,8 @@ Verbessert:
 - **Auswertung:** „Auf der Karte zeigen“ ragt in den Engpass-Karten nicht mehr über den Rand.
 - **Update-Fenster** zeigt nur noch die Neuerungen einer Version, nicht den ganzen Release-Text.
 - **GitHub-Seite:** neues README auf Deutsch mit Bildern aus einem erfundenen Musterklinikum,
-  eigene Seite mit Informationen für die IT (`docs/IT.md`), `SECURITY.md`. Jedes Release enthält
-  jetzt Installation, Prüfsumme und die wichtigsten Angaben für die IT.
+  Seite zu Technik und Betrieb (`docs/TECHNIK.md`), `SECURITY.md`. Jedes Release enthält
+  jetzt Installation, Prüfsumme und die technischen Eckdaten.
 
 ## [0.10.0] - 2026-11-17
 

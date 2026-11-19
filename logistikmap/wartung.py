@@ -39,7 +39,7 @@ REPO = "phillhf/logistik-map"
 SETUP_MUSTER = re.compile(r"^LogistikMap-Setup-(\d+\.\d+\.\d+)\.exe$")
 AUTO_PRAEFIX = "auto-"
 UPDATE_AUFGABE = "LogistikMap Update"
-# Im Release-Text steht unter dieser Zeile der feste Teil (Installation, Hinweise für die IT).
+# Im Release-Text steht unter dieser Zeile der feste Teil (Installation, technische Eckdaten).
 # Im Update-Fenster zeigen wir nur, was darüber steht: die Neuerungen.
 NOTIZEN_ENDE = "<!-- ende-der-neuerungen -->"
 

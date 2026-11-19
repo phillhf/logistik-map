@@ -13,7 +13,7 @@
 ![Sprachen](https://img.shields.io/badge/Oberfl%C3%A4che-Deutsch%20%7C%20English-555)
 
 [**⬇ Herunterladen**](https://github.com/phillhf/logistik-map/releases/latest) ·
-[**Für die IT**](docs/IT.md) ·
+[Technik](#technik-im-überblick) ·
 [Funktionen](#funktionen) ·
 [Installation](#installation) ·
 [English](README.en.md)
@@ -120,9 +120,10 @@ selbst.
 <sub>Alle Bilder zeigen das frei erfundene „Musterklinikum“. Plan, Räume und Lieferanten sind
 ausgedacht und werden mit [`werkzeuge/screenshots.py`](werkzeuge/screenshots.py) erzeugt.</sub>
 
-## Für die IT
+## Technik im Überblick
 
-Die ausführliche Beschreibung für Freigabe und Betrieb steht in **[docs/IT.md](docs/IT.md)**. Kurz:
+Weiterführende Informationen zu Aufbau, Netzwerk, Daten und Betrieb stehen in
+**[docs/TECHNIK.md](docs/TECHNIK.md)**. Kurz:
 
 | | |
 |---|---|

@@ -15,7 +15,7 @@ Meldungen werden so schnell wie möglich bearbeitet. Nach der Korrektur erschein
 Hinweis im Änderungsprotokoll, auf Wunsch mit Nennung der meldenden Person.
 
 Was Logistik Map zur Sicherheit tut (Anmeldung, Rechte, Daten, Updates), steht in
-[docs/IT.md](docs/IT.md).
+[docs/TECHNIK.md](docs/TECHNIK.md).
 
 ---
 

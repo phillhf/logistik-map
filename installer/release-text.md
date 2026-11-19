@@ -25,7 +25,7 @@ oder durch Ausführen dieses Setups. Daten und Einstellungen bleiben erhalten.
 Get-Content .\LogistikMap-Setup-{VERSION}.exe.sha256
 ```
 
-## Für die IT
+## Technische Eckdaten
 
 | | |
 |---|---|
@@ -36,8 +36,8 @@ Get-Content .\LogistikMap-Setup-{VERSION}.exe.sha256
 | Unbeaufsichtigt | `LogistikMap-Setup-{VERSION}.exe /VERYSILENT /PORT=8470 /TASKS="firewall"` |
 | Herkunft | von GitHub Actions aus dem Tag `v{VERSION}` gebaut, alle Tests vor dem Bau |
 
-Alles Weitere – Netzwerk, Anmeldung, Datenschutz, Dienstkonto, Sicherung, Protokolle:
-**[Informationen für die IT](https://github.com/phillhf/logistik-map/blob/main/docs/IT.md)**
+Netzwerk, Anmeldung, Datenschutz, Dienstkonto, Sicherung, Protokolle:
+**[Weiterführende Informationen](https://github.com/phillhf/logistik-map/blob/main/docs/TECHNIK.md)**
 
 <sub>English: Download `LogistikMap-Setup-{VERSION}.exe`, run it as administrator and open the
 browser. See the [English README](https://github.com/phillhf/logistik-map/blob/main/README.en.md).</sub>
