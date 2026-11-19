@@ -1,76 +1,250 @@
+<div align="center">
+
+<img src="logistikmap/static/favicon.svg" width="76" alt="">
+
 # Logistik Map
 
-*[Deutsche Fassung](README.de.md)*
+**Warenflüsse und Transportwege im Krankenhaus sichtbar machen –<br>von der Rampe über den Aufzug bis auf die Station.**
 
-Logistik Map shows the flow of goods through large buildings such as hospitals. You upload the
-floor plans as PDF, draw corridors, lifts and delivery points, enter the deliveries of the day –
-and see where goods go, who is waiting where, and which lift becomes the bottleneck at 8 a.m.
+[![Neueste Version](https://img.shields.io/github/v/release/phillhf/logistik-map?label=Version&color=1f5f8b)](https://github.com/phillhf/logistik-map/releases/latest)
+[![Tests](https://img.shields.io/github/actions/workflow/status/phillhf/logistik-map/tests.yml?branch=main&label=Tests)](https://github.com/phillhf/logistik-map/actions/workflows/tests.yml)
+[![Lizenz: AGPL-3.0](https://img.shields.io/badge/Lizenz-AGPL--3.0-blue)](LICENSE)
+![Windows Server](https://img.shields.io/badge/Windows-Server%202016%2B%20%7C%2010%20%7C%2011-0078d4)
+![Sprachen](https://img.shields.io/badge/Oberfl%C3%A4che-Deutsch%20%7C%20English-555)
 
-![Timeline on the floor plan](docs/screenshots/ablauf.png)
-![Analysis with bottlenecks](docs/screenshots/auswertung.png)
+[**⬇ Herunterladen**](https://github.com/phillhf/logistik-map/releases/latest) ·
+[**Für die IT**](docs/IT.md) ·
+[Funktionen](#funktionen) ·
+[Installation](#installation) ·
+[English](README.en.md)
 
-The user interface is available in **German and English** (each user chooses their language).
-Holidays are calculated for all German federal states.
+</div>
 
-## Features
+![Ablauf auf der Karte: Fahrzeuge, Wege und Warteschlangen am Aufzug um 07:24](docs/screenshots/ablauf.png)
 
-- **Built-in manual** (menu “Help”, or “?” at the top for the page you are on): every page and
-  every parameter explained, how the simulation calculates, step-by-step guides and
-  troubleshooting, with search.
-- **Variation and minimum needed**: calculate a day many times with random arrival and unloading
-  times and passenger load in lifts; find the smallest number of gates, vehicles or staff that keeps
-  waiting below a limit.
-- **Several hospitals** in one installation: switch at the top, each with its own buildings,
-  plans, paths, master data, deliveries and analyses; users are shared, and each user can be
-  limited to certain hospitals.
-- **Getting started** page that guides you through the setup in the right order, checks by
-  itself what is missing (a floor without scale, a point not attached to a path, a delivery
-  without a route – and where the network breaks) and jumps straight to the place to fix it.
-- **Floor plans from PDF**, also very large CAD exports (A0 and beyond), converted once into a
-  zoomable map. Enter the scale (e.g. 1:200; suggested when it is text in the PDF) or click two
-  points with a known distance.
-- **Deliveries in one line**: “At 08:00, 5 pallets from the gate to B25” – the system finds
-  route, lift and transport type. Truck gates at the dock with their number of gates; internal
-  transports such as a bed exchange.
-- **Map editor**: corridors as a path network, start and destination points (ramps, stores,
-  wards), lifts and stairs across floors, connections between building sections, areas and rooms.
-  Undo, snapping, re-aligning everything to a new version of the plan.
-- **Master data**: transport types (e.g. automated guided vehicles that reserve a lift, or staff
-  pushing trolleys) with speed, loading times, fleet size and **shifts**; trolley types with the
-  space they need in a lift; lifts with capacity and travel, door and waiting times.
-- **Deliveries** with time, load, “arrive by”, recurrence rules (weekdays, public holidays,
-  periods, exceptions) and return trips (empty, loaded, later, none). Import and export via Excel.
-- **Simulation** of a day: vehicles, lift cars and bottlenecks with limited capacity, waiting
-  times and late arrivals – including trips that run past midnight.
-- **Timeline** on the map, **analysis** per day or as a weekly heat map, export to Excel and PDF.
-- **Scenarios** (“what if the linen arrives at 7:30?”, “what if the west lift is out of
-  service?”) compared with the current state.
-- **Operations**: Windows installer with service, daily backups, one-click updates from GitHub
-  releases, HTTPS, sign-in via Active Directory, roles and permissions, audit log.
+## Worum es geht
 
-How the simulation works is described in [KONZEPT.md](KONZEPT.md) (German).
+Jeden Morgen kommen Wäsche, Speisen, Medikamente und Paletten ins Haus und müssen auf die
+Stationen – über dieselben Flure und dieselben Aufzüge. Logistik Map rechnet einen solchen Tag
+auf Basis der echten Gebäudepläne durch und beantwortet Fragen wie:
 
-## Installation (Windows server)
+- **Schaffen die Aufzüge das Frühstück um 7:15?** Wer steht wann wo und wartet?
+- **Wie viele FTS, Tore oder Mitarbeitende brauchen wir mindestens**, damit niemand länger als
+  15 Minuten wartet?
+- **Was wäre, wenn** die Wäsche erst um 7:30 käme oder Aufzug West in Wartung ist?
+- **Wie oft wird es eng**, wenn LKW mal früher, mal später kommen?
 
-1. Download `LogistikMap-Setup-x.y.z.exe` from the [releases](https://github.com/phillhf/logistik-map/releases) and run it as administrator.
-2. Choose the port (default 8470) and optionally open it in the Windows firewall.
-3. The browser opens afterwards – create the administrator account there.
+Die Pläne kommen als PDF (auch große CAD-Exporte), die Strecken zeichnet man einmal darüber, die
+Lieferungen trägt man in einer Zeile ein. Den Weg, den Aufzug und das Fahrzeug sucht das System
+selbst.
 
-Logistik Map then runs as the Windows service **LogistikMap** and is available on the network at
-`http://<server>:<port>`. Data lives in `C:\ProgramData\Logistik Map` and is kept on updates and
-uninstall.
+## Funktionen
 
-Useful command-line tools (`C:\Program Files\Logistik Map\LogistikMap.exe …`):
+<table>
+<tr>
+<td width="50%" valign="top">
 
-| Command | Purpose |
+**Planen**
+- **Pläne aus PDF** – auch A0-CAD-Exporte, einmal in eine zoombare Karte umgewandelt.
+  Maßstab eintippen (wird aus dem Plantext vorgeschlagen) oder abmessen.
+- **Strecken zeichnen** statt jeden Weg einzeln: Kreuzungen entstehen von selbst,
+  Lücken findet die Prüfung. Am PC, Tablet oder Handy.
+- **Lieferungen in einer Zeile:** „Um 08:00 kommen 5 Paletten vom Tor nach B25“ –
+  mit Wochentagen, Feiertagsregel, Rückweg und Excel-Import.
+- **Stammdaten:** Fahrzeuge und Personal mit Schichten, Wagentypen, Aufzüge mit
+  Fahr-, Tür- und Räumzeiten und Personen-Grundlast.
+
+</td>
+<td width="50%" valign="top">
+
+**Rechnen und Auswerten**
+- **Ablauf auf der Karte** im Zeitraffer, eingefärbt nach Transportart, Lieferung
+  oder Richtung.
+- **Engpässe** mit Wartezeit, Spitzenauslastung und Ideen zur Abhilfe;
+  Tagesverlauf und Wochen-Heatmap.
+- **Streuung:** den Tag hundertfach mit zufälligen Abweichungen rechnen –
+  „an wie vielen Tagen wird es eng?“
+- **Mindestbedarf:** kleinste Zahl an Toren, Fahrzeugen oder Personal für ein Ziel.
+- **Szenarien** im Vergleich zum Ist-Zustand, Export nach Excel und PDF.
+
+</td>
+</tr>
+<tr>
+<td valign="top">
+
+**Geführt**
+- **Erste Schritte** führt durch die Einrichtung, prüft selbst, was fehlt, und springt
+  mit „Beheben“ an die richtige Stelle.
+- **Ausführliche Hilfe im Programm** zu jeder Seite und jedem Parameter, mit Suche
+  und Schritt-für-Schritt-Anleitungen.
+- Oberfläche auf **Deutsch und Englisch**, Feiertage aller Bundesländer.
+
+</td>
+<td valign="top">
+
+**Betrieb**
+- **Windows-Installer** mit Dienst, läuft komplett im eigenen Netz.
+- **Active Directory**, Rollen und Rechte, **Zugriff je Krankenhaus**,
+  Änderungsprotokoll.
+- **Mehrere Krankenhäuser** in einer Installation.
+- Tägliche **Sicherung**, **HTTPS**, **Updates** auf Knopfdruck mit Prüfsumme.
+
+</td>
+</tr>
+</table>
+
+## So sieht es aus
+
+<table>
+<tr>
+<td width="50%"><img src="docs/screenshots/auswertung.png" alt="Auswertung mit Engpässen"><br><sub><b>Auswertung</b> – Kennzahlen, Engpässe mit Ideen zur Abhilfe, Auslastung im Tagesverlauf</sub></td>
+<td width="50%"><img src="docs/screenshots/streuung.png" alt="Streuung über 100 Tage"><br><sub><b>Streuung</b> – 100 zufällige Tage: Wo wird es wie oft eng?</sub></td>
+</tr>
+<tr>
+<td><img src="docs/screenshots/editor.png" alt="Karte bearbeiten"><br><sub><b>Karte bearbeiten</b> – Strecken, Tore, Aufzüge und Ziele auf dem PDF-Plan</sub></td>
+<td><img src="docs/screenshots/lieferungen.png" alt="Lieferungen"><br><sub><b>Lieferungen</b> – in einer Zeile anlegen, Vorschau der nächsten Tage</sub></td>
+</tr>
+<tr>
+<td><img src="docs/screenshots/start.png" alt="Erste Schritte"><br><sub><b>Erste Schritte</b> – geführte Einrichtung, die selbst mitprüft</sub></td>
+<td><img src="docs/screenshots/hilfe.png" alt="Hilfe im Programm"><br><sub><b>Hilfe</b> – jede Seite und jeder Parameter erklärt, mit Suche</sub></td>
+</tr>
+</table>
+
+<p align="center">
+<img src="docs/screenshots/handy-ablauf.png" width="230" alt="Ablauf auf dem Handy">
+&nbsp;&nbsp;
+<img src="docs/screenshots/handy-menue.png" width="230" alt="Menü auf dem Handy">
+<br><sub>Auch auf Tablet und Handy bedienbar</sub>
+</p>
+
+<sub>Alle Bilder zeigen das frei erfundene „Musterklinikum“. Plan, Räume und Lieferanten sind
+ausgedacht und werden mit [`werkzeuge/screenshots.py`](werkzeuge/screenshots.py) erzeugt.</sub>
+
+## Für die IT
+
+Die ausführliche Beschreibung für Freigabe und Betrieb steht in **[docs/IT.md](docs/IT.md)**. Kurz:
+
+| | |
 |---|---|
-| `plan-test plan.pdf` | Check a PDF plan: size, zoom levels, estimated preparation time |
-| `sicherung [target.zip]` | Create a backup |
-| `wiederherstellen backup.zip` | Restore a backup (stop the service first) |
-| `passwort admin` | Reset a password |
-| `config --port 8470 --zertifikat cert.pem --schluessel key.pem` | Port and HTTPS |
+| **Art** | Webanwendung: ein Windows-Dienst auf einem Server, Zugriff per Browser im eigenen Netz |
+| **System** | Windows Server 2016 oder neuer bzw. Windows 10/11, 64 Bit; keine weiteren Laufzeitumgebungen nötig |
+| **Netzwerk** | ein TCP-Port (Standard 8470), HTTP oder HTTPS mit eigenem Zertifikat |
+| **Verbindungen nach außen** | keine Pflicht. Nur die Update-Prüfung fragt bei github.com nach, ohne Verbindung läuft alles weiter |
+| **Daten** | lokal in `C:\ProgramData\Logistik Map` (SQLite, PDF-Pläne, Sicherungen). Keine Patientendaten, keine Telemetrie |
+| **Anmeldung** | lokale Konten (scrypt) und/oder Active Directory per LDAP(S), Rollen und Rechte, Sperre bei Fehlversuchen |
+| **Nachvollziehbarkeit** | Änderungsprotokoll mit einstellbarer Aufbewahrungsfrist |
+| **Quellcode** | vollständig offen (AGPL-3.0), Installer per GitHub Actions aus diesem Repository gebaut, mit SHA-256-Prüfsumme |
 
-## Development
+## Installation
+
+1. [`LogistikMap-Setup-x.y.z.exe`](https://github.com/phillhf/logistik-map/releases/latest) herunterladen
+   und als Administrator ausführen.
+2. Port wählen (Standard 8470) und bei Bedarf die Firewall-Freigabe anhaken.
+3. Nach der Installation öffnet sich der Browser. Dort legst du das Administrator-Konto an –
+   danach führt die Seite **Erste Schritte** durch die Einrichtung.
+
+Logistik Map läuft dann als Windows-Dienst **LogistikMap** und ist im Netzwerk unter
+`http://<Servername>:<Port>` erreichbar. Unbeaufsichtigt, z. B. für die Softwareverteilung:
+
+```
+LogistikMap-Setup-x.y.z.exe /VERYSILENT /PORT=8470 /TASKS="firewall"
+```
+
+Die Daten liegen in `C:\ProgramData\Logistik Map` (Datenbank, PDF-Pläne, Kacheln, Protokolle,
+`config.json`). Update und Deinstallation lassen sie unangetastet.
+
+## So arbeitest du damit
+
+Eine ausführliche Anleitung steckt im Programm: Menüpunkt **Hilfe** oder **?** oben rechts, das
+die Hilfe zur gerade offenen Seite öffnet. Die Reihenfolge der Einrichtung:
+
+1. **Gebäude & Pläne**: Gebäudeteile und Stockwerke anlegen, PDF hochladen, Seite zuweisen.
+2. **Karte → Bearbeiten**: Maßstab eintragen, alle befahrbaren Strecken zeichnen, Start- und
+   Zielpunkte setzen (Lager, Stationen, Aufbereitung), LKW-Tore mit ihrer Anzahl, Aufzüge auf
+   jedem Stockwerk.
+3. **Stammdaten**: Transportarten (z. B. FTS, Materialtransportdienst), Wagentypen und die Zeiten
+   der Aufzüge an euer Haus anpassen.
+4. **Lieferungen**: in einer Zeile eintragen, Wochentage, Feiertagsregel und Rückweg danach
+   anpassen – oder aus Excel übernehmen.
+5. **Karte → Ablauf** und **Auswertung**: sehen, wohin die Ware geht, wo gewartet wird und welcher
+   Aufzug zum Engpass wird.
+6. **Streuung, Mindestbedarf, Szenarien**: wie oft es eng wird, wie viele reichen, und was eine
+   Änderung bringen würde.
+
+**Mehrere Krankenhäuser:** Oben neben „Logistik Map“ wählst du das Krankenhaus, über
+„＋ Neues Krankenhaus …“ legst du ein weiteres an. Jedes hat eigene Gebäude, Pläne, Strecken,
+Stammdaten, Lieferungen und Auswertungen. Unter **Benutzer** lässt sich je Person festlegen,
+welche Häuser sie sehen darf.
+
+Wie gerechnet wird, steht in [KONZEPT.md](KONZEPT.md).
+
+### Lieferungen aus Excel übernehmen
+
+Unter **Lieferungen → Excel** lädst du die aktuelle Liste herunter. Diese Datei ist zugleich die
+Vorlage, das Blatt „Hinweise“ erklärt alle Spalten und Schreibweisen. Zeilen mit ID ändern
+vorhandene Lieferungen, Zeilen ohne ID legen neue an. Beim Import wird jede Zeile geprüft;
+übernommen wird erst, wenn alle Zeilen in Ordnung sind. CSV (Semikolon oder Komma) geht auch.
+
+## Betrieb
+
+### Sicherung
+
+Logistik Map sichert automatisch nach `C:\ProgramData\Logistik Map\sicherungen`: täglich die
+Datenbank, einmal pro Woche zusätzlich alle PDF-Pläne. Unter **Einstellungen → Sicherung**
+lässt sich eine vollständige Sicherung herunterladen oder einspielen. Für die Datensicherung des
+Servers reicht es, diesen Ordner mitzusichern.
+
+### Anmeldung, Sitzungen und Protokoll
+
+- Nach 5 falschen Passwörtern wird ein Benutzername für eine Minute gesperrt. Eine Adresse wird
+  erst nach 30 Fehlversuchen gesperrt, damit Terminalserver und Citrix nicht alle aussperren.
+- Abgemeldet wird nach 12 Stunden ohne Nutzung. Benutzer aus dem Active Directory müssen sich
+  spätestens nach 12 Stunden neu anmelden, ein dort gesperrtes Konto verliert den Zugang also
+  innerhalb einer Schicht. Beides lässt sich unter **Einstellungen** ändern.
+- Das Änderungsprotokoll (wer hat wann was geändert) wird standardmäßig 365 Tage aufbewahrt.
+  Die Frist ist einstellbar, zum Beispiel nach Absprache mit dem Personalrat.
+
+### Updates
+
+Unter **Einstellungen → Updates** prüft Logistik Map, ob es eine neue Version gibt, und
+installiert sie auf Knopfdruck – die Prüfsumme wird vorher kontrolliert. Dafür braucht der Server
+Zugriff auf github.com. Sonst einfach das neue Setup herunterladen und ausführen. Daten und
+Einstellungen bleiben erhalten.
+
+### HTTPS
+
+Ein Zertifikat mit privatem Schlüssel im PEM-Format, etwa von der eigenen IT, unter
+**Einstellungen → HTTPS** eintragen und neu starten. Aus einer PFX-Datei werden die beiden
+Dateien zum Beispiel so erzeugt:
+
+```
+openssl pkcs12 -in logistik.pfx -clcerts -nokeys -out logistik.pem
+openssl pkcs12 -in logistik.pfx -nocerts -nodes -out logistik-key.pem
+```
+
+### Anmeldung über Active Directory
+
+Unter **Einstellungen → Anmeldung über Active Directory** Server (am besten `ldaps://…`),
+Domäne und Suchbasis eintragen und AD-Gruppen den Rollen zuordnen. Mit „Testen“ lässt sich ein
+Konto vorab prüfen. Lokale Benutzer wie der Administrator funktionieren weiter.
+
+### Pläne vorab prüfen
+
+```
+"C:\Program Files\Logistik Map\LogistikMap.exe" plan-test "D:\Pläne\Haus A UG.pdf"
+```
+
+Das zeigt Größe, Zoomstufen und die geschätzte Aufbereitungszeit je Seite.
+
+### Admin-Passwort vergessen
+
+In einer Eingabeaufforderung mit Administratorrechten:
+
+```
+"C:\Program Files\Logistik Map\LogistikMap.exe" passwort admin
+```
+
+## Entwicklung
 
 ```
 python -m venv .venv
@@ -79,18 +253,70 @@ python -m venv .venv
 .venv\Scripts\python -m logistikmap --data data serve --port 8470
 ```
 
-Browser tests (Playwright): `pip install -r requirements-e2e.txt`, then run `pytest tests/e2e`
-with the environment variable `E2E=1`.
+Oberflächentests im Browser (Playwright, lokal mit Edge):
 
-The code is written in German (identifiers, comments). Texts of the user interface are in
-`logistikmap/static/i18n/<language>.json` – to add a language, copy `en.json`, translate it and
-register it in `SPRACHEN` in `logistikmap/server.py`.
+```
+.venv\Scripts\pip install -r requirements-e2e.txt
+set E2E=1
+.venv\Scripts\python -m pytest tests/e2e
+```
 
-Releases are built by GitHub Actions when a tag `vX.Y.Z` is pushed (`installer/build.ps1`,
-Inno Setup, WinSW).
+Die Bilder in dieser Datei erzeugt `.venv\Scripts\python werkzeuge\screenshots.py` neu.
 
-## License
+Das Setup baut `installer\build.ps1`. Dafür werden Inno Setup 6 und `gh` gebraucht.
+Ein Tag `vX.Y.Z` baut über GitHub Actions das Setup und veröffentlicht es als Release.
 
-[GNU Affero General Public License v3.0](LICENSE). Licenses of all bundled components (among them
-PyMuPDF under AGPL-3.0, ldap3 under LGPL-3.0, Leaflet, WinSW) are installed as
-`THIRD_PARTY_LICENSES.txt` in the program folder.
+### Aufbau
+
+```mermaid
+flowchart LR
+    B["Browser<br/>(Oberfläche, Leaflet)"] -- "HTTP(S), JSON" --> S["LogistikMap.exe<br/>FastAPI + Uvicorn<br/>(Windows-Dienst)"]
+    S --> D[("SQLite-Datenbank")]
+    S --> P["PDF-Pläne und<br/>Kartenkacheln"]
+    S -. "optional" .-> AD["Active Directory<br/>(LDAP/LDAPS)"]
+    S -. "optional: Update-Prüfung" .-> GH["github.com"]
+```
+
+| Pfad | Inhalt |
+|---|---|
+| `logistikmap/server.py` | Webserver und JSON-Schnittstelle |
+| `logistikmap/db.py` | SQLite-Datenbank mit Migrationen |
+| `logistikmap/plaene.py` | PDF → Kartenkacheln (PyMuPDF) |
+| `logistikmap/feiertage.py` | Feiertage je Bundesland |
+| `logistikmap/regeln.py` | Wiederholungsregeln der Lieferungen |
+| `logistikmap/netz.py` | Wegenetz und Wegsuche |
+| `logistikmap/simulation.py` | Ablauf eines Tages mit Wartezeiten |
+| `logistikmap/planung.py` | Schnittstellen für Netz, Stammdaten, Lieferungen, Szenarien, Simulation |
+| `logistikmap/einrichtung.py` | Prüfung für die Seite „Erste Schritte“ |
+| `logistikmap/standort.py` | Aktuelles Krankenhaus je Anfrage und Zugriff je Benutzer |
+| `logistikmap/export.py` | Excel-Import/-Export, Karte als PDF |
+| `logistikmap/wartung.py` | Sicherung, Wiederherstellung, Updates |
+| `logistikmap/verzeichnis.py` | Anmeldung über Active Directory (LDAP) |
+| `logistikmap/protokoll.py` | Änderungsprotokoll |
+| `logistikmap/static/` | Oberfläche (ohne Build-Schritt, Leaflet liegt bei) |
+| `logistikmap/static/i18n/` | Texte der Oberfläche je Sprache |
+| `logistikmap/static/hilfe/` | Hilfe im Programm (Deutsch, Englisch) |
+| `installer/` | Inno-Setup-Skript, Windows-Dienst (WinSW), Build-Skript |
+| `werkzeuge/screenshots.py` | Musterklinikum aufbauen und die Bilder für diese Seite erzeugen |
+
+### Weitere Sprache hinzufügen
+
+Deutsch und Englisch sind enthalten. Für eine weitere Sprache:
+
+1. `logistikmap/static/i18n/de.json` kopieren, z. B. nach `fr.json`, und übersetzen.
+2. In `logistikmap/server.py` die Sprache in `SPRACHEN` eintragen.
+
+`tests/test_oberflaeche.py` prüft, ob alle Schlüssel und Platzhalter vorhanden sind.
+
+## Sicherheit
+
+Sicherheitslücken bitte nicht als öffentliches Issue melden, sondern wie in
+[SECURITY.md](SECURITY.md) beschrieben.
+
+## Lizenz
+
+[GNU Affero General Public License v3.0](LICENSE). Die Nutzung ist kostenlos, auch im Betrieb
+eines Krankenhauses. Die Lizenzen aller mitgelieferten Bestandteile (u. a. PyMuPDF unter
+AGPL-3.0, ldap3 unter LGPL-3.0, Leaflet, WinSW) stehen nach der Installation in
+`THIRD_PARTY_LICENSES.txt` im Programmordner. Erzeugt wird die Datei beim Bauen mit
+`installer/lizenzen.py`.

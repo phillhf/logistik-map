@@ -43,5 +43,4 @@ jobs:
         with:
           name: oberflaeche
           path: |
-            docs/screenshots
             test-results

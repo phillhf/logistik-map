@@ -123,6 +123,9 @@ def test_update_pruefen():
     }
     info = wartung.update_pruefen(neu=True, abrufen=lambda url: rel)
     assert info["verfuegbar"] and info["neueste"] == "9.9.9" and info["setup_url"].endswith(".exe")
+    # der feste Teil unter der Markierung (Installation, IT) erscheint nicht im Update-Fenster
+    mit_fuss = wartung.update_pruefen(neu=True, abrufen=lambda url: {**rel, "body": "Neu\n\n" + wartung.NOTIZEN_ENDE + "\n## Installation"})
+    assert mit_fuss["notizen"] == "Neu"
     alt = wartung.update_pruefen(neu=True, abrufen=lambda url: {**rel, "tag_name": "v0.0.1"})
     assert not alt["verfuegbar"]
 

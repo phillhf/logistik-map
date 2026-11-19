@@ -112,7 +112,7 @@ if ($ist -ne $WinSwSha256) {
 }
 Copy-Item $winsw "$stage\service\LogistikMap-Dienst.exe"
 Copy-Item "$PSScriptRoot\LogistikMap-Dienst.xml" "$stage\service\"
-Copy-Item "$root\LICENSE", "$root\README.md", "$root\README.de.md" $stage
+Copy-Item "$root\LICENSE", "$root\README.md", "$root\README.en.md" $stage
 
 # -- Lizenzen der mitgelieferten Bestandteile -----------------------------------
 Step "Lizenzen sammeln"

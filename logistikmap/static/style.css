@@ -29,7 +29,7 @@ a { color: var(--blau); }
 
 /* ------------------------------------------------------------ Kopf */
 #kopf {
-  position: sticky; top: 0; z-index: 1000;
+  position: sticky; top: 0; z-index: 1100; /* über den Karten-Knöpfen (Leaflet: 1000), sonst verdecken sie das Handy-Menü */
   height: var(--kopf); display: flex; align-items: center; gap: 24px;
   padding: 0 16px; background: var(--blau); color: #fff;
 }
@@ -37,7 +37,8 @@ a { color: var(--blau); }
 #navigation { display: flex; gap: 4px; flex: 1; overflow-x: auto; }
 #navigation a { color: #dce9f3; text-decoration: none; padding: 7px 10px; border-radius: 6px; white-space: nowrap; font-size: 0.93rem; }
 #navigation { scrollbar-width: none; }
-@media (max-width: 1250px) { #kopf { gap: 12px; } .marke span { display: none; } }
+/* Ab der Krankenhaus-Auswahl wird es eng: Schriftzug ausblenden, Menüpunkte rücken zusammen */
+@media (max-width: 1500px) { #kopf { gap: 12px; } .marke span { display: none; } #navigation { gap: 2px; } #navigation a { padding: 7px 8px; } }
 #navigation a:hover { background: rgba(255, 255, 255, 0.1); color: #fff; }
 #navigation a.aktiv { background: rgba(255, 255, 255, 0.18); color: #fff; }
 .benutzermenue { position: relative; }
@@ -335,7 +336,8 @@ main.seite-karte .kartenrahmen { overflow: hidden; }
 .fehlerbox ul { margin: 0; padding-left: 20px; }
 .engpaesse { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 12px; }
 .engpass { border: 1px solid #ffc9c9; border-left: 4px solid var(--rot); border-radius: var(--radius); padding: 10px 14px; background: #fffafa; }
-.engpass-kopf { display: flex; justify-content: space-between; align-items: center; gap: 8px; }
+.engpass-kopf { display: flex; justify-content: space-between; align-items: center; gap: 4px 8px; flex-wrap: wrap; }
+.engpass-kopf > a { white-space: nowrap; }
 .engpass ul { margin: 6px 0; padding-left: 18px; font-size: 0.9rem; }
 .engpass .tipp { margin: 0; color: var(--gedimmt); font-size: 0.85rem; }
 .zeitleiste { display: grid; grid-template-columns: minmax(140px, 220px) 1fr; gap: 3px 10px; align-items: center; font-size: 0.8rem; }
@@ -600,7 +602,10 @@ mark.hilfe-fund { background: #ffe066; border-radius: 2px; }
   .knopfreihe.filter > * { flex: 1 1 auto; }
 
   /* Karte: Platz für die Karte statt für Listen – Stockwerke und Werkzeuge kompakt, seitlich wischbar */
-  main.seite-karte { height: calc(100dvh - var(--kopf)); }
+  /* Seite scrollt, die Karte bekommt eine feste, große Höhe; Bedienung (z. B. Ablauf) folgt darunter */
+  main.seite-karte { display: block; height: auto; }
+  main.seite-karte .kartenrahmen { overflow: visible; }
+  .kartenbereich { flex: none; height: 64dvh; min-height: 320px; }
   main.seite-karte .seitenleiste { max-height: 96px; padding: 6px 8px; }
   .kartenkopf { padding: 6px 10px; gap: 6px 10px; }
   .kartenkopf h2 { font-size: 1rem; }

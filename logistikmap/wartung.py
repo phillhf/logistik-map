@@ -39,6 +39,9 @@ REPO = "phillhf/logistik-map"
 SETUP_MUSTER = re.compile(r"^LogistikMap-Setup-(\d+\.\d+\.\d+)\.exe$")
 AUTO_PRAEFIX = "auto-"
 UPDATE_AUFGABE = "LogistikMap Update"
+# Im Release-Text steht unter dieser Zeile der feste Teil (Installation, Hinweise für die IT).
+# Im Update-Fenster zeigen wir nur, was darüber steht: die Neuerungen.
+NOTIZEN_ENDE = "<!-- ende-der-neuerungen -->"
 
 
 class WartungsFehler(Exception):
@@ -243,7 +246,7 @@ def update_pruefen(neu: bool = False, abrufen=None) -> dict:
         "aktuell": __version__,
         "neueste": neueste,
         "verfuegbar": bool(neueste) and version_tupel(neueste) > version_tupel(__version__),
-        "notizen": rel.get("body", ""),
+        "notizen": (rel.get("body") or "").split(NOTIZEN_ENDE)[0].strip(),
         "url": rel.get("html_url", ""),
         "setup_url": setup["browser_download_url"] if setup else None,
         "sha256_url": pruefsumme["browser_download_url"] if pruefsumme else None,

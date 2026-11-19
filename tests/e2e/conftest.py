@@ -3,7 +3,7 @@
 Startet Logistik Map mit leerem Datenordner auf einem freien Port und legt ein kleines Testhaus an:
 UG mit Rampe, Flur, Aufzug und Raum, 2. OG mit Lager. Lokal wird Edge verwendet, in GitHub Actions Chromium.
 
-Aufruf: pytest tests/e2e  (mit SCREENSHOTS=1 werden Bilder für die README nach docs/screenshots geschrieben)
+Aufruf: pytest tests/e2e  (mit SCREENSHOTS=1 landen Kontrollbilder in test-results/bilder)
 """
 
 from __future__ import annotations

@@ -20,6 +20,7 @@ def karte_bereit(page) -> None:
 
 def screenshot(page, name: str) -> None:
     if os.environ.get("SCREENSHOTS"):
-        ziel = Path(__file__).resolve().parents[2] / "docs" / "screenshots"
+        # Kontrollbilder der Tests – die Bilder der README erzeugt werkzeuge/screenshots.py
+        ziel = Path(__file__).resolve().parents[2] / "test-results" / "bilder"
         ziel.mkdir(parents=True, exist_ok=True)
         page.screenshot(path=str(ziel / f"{name}.png"))

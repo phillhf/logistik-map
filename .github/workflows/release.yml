@@ -85,7 +85,10 @@ jobs:
             if ($lines[$i] -match '^## \[') { break }
             $notes += $lines[$i]
           }
-          ($notes -join "`n").Trim() | Set-Content release-notes.md -Encoding UTF8
+          # darunter der feste Teil (Installation, Prüfsumme, Hinweise für die IT); die App zeigt im
+          # Update-Fenster nur die Neuerungen über der Markierung <!-- ende-der-neuerungen -->
+          $fuss = (Get-Content installer/release-text.md -Raw -Encoding UTF8).Replace('{VERSION}', $version)
+          (($notes -join "`n").Trim() + "`n" + $fuss) | Set-Content release-notes.md -Encoding UTF8
 
       - name: GitHub-Release veröffentlichen
         if: github.ref_type == 'tag'

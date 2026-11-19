@@ -80,7 +80,7 @@ Source: "{#StageDir}\app\*";     DestDir: "{app}";         Flags: ignoreversion 
 Source: "{#StageDir}\service\*"; DestDir: "{app}\service"; Flags: ignoreversion recursesubdirs
 Source: "{#StageDir}\LICENSE";   DestDir: "{app}";         Flags: ignoreversion
 Source: "{#StageDir}\README.md"; DestDir: "{app}";         Flags: ignoreversion
-Source: "{#StageDir}\README.de.md"; DestDir: "{app}"; Flags: ignoreversion
+Source: "{#StageDir}\README.en.md"; DestDir: "{app}"; Flags: ignoreversion
 Source: "{#StageDir}\THIRD_PARTY_LICENSES.txt"; DestDir: "{app}"; Flags: ignoreversion
 
 [INI]

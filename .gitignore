@@ -12,3 +12,4 @@ data-*/
 installer/build/
 build/
 dist/
+test-results/

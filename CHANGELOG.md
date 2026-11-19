@@ -1,5 +1,19 @@
 # Änderungen
 
+## [0.10.1] - 2026-11-19
+
+Verbessert:
+
+- **Handy:** Die Karte bekommt im Ablauf und beim Bearbeiten deutlich mehr Platz, die Bedienung
+  folgt darunter. Die Zoom-Knöpfe der Karte liegen nicht mehr über dem aufgeklappten Menü.
+- **Kopfzeile:** Bei mittleren Bildschirmbreiten (z. B. 1440 Pixel) wurde „Einstellungen“
+  abgeschnitten – jetzt passen alle Menüpunkte.
+- **Auswertung:** „Auf der Karte zeigen“ ragt in den Engpass-Karten nicht mehr über den Rand.
+- **Update-Fenster** zeigt nur noch die Neuerungen einer Version, nicht den ganzen Release-Text.
+- **GitHub-Seite:** neues README auf Deutsch mit Bildern aus einem erfundenen Musterklinikum,
+  eigene Seite mit Informationen für die IT (`docs/IT.md`), `SECURITY.md`. Jedes Release enthält
+  jetzt Installation, Prüfsumme und die wichtigsten Angaben für die IT.
+
 ## [0.10.0] - 2026-11-17
 
 Neu:
