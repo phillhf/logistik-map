@@ -255,6 +255,32 @@ MIGRATIONEN: list[str] = [
         PRIMARY KEY (benutzer_id, standort_id)
     )
     """,
+    # 10 – Produktion: ein Punkt macht im Takt Wagen fertig, die abgeholt werden müssen (Küche, AEMP, Wäscherei …)
+    """
+    CREATE TABLE produktionen (
+        id              INTEGER PRIMARY KEY,
+        standort_id     INTEGER NOT NULL DEFAULT 1,
+        name            TEXT NOT NULL,
+        knoten_id       INTEGER NOT NULL REFERENCES knoten(id),
+        richtung        TEXT NOT NULL DEFAULT 'versorgung',
+        transportart_id INTEGER NOT NULL REFERENCES transportarten(id),
+        wagentyp_id     INTEGER NOT NULL REFERENCES wagentypen(id),
+        von             TEXT NOT NULL,
+        bis             TEXT NOT NULL,
+        takt            REAL NOT NULL,
+        menge           INTEGER NOT NULL DEFAULT 1,
+        stellplaetze    INTEGER,
+        abholung        TEXT NOT NULL DEFAULT '{"art": "sofort"}',
+        verteilung      TEXT NOT NULL DEFAULT '[]',
+        spaetestens     TEXT,
+        streuung        INTEGER NOT NULL DEFAULT 0,
+        regel           TEXT NOT NULL,
+        rueckweg        TEXT NOT NULL DEFAULT '{"modus": "leer"}',
+        aktiv           INTEGER NOT NULL DEFAULT 1,
+        notiz           TEXT NOT NULL DEFAULT ''
+    );
+    CREATE INDEX idx_produktionen_standort ON produktionen(standort_id)
+    """,
 ]
 
 # Stammdaten für einen neuen Standort (wie bei der Erstinstallation)

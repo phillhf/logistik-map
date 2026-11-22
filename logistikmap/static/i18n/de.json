@@ -67,7 +67,7 @@
       "plaene": "Mit Plan: {mit_plan} von {stockwerke}",
       "karte": "Streckenstücke: {wege} · Start-/Zielpunkte: {punkte} · Aufzüge/Treppen: {aufzuege}",
       "stammdaten": "Transportarten: {transportarten} · Wagentypen: {wagentypen} · Aufzüge/Treppen: {aufzuege}",
-      "lieferungen": "Aktive Lieferungen: {lieferungen}"
+      "lieferungen": "Aktive Lieferungen: {lieferungen} · Produktionen: {produktionen}"
     },
     "schritt": {
       "bundesland": {
@@ -140,7 +140,8 @@
       "lieferung_aufzug_nicht_erlaubt": "„{lieferung}“: {transportart} darf {aufzuege} nicht benutzen, einen anderen Weg von „{von}“ nach „{nach}“ gibt es nicht.",
       "lieferung_weg_gesperrt": "„{lieferung}“: Der Weg von „{von}“ nach „{nach}“ ist für {transportart} gesperrt.",
       "lieferung_kein_weg": "„{lieferung}“: Es gibt keinen Weg von „{von}“ nach „{nach}“.",
-      "lieferung_punkt_fehlt": "„{lieferung}“: Ein Start- oder Zielpunkt wurde gelöscht."
+      "lieferung_punkt_fehlt": "„{lieferung}“: Ein Start- oder Zielpunkt wurde gelöscht.",
+      "produktion_leer": "Bei „{name}“ ({stockwerk}) ist noch keine Produktion eingetragen."
     }
   },
   "menue": {
@@ -346,8 +347,8 @@
     "dokument_in_verwendung": "Das PDF wird noch als Plan verwendet. Entferne zuerst den Plan bei den Stockwerken.",
     "in_verwendung": "Das wird noch verwendet (z. B. von einer Lieferung) und kann nicht gelöscht werden.",
     "knoten_in_verwendung": "Dieser Punkt wird von einer Lieferung verwendet. Ändere oder lösche zuerst die Lieferung.",
-    "transportart_in_verwendung": "Diese Transportart wird noch von Lieferungen verwendet.",
-    "wagentyp_in_verwendung": "Dieser Wagentyp wird noch in Lieferungen verwendet.",
+    "transportart_in_verwendung": "Diese Transportart wird noch von Lieferungen oder einer Produktion verwendet.",
+    "wagentyp_in_verwendung": "Dieser Wagentyp wird noch in Lieferungen oder einer Produktion verwendet.",
     "farbe_ungueltig": "Ungültige Farbe.",
     "art_ungueltig": "Ungültige Art.",
     "zu_wenige_punkte": "Eine Fläche braucht mindestens drei Punkte.",
@@ -400,7 +401,15 @@
     "name_fehlt": "Bitte einen Namen eingeben.",
     "standort_benutzer": "Für {namen} ist das das einzige freigegebene Krankenhaus. Erst unter Benutzer die Zuordnung ändern, dann löschen.",
     "standort_unbekannt": "Dieses Krankenhaus gibt es nicht (mehr). Bitte die Seite neu laden.",
-    "zu_viele_rechnungen": "Gerade laufen schon mehrere lange Berechnungen. Bitte kurz warten und noch einmal versuchen."
+    "zu_viele_rechnungen": "Gerade laufen schon mehrere lange Berechnungen. Bitte kurz warten und noch einmal versuchen.",
+    "knoten_in_produktion": "Dieser Punkt wird von der Produktion „{name}“ verwendet. Ändere oder lösche sie zuerst.",
+    "produktion_ort": "Produziert werden kann nur an einem Start-, Ziel- oder Produktionspunkt.",
+    "produktion_ohne_ziel": "Bitte mindestens ein Ziel angeben.",
+    "abholung_ungueltig": "Ungültige Abholregel.",
+    "abholung_zeiten_fehlen": "Bitte mindestens eine Abholzeit angeben, z. B. 07:00.",
+    "stellplaetze_zu_wenig": "Je Takt werden {anzahl} Wagen fertig, so viele Stellplätze sind mindestens nötig.",
+    "abholmenge_zu_gross": "Es gibt nur {anzahl} Stellplätze, so viele Wagen kommen nie zusammen.",
+    "produktion_zu_viel": "Das wären mehr als {anzahl} Wagen am Tag. Bitte Takt, Menge oder Zeitraum prüfen."
   },
   "knoten": {
     "art": {
@@ -410,7 +419,8 @@
       "punkt": "Start-/Zielpunkt",
       "tor": "Tor / Rampe (LKW)",
       "aufzug": "Aufzug/Treppe",
-      "uebergang": "Übergang"
+      "uebergang": "Übergang",
+      "produktion": "Produktion (Küche, AEMP, Wäscherei …)"
     },
     "art_label": "Art",
     "name": "Name",
@@ -537,7 +547,9 @@
     "pruefen_beenden": "Prüfung beenden",
     "strecke_absetzen": "Strecke absetzen",
     "flaeche_fertig": "Fläche fertig",
-    "punkt_zurueck": "Letzten Punkt zurück"
+    "punkt_zurueck": "Letzten Punkt zurück",
+    "produktion": "Produktion an diesem Punkt",
+    "produktion_leer": "Noch nichts eingetragen: wann werden hier wie viele Wagen fertig?"
   },
   "aufzug": {
     "art": {
@@ -651,7 +663,11 @@
       "ohne_weg": "Angelegt: {name}. Es gibt aber noch keinen Weg dorthin, „Erste Schritte“ zeigt, woran es liegt."
     },
     "streuung": "Schwankung ± Min.",
-    "streuung_hilfe": "Wie viele Minuten die Ankunft früher oder später sein kann. Zählt nur für die Auswertung „Streuung“."
+    "streuung_hilfe": "Wie viele Minuten die Ankunft früher oder später sein kann. Zählt nur für die Auswertung „Streuung“.",
+    "ansicht": {
+      "lieferungen": "Lieferungen",
+      "produktion": "Produktion"
+    }
   },
   "stamm": {
     "transportarten": "Transportarten",
@@ -743,7 +759,7 @@
     "wartend_hier": "{anzahl} warten auf diesem Stockwerk",
     "engpaesse": "{anzahl} Engpässe – zur Auswertung",
     "keine_engpaesse": "keine Engpässe",
-    "fehler": "{anzahl} Lieferungen ohne Weg",
+    "fehler": "{anzahl} ohne Weg",
     "fahrt_nr": "Fahrt {nr} von {von}",
     "von": "Von",
     "nach": "Nach",
@@ -766,7 +782,11 @@
       "lieferung": "Lieferung",
       "richtung": "Richtung"
     },
-    "legende_mehr": "+ {anzahl} weitere"
+    "legende_mehr": "+ {anzahl} weitere",
+    "produktion_wartet": "{anzahl} fertige Wagen warten auf Abholung",
+    "produktion_steht": "Produktion steht: kein Stellplatz frei ({anzahl} Wagen warten)",
+    "stillstand": "Produktion steht heute {dauer}",
+    "produktionen": "{anzahl}× Produktion"
   },
   "auswertung": {
     "titel": "Auswertung",
@@ -781,10 +801,11 @@
       "verspaetet": "verspätet",
       "max_warte": "längste Wartezeit",
       "engpaesse": "Engpässe",
-      "summe_warte": "Wartezeit gesamt"
+      "summe_warte": "Wartezeit gesamt",
+      "stillstand": "Produktion steht"
     },
     "gefiltert": "Die Kennzahlen beziehen sich auf die gefilterten Fahrten. Engpässe und Auslastung gelten für den ganzen Tag.",
-    "fehler_titel": "Diese Lieferungen können nicht berechnet werden",
+    "fehler_titel": "Diese Lieferungen oder Produktionen können nicht berechnet werden",
     "engpaesse": "Engpässe",
     "keine_engpaesse": "Keine Engpässe: Niemand wartet länger als eine Minute, nichts ist zu 90 % ausgelastet.",
     "keine_fahrten": "An diesem Tag finden keine Lieferungen statt.",
@@ -818,13 +839,15 @@
     "vergleich_verspaetet": "Verspätete Fahrten: {vorher} → {nachher}.",
     "woche_hilfe": "Jede Zelle ist eine Stunde: Zahl = Fahrten, Farbe = längste Wartezeit. Ein Klick öffnet den Tag.",
     "woche_zelle": "{fahrten} Fahrten, längste Wartezeit {warte}, verspätet: {verspaetet}",
-    "woche_legende": "Längste Wartezeit:"
+    "woche_legende": "Längste Wartezeit:",
+    "produktion": "Produktion"
   },
   "ressource": {
     "aufzug": "Aufzug",
     "kante": "Engstelle",
     "knoten": "Lade-/Entladepunkt",
-    "fahrzeuge": "Fahrzeuge"
+    "fahrzeuge": "Fahrzeuge",
+    "puffer": "Stellplätze"
   },
   "engpass": {
     "wartezeit": "Wartezeit bis zu {max}, zusammen {summe}",
@@ -836,9 +859,12 @@
       "aufzug": "Ideen: Lieferzeiten entzerren, einen anderen Aufzug zulassen (Zwischenstation), Wagen je Fahrt prüfen.",
       "kante": "Ideen: Ausweichweg einzeichnen oder Fahrten zeitlich versetzen.",
       "knoten": "Ideen: mehr Lade-/Entladeplätze oder Anlieferungen zeitlich versetzen.",
-      "fahrzeuge": "Ideen: mehr Fahrzeuge bzw. Personal zu dieser Zeit oder Fahrten verteilen."
+      "fahrzeuge": "Ideen: mehr Fahrzeuge bzw. Personal zu dieser Zeit oder Fahrten verteilen.",
+      "puffer": "Ideen: mehr Fahrzeuge bzw. Personal zu dieser Zeit, früher abholen (kleinere Menge oder andere Zeiten), mehr Stellplätze, mehr Wagen je Fahrt."
     },
-    "ist_vergleich": "Im Ist-Zustand: bis zu {max}"
+    "ist_vergleich": "Im Ist-Zustand: bis zu {max}",
+    "stillstand": "Produktion steht bis zu {max} am Stück, zusammen {summe}",
+    "stellplaetze": "{anzahl} Stellplätze für fertige Wagen"
   },
   "recht": {
     "ansehen": "Ansehen",
@@ -972,7 +998,8 @@
       "update": "Update",
       "import": "Import",
       "plaene": "Plan",
-      "neustart": "Neustart"
+      "neustart": "Neustart",
+      "produktionen": "Produktion"
     }
   },
   "import": {
@@ -1013,8 +1040,8 @@
     "vergleichen": "Vergleichen",
     "ansehen": "Ansehen",
     "uebernehmen": "Übernehmen",
-    "uebernehmen_frage": "Die geänderten Lieferungen aus „{name}“ in den Ist-Zustand übernehmen? Änderungen an Aufzügen und Transportarten werden nicht übernommen.",
-    "uebernommen": "{anzahl} Lieferungen übernommen.",
+    "uebernehmen_frage": "Die geänderten Lieferungen und Produktionen aus „{name}“ in den Ist-Zustand übernehmen? Änderungen an Aufzügen und Transportarten werden nicht übernommen.",
+    "uebernommen": "{anzahl} Einträge übernommen.",
     "name": "Name",
     "name_beispiel": "z. B. Wäsche um 7:30, Aufzug West in Wartung",
     "beschreibung": "Beschreibung",
@@ -1032,7 +1059,8 @@
     "engstellen": "Streckenstücke sperren",
     "engstellen_hilfe": "Benannte Streckenstücke und Engstellen, z. B. eine Tür, die wegen Bauarbeiten geschlossen ist.",
     "gesperrt": "gesperrt",
-    "keine_engstellen": "Noch keine benannten Streckenstücke. Gib Streckenstücken im Karteneditor eine Bezeichnung, um sie hier sperren zu können."
+    "keine_engstellen": "Noch keine benannten Streckenstücke. Gib Streckenstücken im Karteneditor eine Bezeichnung, um sie hier sperren zu können.",
+    "produktion": "Produktion"
   },
   "zeit": {
     "vortag": "Vortag"
@@ -1059,7 +1087,7 @@
   },
   "streuung": {
     "hilfe": "Rechnet den gewählten Tag viele Male mit zufälligen Abweichungen: Ankunft ± Schwankung der Lieferung, Entladezeit am Tor von–bis, Personenfahrten in Aufzügen (Grundlast). So siehst du, wie oft es eng wird – nicht nur am Plan-Tag.",
-    "eingetragen": "Eingetragen: Schwankung bei {lieferungen} von {von} Lieferungen, Grundlast bei {aufzuege} Aufzügen.",
+    "eingetragen": "Eingetragen: Schwankung bei {lieferungen} von {von} Lieferungen und Produktionen, Grundlast bei {aufzuege} Aufzügen.",
     "noch_keine": "Ohne Schwankung kommt jede Lieferung pünktlich – trag sie unter Lieferungen → Bearbeiten ein („Schwankung ± Min.“).",
     "laeufe": "Tage",
     "schwelle": "Schwelle (Min.)",
@@ -1084,11 +1112,12 @@
       "fahrzeuge": "Fahrzeuge / Personal",
       "aufzug": "Aufzug",
       "kante": "Engstelle",
-      "knoten": "Tor / Rampe / Annahme"
+      "knoten": "Tor / Rampe / Annahme",
+      "puffer": "Produktion steht"
     }
   },
   "bedarf": {
-    "hilfe": "Wie viele Fahrzeuge, Mitarbeiter, Tore oder Plätze an einer Engstelle reichen, damit dort niemand länger als die gewünschte Zeit wartet? Das System probiert 1, 2, 3 … durch und nennt die kleinste Anzahl.",
+    "hilfe": "Wie viele Fahrzeuge, Mitarbeiter, Tore oder Plätze an einer Engstelle reichen, damit dort niemand länger als die gewünschte Zeit wartet – oder damit eine Produktion nicht steht? Das System probiert 1, 2, 3 … durch und nennt die kleinste Anzahl.",
     "was": "Was?",
     "ziel": "höchstens warten (Min.)",
     "mit_streuung": "mit Streuung (30 Tage, 9 von 10 müssen passen)",
@@ -1097,12 +1126,16 @@
     "gruppe": {
       "transportart": "Anzahl Fahrzeuge / Mitarbeiter",
       "knoten": "Tore, Rampen, Annahmen",
-      "kante": "Engstellen"
+      "kante": "Engstellen",
+      "produktion": "Fahrzeuge / Mitarbeiter, damit die Produktion läuft",
+      "stellplaetze": "Stellplätze, damit die Produktion läuft"
     },
     "einheit": {
       "transportart": "Fahrzeuge bzw. Mitarbeiter",
       "knoten": "Tore bzw. Plätze gleichzeitig",
-      "kante": "gleichzeitig auf der Engstelle"
+      "kante": "gleichzeitig auf der Engstelle",
+      "produktion": "Fahrzeuge bzw. Mitarbeiter",
+      "stellplaetze": "Stellplätze"
     },
     "ergebnis": "Mindestens nötig: {anzahl} – {einheit}. Bei „{name}“ wartet dann niemand länger als {minuten} Min.",
     "reicht_nicht": "Auch mit {anzahl} ({einheit}) wartet bei „{name}“ jemand länger als {minuten} Min. Dann liegt der Engpass vermutlich woanders (z. B. Aufzug oder Fahrzeuge) – schau unter „Tag“ nach.",
@@ -1113,7 +1146,11 @@
     "auslastung": "Auslastung (Spitze)",
     "verspaetet": "verspätete Fahrten",
     "reicht": "reicht",
-    "anzahl_hinweis": "„Anzahl“ heißt hier: so viele gleichzeitig im Einsatz, den ganzen Tag über. Das ist kein Stellenschlüssel – Schichten, Pausen und Ausfallzeiten kommen für die Stellenplanung noch dazu."
+    "anzahl_hinweis": "„Anzahl“ heißt hier: so viele gleichzeitig im Einsatz, den ganzen Tag über. Das ist kein Stellenschlüssel – Schichten, Pausen und Ausfallzeiten kommen für die Stellenplanung noch dazu.",
+    "ziel_produktion": "darf höchstens stehen (Min.)",
+    "ergebnis_produktion": "Mindestens nötig: {anzahl} × {einheit}. „{name}“ steht dann am Tag höchstens {minuten} Min.",
+    "reicht_nicht_produktion": "Auch mit {anzahl} ({einheit}) steht „{name}“ länger als {minuten} Min. Dann liegt es vermutlich an den Abholzeiten, am Aufzug oder an zu wenig Platz oder Fahrzeugen.",
+    "stillstand": "Produktion steht"
   },
   "hilfe": {
     "titel": "Hilfe",
@@ -1123,5 +1160,84 @@
     "keine_treffer": "Nichts gefunden.",
     "nicht_gefunden": "Die Hilfe konnte nicht geladen werden.",
     "zu_dieser_seite": "Hilfe zu dieser Seite"
+  },
+  "produktion": {
+    "titel": "Produktion",
+    "hilfe": "Orte, an denen laufend etwas entsteht, das abgeholt werden muss: Küche, Sterilgut, Wäscherei, Apotheke, Abfall. Die Fahrten entstehen von selbst, sobald Wagen fertig sind. Ist kein Stellplatz mehr frei, steht die Produktion.",
+    "mehr": "Mehr in der Hilfe",
+    "keine": "Noch keine Produktion. Beispiel: Die Küche macht von 6:30 bis 8:00 alle 8 Minuten einen Speisenwagen fertig. Leg sie mit „Produktion anlegen“ an.",
+    "neu": "Produktion anlegen",
+    "bearbeiten": "Produktion bearbeiten",
+    "erst_wagentyp": "Lege zuerst unter Stammdaten einen Wagentyp an.",
+    "spalte": {
+      "zeit": "Zeit",
+      "name": "Produktion",
+      "output": "Output",
+      "abholung": "Abholung",
+      "ziele": "Ziele",
+      "wann": "Wann"
+    },
+    "ablauf": "Ablauf",
+    "wagen": "{anzahl} Wagen",
+    "takt_text": "alle {takt} min {menge}× {wagentyp}",
+    "stellplaetze_text": "{anzahl} Stellplätze",
+    "stellplaetze_unbegrenzt": "Stellplätze unbegrenzt",
+    "abholung_kurz": {
+      "sofort": "sofort",
+      "menge": "ab {anzahl} Wagen",
+      "zeiten": "um {zeiten}"
+    },
+    "name_auto": "leer = Name des Punkts",
+    "ort": "Wo wird produziert?",
+    "ort_hilfe": "Ein Punkt auf der Karte, z. B. die Ausgabe der Küche.",
+    "ort_fehlt": "Bitte wählen, wo produziert wird.",
+    "wagentyp": "Was wird fertig?",
+    "output": "Wann und wie viel wird fertig?",
+    "von": "Erster Wagen fertig um",
+    "bis": "Produktion bis",
+    "bis_hilfe": "Liegt die Zeit vor dem Beginn, läuft die Produktion über Mitternacht.",
+    "von_kurz": "von",
+    "bis_kurz": "bis",
+    "takt": "Takt (Minuten)",
+    "menge": "Wagen je Takt",
+    "stellplaetze": "Stellplätze",
+    "stellplaetze_hilfe": "So viele fertige Wagen können dort stehen. Sind alle belegt, steht die Produktion. Leer = unbegrenzt.",
+    "streuung": "Schwankung ± Min.",
+    "streuung_hilfe": "Wie viel früher oder später die Produktion beginnen kann. Zählt nur für „Streuung“.",
+    "verteilung": "Wohin gehen die Wagen?",
+    "verteilung_hilfe": "Der Reihe nach: erst die Wagen für das erste Ziel, dann die für das zweite und so weiter.",
+    "anzahl": "Anzahl",
+    "ziel_hinzu": "Ziel hinzufügen",
+    "vorschau": "Ergibt {anzahl} Wagen, der erste um {von}, der letzte um {bis}.",
+    "verteilung_wiederholt": "Verteilt sind {soll}, fertig werden {anzahl}: Die Verteilung fängt danach wieder von vorn an.",
+    "verteilung_unvollstaendig": "Verteilt sind {soll}, fertig werden aber nur {anzahl}: Die letzten Ziele bekommen weniger.",
+    "takt_anpassen": "Takt für {anzahl} Wagen anpassen",
+    "menge_passt_nicht": "Mit {menge} Wagen je Takt geht {soll} nicht genau auf.",
+    "abholung_titel": "Wie wird abgeholt?",
+    "abholart": "Abholung",
+    "abholung": {
+      "sofort": "sofort, wenn ein Wagen fertig ist",
+      "menge": "sobald mehrere Wagen bereitstehen",
+      "zeiten": "zu festen Uhrzeiten"
+    },
+    "abholmenge": "ab wie vielen Wagen",
+    "abholmenge_hilfe": "Der Rest am Ende wird auch abgeholt. Sind vorher alle Stellplätze voll, wird ebenfalls abgeholt.",
+    "abholzeiten": "Uhrzeiten",
+    "abholzeiten_hilfe": "Durch Komma getrennt. Abgeholt wird alles, was dann fertig ist.",
+    "rueck_uhrzeit": "Wagen zurückholen um",
+    "zum_ort": "zum Produktionsort",
+    "steht": "Ab {zeit} staut es sich: Die Produktion steht zusammen {dauer} ({anzahl}×).",
+    "steht_ab": "Ab {zeit} steht die Produktion bis zum Tagesende: Es holt niemand mehr ab.",
+    "laeuft_durch": "Die Produktion läuft durch.",
+    "zeile_wagen": "{fertig} von {gesamt} Wagen fertig, {abgeholt} abgeholt",
+    "zeile_ende": "Letzter Wagen: geplant {plan}, fertig {ist}",
+    "zeile_ende_offen": "Letzter Wagen: geplant {plan}, wird nicht fertig",
+    "zeile_plaetze": "Höchstens {anzahl} von {plaetze} Stellplätzen belegt",
+    "zeile_plaetze_frei": "Höchstens {anzahl} fertige Wagen gleichzeitig",
+    "zeile_standzeit": "Standzeit bis zur Abholung: bis zu {max}, im Mittel {mittel}",
+    "zeile_offen": "{anzahl} Wagen werden nicht fertig",
+    "zeile_liegen": "{anzahl} fertige Wagen werden nicht abgeholt",
+    "zeile_ist": "Im Ist-Zustand steht sie {dauer}",
+    "verlauf": "Fertige Wagen im Verlauf"
   }
 }

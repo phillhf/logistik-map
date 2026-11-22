@@ -117,7 +117,7 @@ Datenordner bleibt bestehen und kann bei Bedarf von Hand gelöscht werden.
 | Daten | Inhalt | Personenbezug |
 |---|---|---|
 | Gebäude, Pläne, Strecken | PDF-Grundrisse, Räume, Wege, Aufzüge | nein |
-| Lieferungen, Stammdaten, Szenarien | Uhrzeiten, Mengen, Lieferantennamen, Fahrzeuge | nein (Lieferanten sind Firmen) |
+| Lieferungen, Produktion, Stammdaten, Szenarien | Uhrzeiten, Mengen, Lieferantennamen, Fahrzeuge | nein (Lieferanten sind Firmen) |
 | Benutzerkonten | Benutzername, Anzeigename, Rolle, Sprache, Passwort-Hash | ja, Beschäftigte |
 | Sitzungen | Zufallswert (nur als Hash gespeichert), Anlage- und letzte Nutzungszeit | ja |
 | Änderungsprotokoll | Zeit, Benutzername, Aktion und betroffenes Objekt (z. B. „Lieferung Wäsche geändert“) | ja, Beschäftigte |

@@ -11,7 +11,7 @@ import contextvars
 
 COOKIE = "lm_standort"
 # Tabellen, die direkt einem Standort gehören; alles darunter hängt über Fremdschlüssel daran
-TABELLEN = ("gebaeudeteile", "dokumente", "aufzuege", "transportarten", "wagentypen", "lieferungen", "szenarien", "sondertage")
+TABELLEN = ("gebaeudeteile", "dokumente", "aufzuege", "transportarten", "wagentypen", "lieferungen", "produktionen", "szenarien", "sondertage")
 # Einstellungen, die je Standort gelten (gespeichert als „s<id>.<schlüssel>“)
 ORT_EINSTELLUNGEN = ("bundesland", "bundesland_bestaetigt", "stammdaten_bestaetigt")
 

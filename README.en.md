@@ -50,6 +50,8 @@ and each delivery is entered in a single line. Route, lift and vehicle are chose
   found by the check. On a PC, tablet or phone.
 - **Deliveries in one line:** “At 08:00, 5 pallets from the gate to B25” – with weekdays,
   holiday rule, return trip and Excel import.
+- **Production:** kitchen, sterile supply or laundry finish trolleys in a cycle that have to be picked
+  up – with parking spaces and a backlog when nobody comes.
 - **Master data:** vehicles and staff with shifts, trolley types, lifts with travel, door and
   clearing times and passenger load.
 
@@ -99,6 +101,10 @@ and each delivery is entered in a single line. Route, lift and vehicle are chose
 <tr>
 <td><img src="docs/screenshots/editor.png" alt="Map editor"><br><sub><b>Map editor</b> – routes, gates, lifts and destinations on the PDF plan</sub></td>
 <td><img src="docs/screenshots/lieferungen.png" alt="Deliveries"><br><sub><b>Deliveries</b> – created in one line, preview of the coming days</sub></td>
+</tr>
+<tr>
+<td><img src="docs/screenshots/produktion.png" alt="Production with backlog"><br><sub><b>Production</b> – when finished trolleys back up and the kitchen stops</sub></td>
+<td><img src="docs/screenshots/ablauf.png" alt="Timeline on the map"><br><sub><b>Timeline</b> – the day on the map, with trolleys waiting at the kitchen</sub></td>
 </tr>
 <tr>
 <td><img src="docs/screenshots/start.png" alt="Getting started"><br><sub><b>Getting started</b> – guided setup that checks along</sub></td>

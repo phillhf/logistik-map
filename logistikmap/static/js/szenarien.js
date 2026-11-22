@@ -33,7 +33,7 @@ export function zeigeSzenarien(wurzel, [idParam]) {
         "div.szenarioliste",
         liste.map((s) => {
           const a = s.aenderungen;
-          const anzahl = ["lieferungen", "transportarten", "aufzuege", "kanten", "knoten"].reduce((n, k) => n + Object.keys(a[k] || {}).length, 0);
+          const anzahl = ["lieferungen", "produktionen", "transportarten", "aufzuege", "kanten", "knoten"].reduce((n, k) => n + Object.keys(a[k] || {}).length, 0);
           return h(
             "div.szenario",
             h("div", h("strong", s.name), s.beschreibung ? h("p.gedimmt", s.beschreibung) : null, h("small", t("szenario.aenderungen", { anzahl }))),
@@ -87,14 +87,15 @@ export function zeigeSzenarien(wurzel, [idParam]) {
 }
 
 async function editor(wurzel, id, darfAendern) {
-  let szenario, lieferungen, stamm, punkte, engstellen;
+  let szenario, lieferungen, stamm, punkte, engstellen, produktionen;
   try {
-    [szenario, lieferungen, stamm, punkte, engstellen] = await Promise.all([
+    [szenario, lieferungen, stamm, punkte, engstellen, produktionen] = await Promise.all([
       api("szenarien").then((l) => l.find((s) => s.id === id)),
       api("lieferungen"),
       stammdaten(true),
       api("punkte"),
       api("engstellen"),
+      api("produktionen"),
     ]);
   } catch (e) {
     return fehlerMelden(e);
@@ -105,7 +106,7 @@ async function editor(wurzel, id, darfAendern) {
   }
   const a = szenario.aenderungen;
   // Lade- und Entladepunkte: Start-/Zielpunkte und alles mit Kapazität
-  const rampen = punkte.filter((p) => ["start", "ziel", "punkt", "tor"].includes(p.art) || p.kapazitaet);
+  const rampen = punkte.filter((p) => ["start", "ziel", "punkt", "produktion", "tor"].includes(p.art) || p.kapazitaet);
   const name = h("input", { value: szenario.name, maxlength: 150, disabled: !darfAendern });
   const beschreibung = h("textarea", { rows: 2, disabled: !darfAendern }, szenario.beschreibung);
   const eingaben = []; // {art, id, feld, el, ist}
@@ -170,6 +171,35 @@ async function editor(wurzel, id, darfAendern) {
           )
         )
       ),
+      produktionen.length
+        ? h(
+            "section.karte-box",
+            h("h2", t("szenario.produktion")),
+            h(
+              "div.tabellenrahmen",
+              h(
+                "table.tabelle.kompakt.szenariotabelle",
+                h("thead", h("tr", h("th", t("lieferung.aktiv_kurz")), h("th", t("produktion.spalte.name")), h("th", t("produktion.von_kurz")), h("th", t("produktion.bis_kurz")), h("th", t("produktion.takt")), h("th", t("produktion.menge")), h("th", t("produktion.stellplaetze")), h("th", t("lieferung.transportart")))),
+                h(
+                  "tbody",
+                  produktionen.map((p) =>
+                    h(
+                      "tr",
+                      h("td", feld("produktionen", p, "aktiv", h("input", { type: "checkbox", checked: p.aktiv }), p.aktiv)),
+                      h("td", p.name),
+                      h("td", feld("produktionen", p, "von", h("input", { type: "time", value: p.von, required: true }), p.von)),
+                      h("td", feld("produktionen", p, "bis", h("input", { type: "time", value: p.bis, required: true }), p.bis)),
+                      h("td", feld("produktionen", p, "takt", h("input", { type: "number", min: 0.1, step: "any", value: p.takt, style: { width: "80px" } }), p.takt)),
+                      h("td", feld("produktionen", p, "menge", h("input", { type: "number", min: 1, value: p.menge, style: { width: "70px" } }), p.menge)),
+                      h("td", feld("produktionen", p, "stellplaetze", h("input", { type: "number", min: 0, value: p.stellplaetze ?? "", placeholder: "∞", style: { width: "70px" } }), p.stellplaetze ?? 0)),
+                      h("td", feld("produktionen", p, "transportart_id", h("select", taOptionen(p.transportart_id)), p.transportart_id))
+                    )
+                  )
+                )
+              )
+            )
+          )
+        : null,
       h(
         "div.spalten.gleich",
         h(

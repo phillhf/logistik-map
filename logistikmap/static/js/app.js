@@ -136,10 +136,10 @@ function kopfAufbauen() {
   if (!document.getElementById("hilfe-knopf")) {
     const hilfe = h("a", { id: "hilfe-knopf", href: "#/hilfe", title: t("hilfe.zu_dieser_seite"), "aria-label": t("hilfe.zu_dieser_seite") }, "?");
     hilfe.addEventListener("click", (e) => {
-      const pfad = location.hash.replace(/^#\/?/, "").split("/")[0];
+      const [pfad, unter] = location.hash.replace(/^#\/?/, "").split("/");
       if (pfad === "hilfe") return;
       e.preventDefault();
-      location.hash = `#/hilfe/${KAPITEL_JE_SEITE[pfad] || ""}`;
+      location.hash = `#/hilfe/${KAPITEL_JE_SEITE[`${pfad}/${unter}`] || KAPITEL_JE_SEITE[pfad] || ""}`;
     });
     kopf.querySelector(".benutzermenue").before(hilfe);
   }

@@ -47,7 +47,7 @@ export async function streuungZeigen(inhalt, { datum, szenario, stamm }) {
   const ergebnis = h("div");
   let lieferungen = [];
   try {
-    lieferungen = await api("lieferungen");
+    lieferungen = (await Promise.all([api("lieferungen"), api("produktionen")])).flat();
   } catch {}
   const mitStreuung = lieferungen.filter((l) => l.streuung).length;
   const mitGrundlast = stamm.aufzuege.filter((a) => a.grundlast?.length).length;
@@ -125,8 +125,9 @@ export async function streuungZeigen(inhalt, { datum, szenario, stamm }) {
 export async function bedarfZeigen(inhalt, { datum, szenario, stamm }) {
   let punkte = [];
   let engstellen = [];
+  let produktionen = [];
   try {
-    [punkte, engstellen] = await Promise.all([api("punkte"), api("engstellen")]);
+    [punkte, engstellen, produktionen] = await Promise.all([api("punkte"), api("engstellen"), api("produktionen")]);
   } catch (e) {
     return fehlerMelden(e);
   }
@@ -137,19 +138,33 @@ export async function bedarfZeigen(inhalt, { datum, szenario, stamm }) {
     tore.length ? h("optgroup", { label: t("bedarf.gruppe.knoten") }, tore.map((p) => h("option", { value: `knoten:${p.id}` }, punktName(p)))) : null,
     engstellen.filter((e) => e.kapazitaet).length
       ? h("optgroup", { label: t("bedarf.gruppe.kante") }, engstellen.filter((e) => e.kapazitaet).map((e) => h("option", { value: `kante:${e.id}` }, e.name || `${e.von_name || "·"} – ${e.nach_name || "·"} (${e.stockwerk})`)))
+      : null,
+    produktionen.length
+      ? [
+          h("optgroup", { label: t("bedarf.gruppe.produktion") }, produktionen.map((p) => h("option", { value: `produktion:${p.id}` }, p.name))),
+          produktionen.some((p) => p.stellplaetze) ? h("optgroup", { label: t("bedarf.gruppe.stellplaetze") }, produktionen.filter((p) => p.stellplaetze).map((p) => h("option", { value: `stellplaetze:${p.id}` }, p.name))) : null,
+        ]
       : null
   );
   const ziel = h("input", { type: "number", min: 0, max: 240, value: 15 });
   const mitStreuung = h("input", { type: "checkbox" });
   const knopf = h("button.knopf", { type: "button" }, t("bedarf.berechnen"));
   const ergebnis = h("div");
+  // Bei Produktion zählt, wie lange sie steht – Vorschlag: gar nicht
+  const zielText = h("span", t("bedarf.ziel"));
+  const istProduktion = (art) => art === "produktion" || art === "stellplaetze";
+  wahl.addEventListener("change", () => {
+    const p = istProduktion(wahl.value.split(":")[0]);
+    zielText.textContent = t(p ? "bedarf.ziel_produktion" : "bedarf.ziel");
+    ziel.value = p ? 0 : 15;
+  });
   leeren(
     inhalt,
     h("p.hinweis", t("bedarf.hilfe")),
     h(
       "div.knopfreihe.filter",
       h("label.inline", t("bedarf.was"), wahl),
-      h("label.inline", t("bedarf.ziel"), ziel),
+      h("label.inline", zielText, ziel),
       h("label.inline.haken", mitStreuung, h("span", t("bedarf.mit_streuung"))),
       knopf
     ),
@@ -162,7 +177,7 @@ export async function bedarfZeigen(inhalt, { datum, szenario, stamm }) {
     leeren(ergebnis, h("p.gedimmt", t("bedarf.rechnet")));
     try {
       const name = wahl.selectedOptions[0].textContent;
-      const r = await imHintergrund("bedarf", { art, id: Number(id), ziel: Number(ziel.value), datum, laeufe: mitStreuung.checked ? 30 : 0, szenario: szenario || null },
+      const r = await imHintergrund("bedarf", { art, id: Number(id), ziel: Number(ziel.value), datum, laeufe: mitStreuung.checked ? 30 : 0, max_anzahl: art === "stellplaetze" ? 50 : 20, szenario: szenario || null },
         ergebnis, t("bedarf.rechnet"));
       if (r) zeigen(r, name, art);
       else leeren(ergebnis);
@@ -176,20 +191,21 @@ export async function bedarfZeigen(inhalt, { datum, szenario, stamm }) {
 
   function zeigen(r, name, art) {
     const einheit = t(`bedarf.einheit.${art}`);
+    const prod = istProduktion(art);
     const ta = art === "transportart" ? stamm.transportarten.find((x) => x.id === r.id) : null;
     leeren(
       ergebnis,
       r.empfehlung
-        ? h("p.bedarf-ergebnis.gut", t("bedarf.ergebnis", { anzahl: r.empfehlung, einheit, name, minuten: r.ziel }))
-        : h("p.bedarf-ergebnis.schlecht", t("bedarf.reicht_nicht", { anzahl: r.punkte.at(-1)?.anzahl, einheit, name, minuten: r.ziel })),
-      art === "transportart" ? h("p.hinweis", t("bedarf.anzahl_hinweis")) : null,
+        ? h("p.bedarf-ergebnis.gut", t(prod ? "bedarf.ergebnis_produktion" : "bedarf.ergebnis", { anzahl: r.empfehlung, einheit, name, minuten: r.ziel }))
+        : h("p.bedarf-ergebnis.schlecht", t(prod ? "bedarf.reicht_nicht_produktion" : "bedarf.reicht_nicht", { anzahl: r.punkte.at(-1)?.anzahl, einheit, name, minuten: r.ziel })),
+      art === "transportart" || art === "produktion" ? h("p.hinweis", t("bedarf.anzahl_hinweis")) : null,
       ta?.schichten?.length ? h("p.hinweis", t("bedarf.schichten_hinweis")) : null,
       r.laeufe ? h("p.hinweis", t("bedarf.streuung_hinweis", { laeufe: r.laeufe })) : null,
       h(
         "div.tabellenrahmen",
         h(
           "table.tabelle",
-          h("thead", h("tr", h("th", t("bedarf.anzahl", { einheit })), h("th", t("bedarf.wartezeit")), h("th", t("bedarf.auslastung")), h("th", t("bedarf.verspaetet")))),
+          h("thead", h("tr", h("th", t("bedarf.anzahl", { einheit })), h("th", t(prod ? "bedarf.stillstand" : "bedarf.wartezeit")), h("th", t("bedarf.auslastung")), h("th", t("bedarf.verspaetet")))),
           h(
             "tbody",
             r.punkte.map((p) =>

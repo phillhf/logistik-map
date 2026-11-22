@@ -95,6 +95,7 @@ export async function starteAblauf(ctx) {
   let letzterFrame = 0;
   const marker = new Map(); // fahrt.id → circleMarker
   const aufzugMarker = new Map();
+  const produktionMarker = new Map(); // Punkt → Anzeige der wartenden Wagen
 
   const datumFeld = h("input", { type: "date", value: datum });
   const zeitText = h("strong.zeitanzeige");
@@ -380,6 +381,39 @@ export async function starteAblauf(ctx) {
       if (!ctx.ebenen.overlay.hasLayer(m)) m.addTo(ctx.ebenen.overlay);
     }
 
+    // ---- Produktion: wie viele fertige Wagen stehen gerade, steht die Produktion?
+    const produktionAm = new Map();
+    for (const p of sim.produktionen || []) {
+      const letzter = p.verlauf.findLast(([s]) => s <= zeit);
+      if (!letzter) continue;
+      const x = produktionAm.get(p.knoten_id) || { wartend: 0, plaetze: 0, steht: false, namen: [] };
+      x.wartend += letzter[1];
+      if (p.stellplaetze && letzter[1]) x.plaetze += p.stellplaetze;
+      x.steht ||= p.stillstaende.some(([a, b]) => zeit >= a && (b === null || zeit < b));
+      produktionAm.set(p.knoten_id, x);
+    }
+    for (const k of ctx.netz.knoten) {
+      const x = produktionAm.get(k.id);
+      let m = produktionMarker.get(k.id);
+      if (!x || (!x.wartend && !x.steht)) {
+        m?.remove();
+        produktionMarker.delete(k.id);
+        continue;
+      }
+      const html = `<span class="aufzug-status produktion${x.steht ? " stau" : ""}">${x.steht ? "⏸ " : ""}▦ ${x.wartend}${x.plaetze ? `/${x.plaetze}` : ""}</span>`;
+      if (!m) {
+        m = L.marker(ll(k.x, k.y), { pane: "fahrzeuge", keyboard: false });
+        m.bindTooltip("", { direction: "top" });
+        produktionMarker.set(k.id, m);
+      }
+      if (m._html !== html) {
+        m.setIcon(L.divIcon({ className: "produktion-marke", html, iconSize: [60, 20], iconAnchor: [30, 34] }));
+        m.setTooltipContent(t(x.steht ? "ablauf.produktion_steht" : "ablauf.produktion_wartet", { anzahl: x.wartend }));
+        m._html = html;
+      }
+      if (!ctx.ebenen.overlay.hasLayer(m)) m.addTo(ctx.ebenen.overlay);
+    }
+
     // ---- Zahlen je Stockwerk in der Seitenleiste
     const jeStockwerk = {};
     for (const f of fahrten) {
@@ -396,7 +430,9 @@ export async function starteAblauf(ctx) {
       info,
       sim.feiertag ? h("span.marke-klein", feiertagText(sim.feiertag)) : null,
       h("span", t("ablauf.info", { lieferungen: sim.lieferungen.length, fahrten: sim.fahrten.length, unterwegs })),
+      sim.produktionen?.length ? h("span", t("ablauf.produktionen", { anzahl: sim.produktionen.length })) : null,
       wartend ? h("span.warnung", t("ablauf.wartend_hier", { anzahl: wartend })) : null,
+      sim.zusammenfassung.stillstand >= 60 ? h("span.warnung", t("ablauf.stillstand", { dauer: dauer(sim.zusammenfassung.stillstand) })) : null,
       engpaesse ? h("a", { href: `#/auswertung/${datum}${szenario ? `/${szenario}` : ""}` }, t("ablauf.engpaesse", { anzahl: engpaesse })) : h("span.gut", t("ablauf.keine_engpaesse")),
       sim.fehler.length ? h("a.warnung", { href: `#/auswertung/${datum}${szenario ? `/${szenario}` : ""}` }, t("ablauf.fehler", { anzahl: sim.fehler.length })) : null,
       h("a", { href: `/api/export/karte/${sid}.pdf?datum=${datum}&von=${uhr(Math.max(0, zeit))}&bis=${uhr(Math.min(86340, zeit + (fenster === "tag" ? 86400 : (Number(fenster) || 30) * 60)))}${filter.start ? `&start=${filter.start}` : ""}${szenario ? `&szenario=${szenario}` : ""}`, target: "_blank" }, "⤓ " + t("ablauf.pdf"))

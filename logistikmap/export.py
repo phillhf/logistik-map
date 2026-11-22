@@ -333,7 +333,7 @@ def auswertung_xlsx(e: dict, kontext: dict, szenario: str | None) -> bytes:
             blatt.column_dimensions[get_column_letter(i)].width = b
         blatt.freeze_panes = "A2"
 
-    typ_name = {"aufzug": "Aufzug", "kante": "Engstelle", "knoten": "Lade-/Entladepunkt", "fahrzeuge": "Fahrzeuge"}
+    typ_name = {"aufzug": "Aufzug", "kante": "Engstelle", "knoten": "Lade-/Entladepunkt", "fahrzeuge": "Fahrzeuge", "puffer": "Stellplätze"}
     eng = wb.create_sheet("Engpässe")
     kopf(eng, ["Art", "Name", "Max. Wartezeit (min)", "Wartezeit gesamt (min)", "Max. wartend", "Spitze Auslastung", "Vorgänge"], [20, 30, 20, 22, 14, 18, 12])
     engpaesse = {(x["typ"], x["id"]) for x in e["engpaesse"]}
@@ -343,6 +343,16 @@ def auswertung_xlsx(e: dict, kontext: dict, szenario: str | None) -> bytes:
         if (r["typ"], r["id"]) in engpaesse:
             for zelle in eng[eng.max_row]:
                 zelle.fill = PatternFill("solid", fgColor="FFE3E3")
+
+    if e["produktionen"]:
+        pr = wb.create_sheet("Produktion")
+        kopf(pr, ["Produktion", "Ort", "Wagen geplant", "Wagen abgeholt", "Erster fertig", "Letzter geplant", "Letzter fertig",
+                  "Steht gesamt (min)", "Stillstände", "Stellplätze", "Höchstens wartend", "Längste Standzeit (min)", "Mittlere Standzeit (min)"],
+             [30, 30, 14, 14, 13, 14, 13, 16, 12, 11, 16, 20, 20])
+        for p in e["produktionen"]:
+            pr.append([p["name"], (punkte.get(p["knoten_id"]) or {}).get("name", ""), p["gesamt"], p["abgeholt"], _uhr(p["erster"]), _uhr(p["letzter_plan"]),
+                       _uhr(p["letzter"]), round(p["stillstand"] / 60, 1), len(p["stillstaende"]), p["stellplaetze"] or "",
+                       p["max_wartend"], round(p["max_standzeit"] / 60, 1), round(p["mittlere_standzeit"] / 60, 1)])
 
     fa = wb.create_sheet("Fahrten")
     kopf(fa, ["Geplant", "Lieferung", "Fahrt", "Transportart", "Von", "Nach", "Los", "Ankunft", "Spätestens", "Verspätet",
@@ -431,7 +441,7 @@ def karte_pdf(db, pfade, sid: int, e: dict, von: str, bis: str, start_filter: in
         seite.draw_line((a["x0"], a["y0"]), (a["x1"], a["y1"]), color=farbe, width=e_ * (2 + 10 * x["anzahl"] / maximal), stroke_opacity=0.6, lineCap=1)
 
     # Punkte mit Namen
-    punkt_farben = {"start": (0.17, 0.54, 0.24), "ziel": (0.79, 0.16, 0.16), "punkt": (0.11, 0.49, 0.84), "tor": (0.36, 0.25, 0.2), "aufzug": (0.44, 0.28, 0.91), "uebergang": (0.9, 0.47, 0.0)}
+    punkt_farben = {"start": (0.17, 0.54, 0.24), "ziel": (0.79, 0.16, 0.16), "punkt": (0.11, 0.49, 0.84), "produktion": (0.76, 0.15, 0.36), "tor": (0.36, 0.25, 0.2), "aufzug": (0.44, 0.28, 0.91), "uebergang": (0.9, 0.47, 0.0)}
     aufzuege = {a["id"]: a["name"] for a in kontext["stamm"]["aufzuege"]}
     for k in knoten.values():
         if k["art"] == "weg":

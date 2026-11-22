@@ -51,6 +51,8 @@ selbst.
   Lücken findet die Prüfung. Am PC, Tablet oder Handy.
 - **Lieferungen in einer Zeile:** „Um 08:00 kommen 5 Paletten vom Tor nach B25“ –
   mit Wochentagen, Feiertagsregel, Rückweg und Excel-Import.
+- **Produktion:** Küche, Sterilgut oder Wäscherei machen im Takt Wagen fertig, die abgeholt
+  werden – mit Stellplätzen und Rückstau, wenn niemand kommt.
 - **Stammdaten:** Fahrzeuge und Personal mit Schichten, Wagentypen, Aufzüge mit
   Fahr-, Tür- und Räumzeiten und Personen-Grundlast.
 
@@ -103,6 +105,10 @@ selbst.
 <tr>
 <td><img src="docs/screenshots/editor.png" alt="Karte bearbeiten"><br><sub><b>Karte bearbeiten</b> – Strecken, Tore, Aufzüge und Ziele auf dem PDF-Plan</sub></td>
 <td><img src="docs/screenshots/lieferungen.png" alt="Lieferungen"><br><sub><b>Lieferungen</b> – in einer Zeile anlegen, Vorschau der nächsten Tage</sub></td>
+</tr>
+<tr>
+<td><img src="docs/screenshots/produktion.png" alt="Produktion mit Rückstau"><br><sub><b>Produktion</b> – wann sich fertige Wagen stauen und die Küche steht</sub></td>
+<td><img src="docs/screenshots/ablauf.png" alt="Ablauf auf der Karte"><br><sub><b>Ablauf</b> – der Tag auf der Karte, mit wartenden Wagen an der Küche</sub></td>
 </tr>
 <tr>
 <td><img src="docs/screenshots/start.png" alt="Erste Schritte"><br><sub><b>Erste Schritte</b> – geführte Einrichtung, die selbst mitprüft</sub></td>

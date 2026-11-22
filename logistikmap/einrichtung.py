@@ -24,7 +24,7 @@ from .db import Datenbank
 from .netz import BENANNTE_ARTEN, Netz, WegFehler
 
 MAX_PROBLEME = 12  # je Schritt; der Rest wird nur gezählt
-PUNKT_ARTEN = ("start", "ziel", "punkt", "tor")
+PUNKT_ARTEN = ("start", "ziel", "punkt", "produktion", "tor")
 
 
 class Bestaetigung(BaseModel):
@@ -192,6 +192,22 @@ def pruefen(db: Datenbank, https: bool = False) -> dict:
     lieferungen = db.alle("SELECT id, name, transportart_id, start_id, ziel_id, via, rueckweg FROM lieferungen WHERE aktiv = 1 AND standort_id = ? ORDER BY uhrzeit, name", (ort,))
     ta_index = {t["id"]: t for t in transportarten}
     probleme = []
+
+    def weg_problem(name: str, von: int, nach: int, via: list, ta: dict, eigener_link: str) -> dict | None:
+        try:
+            netz.weg(von, nach, ta, via)
+            return None
+        except WegFehler as e:
+            werte = {"lieferung": name, "von": netz.knoten.get(von, {}).get("name") or "?", "nach": netz.knoten.get(nach, {}).get("name") or "?", "transportart": ta["name"]}
+            if e.code == "massstab_fehlt":
+                return _problem("lieferung_massstab", link=None, stockwerke=e.extra.get("stockwerke", ""), **werte)
+            d = netz.weg_diagnose(von, nach, ta, teil_namen if mehrere_teile else None)
+            code = d.pop("code")
+            # Link dorthin, wo man es behebt: Lücke im Netz → Karte, Aufzug nicht erlaubt → Stammdaten
+            sw = d.pop("stockwerk_id", None)
+            link = f"#/karte/{sw}/bearbeiten" if sw else "#/stammdaten" if code == "aufzug_nicht_erlaubt" else eigener_link
+            return _problem(f"lieferung_{code}", link=link, **werte, **d)
+
     for l in lieferungen:
         ta = ta_index.get(l["transportart_id"])
         if ta is None:
@@ -201,21 +217,33 @@ def pruefen(db: Datenbank, https: bool = False) -> dict:
         if rueck.get("modus", "leer") != "keiner":
             strecken.append((l["ziel_id"], rueck.get("ziel_id") or l["start_id"], []))
         for von, nach, via in strecken:
-            try:
-                netz.weg(von, nach, ta, via)
-            except WegFehler as e:
-                werte = {"lieferung": l["name"], "von": netz.knoten.get(von, {}).get("name") or "?", "nach": netz.knoten.get(nach, {}).get("name") or "?", "transportart": ta["name"]}
-                if e.code == "massstab_fehlt":
-                    probleme.append(_problem("lieferung_massstab", link=None, stockwerke=e.extra.get("stockwerke", ""), **werte))
-                else:
-                    d = netz.weg_diagnose(von, nach, ta, teil_namen if mehrere_teile else None)
-                    code = d.pop("code")
-                    # Link dorthin, wo man es behebt: Lücke im Netz → Karte, Aufzug nicht erlaubt → Stammdaten
-                    sw = d.pop("stockwerk_id", None)
-                    link = f"#/karte/{sw}/bearbeiten" if sw else "#/stammdaten" if code == "aufzug_nicht_erlaubt" else f"#/lieferungen/{l['id']}"
-                    probleme.append(_problem(f"lieferung_{code}", link=link, **werte, **d))
+            problem = weg_problem(l["name"], von, nach, via, ta, f"#/lieferungen/{l['id']}")
+            if problem:
+                probleme.append(problem)
                 break
-    schritte.append(_schritt("lieferungen", bool(lieferungen), probleme, "#/lieferungen", lieferungen=len(lieferungen)))
+    # Produktionen: führt von dort ein Weg zu jedem Ziel (und zurück)?
+    produktionen = db.alle("SELECT * FROM produktionen WHERE aktiv = 1 AND standort_id = ? ORDER BY von, name", (ort,))
+    for p in produktionen:
+        ta = ta_index.get(p["transportart_id"])
+        if ta is None:
+            continue
+        rueck = json.loads(p["rueckweg"] or "{}")
+        rueck_ziel = rueck.get("ziel_id") or p["knoten_id"]
+        for ziel in dict.fromkeys(v["ziel_id"] for v in json.loads(p["verteilung"])):
+            strecken = [(p["knoten_id"], ziel)]
+            if rueck.get("modus", "leer") != "keiner" and ziel != rueck_ziel:
+                strecken.append((ziel, rueck_ziel))
+            for von, nach in strecken:
+                problem = weg_problem(p["name"], von, nach, [], ta, f"#/lieferungen/produktion/{p['id']}")
+                if problem:
+                    probleme.append(problem)
+                    break
+    mit_produktion = {p["knoten_id"] for p in db.alle("SELECT knoten_id FROM produktionen WHERE standort_id = ?", (ort,))}
+    for k in punkte:
+        if k["art"] == "produktion" and k["id"] not in mit_produktion:
+            probleme.append(_problem("produktion_leer", art="hinweis", link=f"#/lieferungen/produktion/neu/{k['id']}", **knoten_werte(k)))
+    schritte.append(_schritt("lieferungen", bool(lieferungen) or bool(produktionen), probleme, "#/lieferungen",
+                             lieferungen=len(lieferungen), produktionen=len(produktionen)))
 
     pflicht = len(schritte)
     erledigt = sum(1 for s in schritte if s["status"] != "offen")

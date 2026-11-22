@@ -2,6 +2,7 @@
 
 import { api, bestaetigen, darf, dateiWaehlen, fehlerMelden, h, herunterladen, heute, hochladen, leeren, melden, punktAuswahl, punktName, stammdaten, t } from "./basis.js";
 import { simulationVergessen } from "./ablauf.js";
+import { zeigeProduktion } from "./produktion.js";
 
 const TAGE = [1, 2, 3, 4, 5, 6, 7];
 
@@ -21,10 +22,65 @@ export function regelText(r) {
   return text;
 }
 
-export function zeigeLieferungen(wurzel, [sprung] = []) {
+/** Umschalter oben auf der Seite: Lieferungen | Produktion */
+export function ansichtUmschalter(aktiv) {
+  return h(
+    "div.umschalter",
+    [["lieferungen", "#/lieferungen"], ["produktion", "#/lieferungen/produktion"]].map(([k, href]) => h("a", { href, class: k === aktiv ? "aktiv" : "" }, t(`lieferung.ansicht.${k}`)))
+  );
+}
+
+/** Felder „an welchen Tagen“: {element, lesen()} – für Lieferungen und Produktion gleich */
+export function regelEditor(regel) {
+  const el = {
+    feiertage: h("select", ["ausser", "auch", "nur"].map((m) => h("option", { value: m, selected: m === (regel.feiertage || "ausser") }, t(`regel.feiertage.${m}`)))),
+    von: h("input", { type: "date", value: regel.von || "" }),
+    bis: h("input", { type: "date", value: regel.bis || "" }),
+    ausnahmen: h("input", { value: (regel.ausnahmen || []).join(", "), placeholder: "2026-12-24, 2026-12-31" }),
+    zusatztage: h("input", { value: (regel.zusatztage || []).join(", "), placeholder: "2026-12-27" }),
+  };
+  const tage = TAGE.map((d) => h("label.tagwahl", h("input", { type: "checkbox", value: d, checked: (regel.wochentage || []).includes(d) }), h("span", t("wochentag")[d % 7])));
+  const tageSetzen = (liste) => tage.forEach((l) => (l.querySelector("input").checked = liste.includes(Number(l.querySelector("input").value))));
+  const datumsliste = (text) => text.split(/[,;\s]+/).map((x) => x.trim()).filter(Boolean);
+  const f = (label, eingabe, hilfe) => h("label.feld", h("span", label), eingabe, hilfe ? h("small", hilfe) : null);
+  return {
+    element: h(
+      "div",
+      h(
+        "div.tage",
+        tage,
+        h("span.trenner"),
+        h("button.knopf-flach", { type: "button", onclick: () => tageSetzen([1, 2, 3, 4, 5]) }, t("regel.mo_fr")),
+        h("button.knopf-flach", { type: "button", onclick: () => tageSetzen(TAGE) }, t("regel.taeglich")),
+        h("button.knopf-flach", { type: "button", onclick: () => tageSetzen([6, 7]) }, t("regel.wochenende"))
+      ),
+      h(
+        "div.raster",
+        f(t("regel.feiertage_label"), el.feiertage),
+        h("div"),
+        f(t("regel.von"), el.von),
+        f(t("regel.bis"), el.bis),
+        f(t("regel.ausnahmen"), el.ausnahmen, t("regel.ausnahmen_hilfe")),
+        f(t("regel.zusatztage"), el.zusatztage, t("regel.zusatztage_hilfe"))
+      )
+    ),
+    lesen: () => ({
+      wochentage: tage.map((l) => l.querySelector("input")).filter((i) => i.checked).map((i) => Number(i.value)),
+      feiertage: el.feiertage.value,
+      von: el.von.value || null,
+      bis: el.bis.value || null,
+      ausnahmen: datumsliste(el.ausnahmen.value),
+      zusatztage: datumsliste(el.zusatztage.value),
+    }),
+  };
+}
+
+export function zeigeLieferungen(wurzel, [sprung, ...rest] = []) {
+  if (sprung === "produktion") return zeigeProduktion(wurzel, rest);
   const bearbeiten = darf("lieferungen");
   const suche = h("input", { type: "search", placeholder: t("lieferung.suchen") });
   const box = h("div");
+  const neuKnopf = h("button.knopf", { type: "button", disabled: true, onclick: () => dialog() }, "+ " + t("lieferung.neu")); // frei, sobald alles geladen ist
   const vorschau = h("div.tagesvorschau");
   const schnell = h("form.schnellzeile", { hidden: true });
   let liste = [];
@@ -39,10 +95,11 @@ export function zeigeLieferungen(wurzel, [sprung] = []) {
         h("h2", t("lieferung.titel")),
         h(
           "div.knopfreihe",
+          ansichtUmschalter("lieferungen"),
           suche,
           h("button.knopf-flach", { type: "button", onclick: () => herunterladen("export/lieferungen.xlsx").catch(fehlerMelden) }, "⤓ " + t("lieferung.export")),
           bearbeiten ? h("button.knopf-flach", { type: "button", onclick: importieren }, "⤒ " + t("lieferung.import")) : null,
-          bearbeiten ? h("button.knopf", { type: "button", onclick: () => dialog() }, "+ " + t("lieferung.neu")) : null
+          bearbeiten ? neuKnopf : null
         )
       ),
       schnell,
@@ -55,6 +112,7 @@ export function zeigeLieferungen(wurzel, [sprung] = []) {
   async function laden() {
     try {
       [liste, punkte, stamm] = await Promise.all([api("lieferungen"), api("punkte"), stammdaten(true)]);
+      neuKnopf.disabled = false;
       zeigen();
       schnellAufbauen();
       vorschauLaden();
@@ -104,7 +162,7 @@ export function zeigeLieferungen(wurzel, [sprung] = []) {
   function schnellAufbauen() {
     if (!bearbeiten || !punkte.length) return (schnell.hidden = true);
     const v = schnellWerte;
-    const orte = (p) => ["start", "ziel", "punkt", "tor"].includes(p.art);
+    const orte = (p) => ["start", "ziel", "punkt", "produktion", "tor"].includes(p.art);
     const el = {
       uhrzeit: h("input", { type: "time", value: v.uhrzeit, required: true }),
       anzahl: h("input.anzahl", { type: "number", min: 1, max: 1000, value: v.anzahl, required: true }),
@@ -322,19 +380,13 @@ export function zeigeLieferungen(wurzel, [sprung] = []) {
       streuung: h("input", { type: "number", min: 0, max: 240, step: 5, value: v.streuung || 0 }),
       start: punktAuswahl(punkte, v.start_id, { filter: startPunkte, leer: t("lieferung.waehlen") }),
       ziel: punktAuswahl(punkte, v.ziel_id, { filter: startPunkte, leer: t("lieferung.waehlen") }),
-      feiertage: h("select", ["ausser", "auch", "nur"].map((m) => h("option", { value: m, selected: m === (v.regel.feiertage || "ausser") }, t(`regel.feiertage.${m}`)))),
-      von: h("input", { type: "date", value: v.regel.von || "" }),
-      bis: h("input", { type: "date", value: v.regel.bis || "" }),
-      ausnahmen: h("input", { value: (v.regel.ausnahmen || []).join(", "), placeholder: "2026-12-24, 2026-12-31" }),
-      zusatztage: h("input", { value: (v.regel.zusatztage || []).join(", "), placeholder: "2026-12-27" }),
       rueckModus: h("select", ["leer", "beladen", "spaeter", "keiner"].map((m) => h("option", { value: m, selected: m === v.rueckweg.modus }, t(`rueckweg.${m}`)))),
       rueckUhrzeit: h("input", { type: "time", value: v.rueckweg.uhrzeit || "" }),
       rueckZiel: punktAuswahl(punkte, v.rueckweg.ziel_id, { filter: startPunkte, leer: t("rueckweg.zum_start") }),
       aktiv: h("input", { type: "checkbox", checked: v.aktiv }),
       notiz: h("textarea", { rows: 2, maxlength: 2000 }, v.notiz),
     };
-    const tage = TAGE.map((d) => h("label.tagwahl", h("input", { type: "checkbox", value: d, checked: (v.regel.wochentage || []).includes(d) }), h("span", t("wochentag")[d % 7])));
-    const tageSetzen = (liste) => tage.forEach((l) => (l.querySelector("input").checked = liste.includes(Number(l.querySelector("input").value))));
+    const regel = regelEditor(v.regel);
 
     // Ladung: Zeilen Wagentyp + Anzahl
     const ladungBox = h("div.ladung");
@@ -387,23 +439,7 @@ export function zeigeLieferungen(wurzel, [sprung] = []) {
       ladungBox,
       h("button.knopf-flach", { type: "button", onclick: () => ladungZeile() }, "+ " + t("lieferung.wagen_hinzu")),
       h("h3.dialog-abschnitt", t("lieferung.wann")),
-      h(
-        "div.tage",
-        tage,
-        h("span.trenner"),
-        h("button.knopf-flach", { type: "button", onclick: () => tageSetzen([1, 2, 3, 4, 5]) }, t("regel.mo_fr")),
-        h("button.knopf-flach", { type: "button", onclick: () => tageSetzen(TAGE) }, t("regel.taeglich")),
-        h("button.knopf-flach", { type: "button", onclick: () => tageSetzen([6, 7]) }, t("regel.wochenende"))
-      ),
-      h(
-        "div.raster",
-        f(t("regel.feiertage_label"), el.feiertage),
-        h("div"),
-        f(t("regel.von"), el.von),
-        f(t("regel.bis"), el.bis),
-        f(t("regel.ausnahmen"), el.ausnahmen, t("regel.ausnahmen_hilfe")),
-        f(t("regel.zusatztage"), el.zusatztage, t("regel.zusatztage_hilfe"))
-      ),
+      regel.element,
       h("h3.dialog-abschnitt", t("lieferung.rueckweg")),
       h("div.raster", f(t("rueckweg.label"), el.rueckModus), h("div", rueckZeile), f(t("rueckweg.ziel"), el.rueckZiel)),
       h("h3.dialog-abschnitt", t("lieferung.zwischenstationen")),
@@ -422,7 +458,6 @@ export function zeigeLieferungen(wurzel, [sprung] = []) {
     );
     rueckSichtbar();
 
-    const datumsliste = (text) => text.split(/[,;\s]+/).map((x) => x.trim()).filter(Boolean);
     form.addEventListener("submit", async (e) => {
       e.preventDefault();
       const daten = {
@@ -437,14 +472,7 @@ export function zeigeLieferungen(wurzel, [sprung] = []) {
         streuung: Math.max(0, Math.min(240, Number(el.streuung.value) || 0)),
         ladung: [...ladungBox.querySelectorAll(".zeile")].map((z) => ({ anzahl: Number(z.querySelector("input").value) || 0, wagentyp_id: Number(z.querySelector("select").value) })),
         via: [...viaBox.querySelectorAll("select")].map((s) => Number(s.value)).filter(Boolean),
-        regel: {
-          wochentage: tage.map((l) => l.querySelector("input")).filter((i) => i.checked).map((i) => Number(i.value)),
-          feiertage: el.feiertage.value,
-          von: el.von.value || null,
-          bis: el.bis.value || null,
-          ausnahmen: datumsliste(el.ausnahmen.value),
-          zusatztage: datumsliste(el.zusatztage.value),
-        },
+        regel: regel.lesen(),
         rueckweg: { modus: el.rueckModus.value, uhrzeit: el.rueckUhrzeit.value || null, ziel_id: Number(el.rueckZiel.value) || null },
         aktiv: el.aktiv.checked,
         notiz: el.notiz.value,

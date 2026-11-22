@@ -26,7 +26,7 @@ from .db import Datenbank
 from .feiertage import feiertage
 from .netz import KNOTEN_ARTEN, Netz, WegFehler
 from .regeln import RegelFehler, gilt_am, normalisieren
-from .simulation import Simulation
+from .simulation import Simulation, produktion_stueck
 
 log = logging.getLogger(__name__)
 
@@ -34,6 +34,9 @@ UHRZEIT = re.compile(r"^([01]\d|2[0-3]):[0-5]\d$")
 FARBE = re.compile(r"^(#[0-9a-fA-F]{6})?$")
 RUECKWEG_MODI = ("leer", "beladen", "spaeter", "keiner")
 RICHTUNGEN = ("versorgung", "entsorgung", "intern")
+ABHOLARTEN = ("sofort", "menge", "zeiten")
+PRODUKTION_ORTE = ("start", "ziel", "punkt", "produktion")  # Arten von Punkten, an denen produziert werden kann
+PRODUKTION_MAX = 2000  # Wagen je Tag und Produktion
 VORTAG_AB = "16:00"  # Lieferungen ab dieser Uhrzeit können in den nächsten Tag hineinlaufen
 
 
@@ -206,6 +209,38 @@ class Lieferung(BaseModel):
     notiz: str = Field(default="", max_length=2000)
 
 
+class Abholung(BaseModel):
+    art: str = "sofort"
+    menge: int = Field(default=1, ge=1, le=1000)  # bei „menge“: ab so vielen fertigen Wagen
+    zeiten: list[str] = []  # bei „zeiten“
+
+
+class Verteilung(BaseModel):
+    ziel_id: int
+    anzahl: int = Field(default=1, ge=1, le=1000)
+
+
+class ProduktionModell(BaseModel):
+    name: str = Field(default="", max_length=150)  # leer: Name des Punkts
+    knoten_id: int
+    richtung: str = "versorgung"
+    transportart_id: int | None = None  # leer: die erste Transportart, die alle Wege schafft
+    wagentyp_id: int
+    von: str
+    bis: str
+    takt: float = Field(ge=0.1, le=1440)  # Minuten
+    menge: int = Field(default=1, ge=1, le=1000)  # Wagen je Takt
+    stellplaetze: int | None = Field(default=None, ge=0, le=1000)  # leer/0: unbegrenzt
+    abholung: Abholung = Abholung()
+    verteilung: list[Verteilung] = []
+    spaetestens: str | None = None
+    streuung: int = Field(default=0, ge=0, le=240)  # Beginn schwankt um ± Minuten
+    regel: dict = {}
+    rueckweg: Rueckweg = Rueckweg()
+    aktiv: bool = True
+    notiz: str = Field(default="", max_length=2000)
+
+
 # --------------------------------------------------------------------------- Geometrie
 def im_polygon(x: float, y: float, punkte: list) -> bool:
     innen = False
@@ -271,13 +306,20 @@ def transformation(paare: list[tuple[float, float, float, float]]):
     return (*abc, *def_)
 
 
-def szenario_anwenden(aenderungen: dict, lieferungen: list[dict], stamm: dict, netz: Netz) -> list[dict]:
+SZENARIO_PRODUKTION = ("von", "bis", "takt", "menge", "stellplaetze", "abholung", "spaetestens", "aktiv", "transportart_id")
+
+
+def szenario_anwenden(aenderungen: dict, lieferungen: list[dict], stamm: dict, netz: Netz, produktionen: list[dict] = ()) -> list[dict]:
     """Wendet die Abweichungen eines Szenarios auf die geladenen Daten an (nur im Speicher)."""
     aend = aenderungen or {}
     for l in lieferungen:
         for k, v in (aend.get("lieferungen", {}).get(str(l["id"])) or {}).items():
             if k in ("uhrzeit", "spaetestens", "aktiv", "transportart_id", "ladung", "start_id", "ziel_id", "rueckweg", "via"):
                 l[k] = v
+    for p in produktionen:
+        for k, v in (aend.get("produktionen", {}).get(str(p["id"])) or {}).items():
+            if k in SZENARIO_PRODUKTION:
+                p[k] = v
     for t in stamm["transportarten"]:
         for k, v in (aend.get("transportarten", {}).get(str(t["id"])) or {}).items():
             if k in ("anzahl", "geschwindigkeit", "ladezeit", "entladezeit", "wagen_pro_fahrt", "schichten", "aufzug_exklusiv"):
@@ -364,7 +406,7 @@ def registrieren(app: FastAPI, db: Datenbank, fehler, ansehen, bearbeiten, liefe
 
     @app.delete("/api/transportarten/{tid}")
     def transportart_loeschen(tid: int, _: dict = Depends(bearbeiten)):
-        if db.eins("SELECT 1 FROM lieferungen WHERE transportart_id = ?", (tid,)):
+        if db.eins("SELECT 1 FROM lieferungen WHERE transportart_id = ?", (tid,)) or db.eins("SELECT 1 FROM produktionen WHERE transportart_id = ?", (tid,)):
             raise fehler(409, "transportart_in_verwendung")
         db.ausfuehren("DELETE FROM transportarten WHERE id = ?", (tid,))
         return {"ok": True}
@@ -381,6 +423,8 @@ def registrieren(app: FastAPI, db: Datenbank, fehler, ansehen, bearbeiten, liefe
 
     @app.delete("/api/wagentypen/{wid}")
     def wagentyp_loeschen(wid: int, _: dict = Depends(bearbeiten)):
+        if db.eins("SELECT 1 FROM produktionen WHERE wagentyp_id = ?", (wid,)):
+            raise fehler(409, "wagentyp_in_verwendung")
         for l in db.alle("SELECT ladung FROM lieferungen"):
             if any(p.get("wagentyp_id") == wid for p in json.loads(l["ladung"])):
                 raise fehler(409, "wagentyp_in_verwendung")
@@ -721,6 +765,9 @@ def registrieren(app: FastAPI, db: Datenbank, fehler, ansehen, bearbeiten, liefe
             kid in json.loads(l["via"]) or json.loads(l["rueckweg"]).get("ziel_id") == kid for l in db.alle("SELECT via, rueckweg FROM lieferungen")
         ):
             raise fehler(409, "knoten_in_verwendung")
+        for p in db.alle("SELECT name, knoten_id, verteilung, rueckweg FROM produktionen"):
+            if kid in (p["knoten_id"], json.loads(p["rueckweg"]).get("ziel_id"), *(v["ziel_id"] for v in json.loads(p["verteilung"]))):
+                raise fehler(409, "knoten_in_produktion", name=p["name"])
         merken(k_alt["stockwerk_id"], request, "punkt_geloescht")
         db.ausfuehren("DELETE FROM knoten WHERE id = ?", (kid,))
         return {"ok": True}
@@ -919,6 +966,91 @@ def registrieren(app: FastAPI, db: Datenbank, fehler, ansehen, bearbeiten, liefe
             "abschnitte": [a.als_dict() for a in weg.abschnitte],
         }
 
+    # ---------------------------------------------------------------- Produktion
+    def produktion_lesen(row: dict) -> dict:
+        for k in ("abholung", "verteilung", "regel", "rueckweg"):
+            row[k] = json.loads(row[k])
+        row["aktiv"] = bool(row["aktiv"])
+        row["gesamt"] = produktion_stueck(row)
+        return row
+
+    def produktionen_alle() -> list[dict]:
+        return [produktion_lesen(r) for r in db.alle("SELECT * FROM produktionen WHERE standort_id = ? ORDER BY von, name", (ort(),))]
+
+    def produktion_pruefen(d: ProduktionModell) -> dict:
+        if d.richtung not in RICHTUNGEN:
+            raise fehler(400, "richtung_ungueltig")
+        for z in (d.von, d.bis):
+            if not UHRZEIT.match(z):
+                raise fehler(400, "uhrzeit_ungueltig")
+        for z in (d.spaetestens, d.rueckweg.uhrzeit, *d.abholung.zeiten):
+            if z and not UHRZEIT.match(z):
+                raise fehler(400, "uhrzeit_ungueltig")
+        ort_punkt = holen("knoten", d.knoten_id)
+        if ort_punkt["art"] not in PRODUKTION_ORTE:
+            raise fehler(400, "produktion_ort")
+        if not d.verteilung:
+            raise fehler(400, "produktion_ohne_ziel")
+        for kid in [*(v.ziel_id for v in d.verteilung), *([d.rueckweg.ziel_id] if d.rueckweg.ziel_id else [])]:
+            holen("knoten", kid)
+        if any(v.ziel_id == d.knoten_id for v in d.verteilung):
+            raise fehler(400, "start_gleich_ziel")
+        if d.abholung.art not in ABHOLARTEN:
+            raise fehler(400, "abholung_ungueltig")
+        zeiten = sorted({z for z in d.abholung.zeiten if z})
+        if d.abholung.art == "zeiten" and not zeiten:
+            raise fehler(400, "abholung_zeiten_fehlen")
+        plaetze = d.stellplaetze or None
+        if plaetze and d.menge > plaetze:
+            raise fehler(400, "stellplaetze_zu_wenig", anzahl=d.menge)
+        if plaetze and d.abholung.art == "menge" and d.abholung.menge > plaetze:
+            raise fehler(400, "abholmenge_zu_gross", anzahl=plaetze)
+        if d.rueckweg.modus not in RUECKWEG_MODI:
+            raise fehler(400, "rueckweg_ungueltig")
+        if d.rueckweg.modus == "spaeter" and not d.rueckweg.uhrzeit:
+            raise fehler(400, "rueckweg_uhrzeit_fehlt")
+        if not db.eins("SELECT 1 FROM wagentypen WHERE id = ? AND standort_id = ?", (d.wagentyp_id, ort())):
+            raise fehler(400, "wagentyp_unbekannt")
+        if produktion_stueck({"von": d.von, "bis": d.bis, "takt": d.takt, "menge": d.menge}) > PRODUKTION_MAX:
+            raise fehler(400, "produktion_zu_viel", anzahl=PRODUKTION_MAX)
+        if d.transportart_id is None:
+            # die erste Transportart, die zum ersten Ziel (und zurück) einen Weg findet
+            d.transportart_id = transportart_waehlen(Lieferung(start_id=d.knoten_id, ziel_id=d.verteilung[0].ziel_id, uhrzeit=d.von, rueckweg=d.rueckweg))
+        holen("transportarten", d.transportart_id)
+        try:
+            regel = normalisieren(d.regel)
+        except RegelFehler as e:
+            raise fehler(400, "regel_ungueltig", feld=str(e))
+        return {
+            "name": d.name.strip() or knoten_name(d.knoten_id)[:150], "knoten_id": d.knoten_id, "richtung": d.richtung,
+            "transportart_id": d.transportart_id, "wagentyp_id": d.wagentyp_id, "von": d.von, "bis": d.bis, "takt": d.takt, "menge": d.menge,
+            "stellplaetze": plaetze, "abholung": json.dumps({"art": d.abholung.art, "menge": d.abholung.menge, "zeiten": zeiten}),
+            "verteilung": json.dumps([v.model_dump() for v in d.verteilung]), "spaetestens": d.spaetestens or None, "streuung": d.streuung,
+            "regel": json.dumps(regel), "rueckweg": json.dumps(d.rueckweg.model_dump()), "aktiv": int(d.aktiv), "notiz": d.notiz,
+        }
+
+    @app.get("/api/produktionen")
+    def produktionen(_: dict = Depends(ansehen)):
+        return produktionen_alle()
+
+    @app.post("/api/produktionen")
+    def produktion_anlegen(d: ProduktionModell, _: dict = Depends(lieferungen_recht)):
+        werte = {**produktion_pruefen(d), "standort_id": ort()}
+        pid = db.ausfuehren(f"INSERT INTO produktionen ({', '.join(werte)}) VALUES ({', '.join('?' * len(werte))})", tuple(werte.values()))
+        return {"id": pid, "name": werte["name"]}
+
+    @app.put("/api/produktionen/{pid}")
+    def produktion_aendern(pid: int, d: ProduktionModell, _: dict = Depends(lieferungen_recht)):
+        holen("produktionen", pid)
+        werte = produktion_pruefen(d)
+        db.ausfuehren(f"UPDATE produktionen SET {', '.join(f'{k} = ?' for k in werte)} WHERE id = ?", (*werte.values(), pid))
+        return {"ok": True}
+
+    @app.delete("/api/produktionen/{pid}")
+    def produktion_loeschen(pid: int, _: dict = Depends(lieferungen_recht)):
+        db.ausfuehren("DELETE FROM produktionen WHERE id = ?", (pid,))
+        return {"ok": True}
+
     # ---------------------------------------------------------------- Simulation
     def ist_feiertag_fn():
         bl = db.ort_einstellung("bundesland", db.einstellung("bundesland", "NW"))
@@ -953,14 +1085,19 @@ def registrieren(app: FastAPI, db: Datenbank, fehler, ansehen, bearbeiten, liefe
         alle = [lieferung_lesen(r) for r in db.alle("SELECT * FROM lieferungen WHERE standort_id = ? ORDER BY uhrzeit, id", (ort(),))]
         sd = stammdaten()
         netz = Netz(db)
-        szenario_anwenden(aenderungen, alle, sd, netz)
+        prod = produktionen_alle()
+        szenario_anwenden(aenderungen, alle, sd, netz, prod)
         heute = sorted((l for l in alle if l["aktiv"] and gilt_am(l["regel"], tag, feiertag)), key=lambda l: (l["uhrzeit"], l["id"]))
         # späte Lieferungen des Vortags, die über Mitternacht laufen können
         vortag = date.fromordinal(tag.toordinal() - 1)
         vortag_feiertag, _ = pruefen(vortag)
         vom_vortag = [l for l in alle if (l["uhrzeit"] >= VORTAG_AB or ((l["rueckweg"] or {}).get("uhrzeit") or "") >= VORTAG_AB)
                       and l["aktiv"] and gilt_am(l["regel"], vortag, vortag_feiertag)]
-        return {"tag": tag, "feiertag": feiertag_name, "heute": heute, "vortag": vom_vortag, "sd": sd, "netz": netz}
+        prod_heute = [p for p in prod if p["aktiv"] and gilt_am(p["regel"], tag, feiertag)]
+        prod_vortag = [p for p in prod if p["aktiv"] and gilt_am(p["regel"], vortag, vortag_feiertag)
+                       and (p["bis"] < p["von"] or max([p["bis"], p["rueckweg"].get("uhrzeit") or "", *p["abholung"].get("zeiten", [])]) >= VORTAG_AB)]
+        return {"tag": tag, "feiertag": feiertag_name, "heute": heute, "vortag": vom_vortag, "sd": sd, "netz": netz,
+                "prod_heute": prod_heute, "prod_vortag": prod_vortag}
 
     def tag_rechnen(v: dict, zufall: random.Random | None = None) -> dict:
         sd, tag = v["sd"], v["tag"]
@@ -969,6 +1106,10 @@ def registrieren(app: FastAPI, db: Datenbank, fehler, ansehen, bearbeiten, liefe
             sim.lieferung_einplanen(l, vortag=True)
         for l in v["heute"]:
             sim.lieferung_einplanen(l)
+        for p in v["prod_vortag"]:
+            sim.produktion_einplanen(p, vortag=True)
+        for p in v["prod_heute"]:
+            sim.produktion_einplanen(p)
         ergebnis = sim.laufen()
         ergebnis.update({"datum": tag.isoformat(), "feiertag": v["feiertag"], "wochentag": tag.isoweekday(), "lieferungen": [l["id"] for l in v["heute"]]})
         return ergebnis
@@ -1066,13 +1207,16 @@ def registrieren(app: FastAPI, db: Datenbank, fehler, ansehen, bearbeiten, liefe
         return streuung_rechnen(datum, szenario, laeufe, schwelle)
 
     # ---------------------------------------------------------------- Mindestbedarf
-    BEDARF_ARTEN = {"transportart": ("transportarten", "fahrzeuge"), "knoten": ("knoten", "knoten"), "kante": ("kanten", "kante")}
+    # produktion: Fahrzeuge, damit die Produktion nicht länger steht; stellplaetze: dasselbe mit Stellplätzen
+    BEDARF_ARTEN = {"transportart": ("transportarten", "fahrzeuge"), "knoten": ("knoten", "knoten"), "kante": ("kanten", "kante"),
+                    "produktion": ("produktionen", "fahrzeuge"), "stellplaetze": ("produktionen", "puffer")}
 
     @app.get("/api/simulation/bedarf")
     def bedarf(art: str, id: int, ziel: float = 15, datum: str | None = None, szenario: int | None = None,
                laeufe: int = 0, max_anzahl: int = 20, _: dict = Depends(ansehen)):
         """Kleinste Anzahl (Fahrzeuge/Personen, Tore, gleichzeitig auf einer Engstelle), bei der dort
-        niemand länger als ziel Minuten wartet. Mit laeufe > 0 zählt der 90-%-Wert über so viele Tage."""
+        niemand länger als ziel Minuten wartet. Bei art=produktion/stellplaetze: bei der die Produktion
+        zusammen höchstens ziel Minuten steht. Mit laeufe > 0 zählt der 90-%-Wert über so viele Tage."""
         return bedarf_rechnen(art, id, ziel, datum, szenario, laeufe, max_anzahl)
 
     def bedarf_rechnen(art: str, id: int, ziel: float, datum: str | None, szenario: int | None,
@@ -1080,23 +1224,32 @@ def registrieren(app: FastAPI, db: Datenbank, fehler, ansehen, bearbeiten, liefe
         if art not in BEDARF_ARTEN:
             raise fehler(400, "art_ungueltig")
         tabelle, typ = BEDARF_ARTEN[art]
-        holen(tabelle, id)
+        objekt = holen(tabelle, id)
         tag = tag_lesen(datum)
         basis = szenario_laden(szenario)
         laeufe = max(0, min(laeufe, 200))
         max_anzahl = max(1, min(max_anzahl, 50))
         punkte, empfehlung = [], None
-        for n in range(1, max_anzahl + 1):
+        # was verändert wird: (Tabelle im Szenario, Objekt)
+        stelle, objekt_id = (tabelle, id) if art != "produktion" else (
+            "transportarten", (basis.get("produktionen", {}).get(str(id)) or {}).get("transportart_id") or objekt["transportart_id"])
+        feld = {"transportart": "anzahl", "produktion": "anzahl", "stellplaetze": "stellplaetze"}.get(art, "kapazitaet")
+        erste = objekt["menge"] if art == "stellplaetze" else 1
+        for n in range(erste, max(max_anzahl, erste) + 1):
             aend = copy.deepcopy(basis)
-            werte = {"anzahl": n, "schichten": []} if art == "transportart" else {"kapazitaet": n}
-            aend.setdefault(tabelle, {}).setdefault(str(id), {}).update(werte)
+            werte = {feld: n, "schichten": []} if feld == "anzahl" else {feld: n}
+            aend.setdefault(stelle, {}).setdefault(str(objekt_id), {}).update(werte)
             v = tag_vorbereiten(tag, aend)
             ergebnisse = mehrfach(v, laeufe) if laeufe else [tag_rechnen(v)]
             if fortschritt:
                 # Wie weit es geht, ist offen (bis zur Empfehlung + 1) – grob nach der Obergrenze schätzen
                 fortschritt(min(0.95, n / max(2, min(max_anzahl, (empfehlung or n) + 4))))
-            warte = [next((r["max_wartezeit"] for r in e["ressourcen"] if r["typ"] == typ and r["id"] == id), 0.0) for e in ergebnisse]
-            spitze = [next((r["spitze"] for r in e["ressourcen"] if r["typ"] == typ and r["id"] == id), 0.0) for e in ergebnisse]
+            ressource_id = objekt_id if art == "produktion" else id
+            if art in ("produktion", "stellplaetze"):
+                warte = [next((p["stillstand"] for p in e["produktionen"] if p["id"] == id), 0.0) for e in ergebnisse]
+            else:
+                warte = [next((r["max_wartezeit"] for r in e["ressourcen"] if r["typ"] == typ and r["id"] == id), 0.0) for e in ergebnisse]
+            spitze = [next((r["spitze"] for r in e["ressourcen"] if r["typ"] == typ and r["id"] == ressource_id), 0.0) for e in ergebnisse]
             wert = quantil(warte, 0.9) if laeufe else warte[0]
             punkte.append({"anzahl": n, "wartezeit": round(wert, 1), "auslastung": round(quantil(spitze, 0.9), 3),
                            "verspaetet": round(sum(e["zusammenfassung"]["verspaetet"] for e in ergebnisse) / len(ergebnisse), 1)})
@@ -1216,13 +1369,25 @@ def registrieren(app: FastAPI, db: Datenbank, fehler, ansehen, bearbeiten, liefe
         return [szenario_lesen(r) for r in db.alle("SELECT * FROM szenarien WHERE standort_id = ? ORDER BY name", (ort(),))]
 
     def aenderungen_pruefen(a: dict) -> str:
-        erlaubt = {"lieferungen", "transportarten", "aufzuege", "kanten", "knoten"}
+        erlaubt = {"lieferungen", "produktionen", "transportarten", "aufzuege", "kanten", "knoten"}
         if not isinstance(a, dict) or not set(a) <= erlaubt or any(not isinstance(v, dict) for v in a.values()):
             raise fehler(400, "szenario_ungueltig")
         for l in (a.get("lieferungen") or {}).values():
             for z in (l.get("uhrzeit"), l.get("spaetestens")):
                 if z and not UHRZEIT.match(z):
                     raise fehler(400, "uhrzeit_ungueltig")
+        for p in (a.get("produktionen") or {}).values():
+            for z in (p.get("von"), p.get("bis"), p.get("spaetestens")):
+                if z and not UHRZEIT.match(z):
+                    raise fehler(400, "uhrzeit_ungueltig")
+            if ("von" in p and not p["von"]) or ("bis" in p and not p["bis"]):
+                raise fehler(400, "uhrzeit_ungueltig")
+            try:
+                if ("takt" in p and not 0.1 <= float(p["takt"]) <= 1440) or ("menge" in p and not 1 <= int(p["menge"]) <= 1000) \
+                        or ("stellplaetze" in p and not 0 <= int(p["stellplaetze"] or 0) <= 1000):
+                    raise fehler(400, "szenario_ungueltig")
+            except (TypeError, ValueError):
+                raise fehler(400, "szenario_ungueltig")
         return json.dumps(a)
 
     @app.post("/api/szenarien")
@@ -1254,6 +1419,12 @@ def registrieren(app: FastAPI, db: Datenbank, fehler, ansehen, bearbeiten, liefe
                         con.execute(f"UPDATE lieferungen SET {k} = ? WHERE id = ?", (int(v) if k == "aktiv" else v, int(lid)))
                     elif k in ("ladung", "rueckweg", "via"):
                         con.execute(f"UPDATE lieferungen SET {k} = ? WHERE id = ?", (json.dumps(v), int(lid)))
+                n += 1
+            for pid, werte in (a.get("produktionen") or {}).items():
+                for k, v in werte.items():
+                    if k in SZENARIO_PRODUKTION:
+                        wert = json.dumps(v) if k == "abholung" else int(v) if k == "aktiv" else (v or None) if k in ("stellplaetze", "spaetestens") else v
+                        con.execute(f"UPDATE produktionen SET {k} = ? WHERE id = ?", (wert, int(pid)))
                 n += 1
         return {"ok": True, "lieferungen": n}
 

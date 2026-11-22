@@ -85,6 +85,10 @@ Die Simulation spielt einen Tag ereignisgenau durch (Sekunden seit Mitternacht):
 - Als Engpass gilt alles, wo jemand mindestens eine Minute wartet oder die Auslastung in einem
   5-Minuten-Abschnitt 90 % erreicht.
 
+- Produktion (Küche, Sterilgut …): Im Takt wird ein Wagen fertig und belegt einen Stellplatz bis nach dem
+  Laden. Ist keiner frei, steht die Produktion; die geplante Menge wird trotzdem fertig, nur später. Fahrten
+  werden sofort, ab einer Menge (auch bei vollen Stellplätzen) oder zu festen Zeiten gerufen, je Fahrt ein
+  Ziel und höchstens „Wagen je Fahrt“. Noch offen: Beginn erst, wenn Ware oder Leerwagen da sind.
 - Lieferungen des Vortags ab 16 Uhr werden mitgerechnet, soweit sie nach Mitternacht noch
   unterwegs sind. In den Kennzahlen des Tages zählen sie nicht mit.
 

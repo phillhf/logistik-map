@@ -1,6 +1,6 @@
 // Editor auf der Karte: Bereiche, Räume, Punkte und Wegenetz einzeichnen und bearbeiten.
 
-import { api, bestaetigen, fehlerMelden, formularDialog, gruppe, h, leeren, melden, punktAuswahl, stammdaten, t, zahl, zustand } from "./basis.js";
+import { api, bestaetigen, darf, fehlerMelden, formularDialog, gruppe, h, leeren, melden, punktAuswahl, stammdaten, t, zahl, zustand } from "./basis.js";
 import { abstand, ll, xy } from "./karte.js";
 
 const FARBEN = [
@@ -12,7 +12,7 @@ const FARBEN = [
   ["#7048e8", "editor.farbe.lila"],
   ["#495057", "editor.farbe.grau"],
 ];
-const PUNKT_ARTEN = ["start", "ziel", "punkt", "tor", "aufzug", "uebergang"];
+const PUNKT_ARTEN = ["start", "ziel", "punkt", "produktion", "tor", "aufzug", "uebergang"];
 const FANG_KNOTEN = 20; // Pixel
 const FANG_KANTE = 10;
 const WINKEL_FANG = 8; // Grad: fast waagerecht/senkrecht wird gerade gezogen
@@ -914,6 +914,22 @@ export function starteEditor(ctx) {
     art.addEventListener("change", torSichtbar);
     torSichtbar();
     const p = ctx.punkte.find((x) => x.id === k.id);
+    const produktionBox = h("div.produktion-hier");
+    if (["start", "ziel", "punkt", "produktion"].includes(k.art) && darf("lieferungen")) {
+      api("produktionen")
+        .then((liste) => {
+          const hier = liste.filter((x) => x.knoten_id === k.id);
+          if (!hier.length && k.art !== "produktion") return;
+          leeren(
+            produktionBox,
+            h("h4", t("editor.produktion")),
+            hier.map((x) => h("div", h("a", { href: `#/lieferungen/produktion/${x.id}` }, x.name), h("small", ` ${x.von} – ${x.bis} · ${t("produktion.wagen", { anzahl: x.gesamt })}`))),
+            hier.length ? null : h("p.hinweis", t("editor.produktion_leer")),
+            h("a.knopf-flach", { href: `#/lieferungen/produktion/neu/${k.id}` }, "+ " + t("produktion.neu"))
+          );
+        })
+        .catch(() => {});
+    }
     const uebergaenge = ctx.netz.kanten.filter((e) => (e.von === k.id || e.nach === k.id) && e.von_stockwerk !== e.nach_stockwerk);
     const form = h(
       "form",
@@ -924,6 +940,7 @@ export function starteEditor(ctx) {
       feld(t("knoten.aufzug"), aufzug, t("editor.aufzug_hilfe")),
       feld(t("knoten.kapazitaet"), kap, t("knoten.kapazitaet_hilfe")),
       minutenFeld,
+      produktionBox,
       h("h4", t("editor.uebergaenge")),
       h("p.hinweis", t("editor.uebergaenge_hilfe")),
       uebergaenge.length

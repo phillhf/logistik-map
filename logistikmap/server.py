@@ -244,7 +244,7 @@ def erstelle_app(pfade: Pfade, kacheln_starten: bool = True) -> FastAPI:
     # ---------------------------------------------------------------- Standort der Anfrage
     # Adressen der Form /api/<art>/<nummer>…: das Objekt muss zu einem erlaubten Standort gehören
     OBJEKT_ADRESSE = re.compile(r"^/api/(gebaeudeteile|stockwerke|plaene|dokumente|transportarten|wagentypen|aufzuege|"
-                                r"flaechen|knoten|kanten|lieferungen|szenarien|sondertage|export/karte)/(\d+)")
+                                r"flaechen|knoten|kanten|lieferungen|produktionen|szenarien|sondertage|export/karte)/(\d+)")
 
     @app.middleware("http")
     async def standort_setzen(request: Request, call_next):
@@ -887,7 +887,7 @@ def erstelle_app(pfade: Pfade, kacheln_starten: bool = True) -> FastAPI:
         for did in doks:
             plaene |= {r["id"] for r in db.alle("SELECT id FROM plaene WHERE dokument_id = ?", (did,))}
         with db.transaktion() as con:
-            for tabelle in ("lieferungen", "szenarien", "gebaeudeteile"):
+            for tabelle in ("lieferungen", "produktionen", "szenarien", "gebaeudeteile"):
                 con.execute(f"DELETE FROM {tabelle} WHERE standort_id = ?", (sid,))
         for pid in plaene:
             plan_entfernen(pid)

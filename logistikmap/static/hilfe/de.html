@@ -28,6 +28,7 @@
 <tr><td>Transportart</td><td>Wer oder was fährt: z. B. „Materialtransportdienst“ (Menschen) oder „FTS“ (fahrerloses Transportsystem).</td></tr>
 <tr><td>Wagentyp</td><td>Was gefahren wird: Wäschewagen, Rollcontainer, Palette, Bett … mit seinem Platzbedarf im Aufzug.</td></tr>
 <tr><td>Lieferung</td><td>Ein wiederkehrender Transport: was, wann, von wo nach wo, wie oft, mit welchem Rückweg.</td></tr>
+<tr><td>Produktion</td><td>Ein Ort, an dem laufend Wagen fertig werden, die abgeholt werden müssen, z. B. die Küche. Siehe <a href="#/hilfe/produktion">Produktion</a>.</td></tr>
 <tr><td>Fahrt</td><td>Eine einzelne Tour einer Transportart. Eine Lieferung mit 6 Wäschewagen ergibt bei „1 Wagen je Fahrt“ sechs Fahrten.</td></tr>
 <tr><td>Engpass</td><td>Eine Stelle, an der Transporte warten müssen (mindestens 1 Minute) oder die zu 90 % oder mehr ausgelastet ist.</td></tr>
 <tr><td>Szenario</td><td>Eine Kopie des Ist-Zustands mit Änderungen zum Ausprobieren.</td></tr>
@@ -207,6 +208,7 @@
 <tr><td>Wegpunkt</td><td>Ecke oder Kreuzung einer Strecke. Entsteht beim Zeichnen von selbst und hat meist keinen Namen.</td></tr>
 <tr><td>Start-/Zielpunkt</td><td>Ein Ort, an dem Ware beginnt oder endet: Lager, Küche, Apotheke, Station, Aufbereitung … Kann in Lieferungen als Start und als Ziel gewählt werden.</td></tr>
 <tr><td>Startpunkt / Zielpunkt</td><td>Wie oben, aber nur als Start bzw. nur als Ziel gedacht. Im Zweifel nimm „Start-/Zielpunkt“.</td></tr>
+<tr><td>Produktion</td><td>Ein Ort, an dem etwas fertig wird, das abgeholt werden muss: Küche, Sterilgut, Wäscherei. Kann auch Start und Ziel von Lieferungen sein. Siehe <a href="#/hilfe/produktion">Produktion</a>.</td></tr>
 <tr><td>Tor / Rampe (LKW)</td><td>Ein Tor, an dem LKW entladen werden. Hier wartet der LKW, bis ein Tor frei ist. Die Ware geht erst nach dem Entladen weiter. Siehe <a href="#/hilfe/berechnung-tor">LKW am Tor</a>.</td></tr>
 <tr><td>Aufzug/Treppe</td><td>Ein Halt eines Aufzugs oder einer Treppe. Setz ihn auf <strong>jedem</strong> Stockwerk, auf dem der Aufzug hält, und wähle dort jeweils <strong>denselben</strong> Aufzug. So sind alle Stockwerke verbunden.</td></tr>
 <tr><td>Übergang</td><td>Verbindung zu einem Punkt auf einem anderen Stockwerk oder in einem anderen Gebäudeteil ohne Aufzug: Brücke, Verbindungsgang, Rampe zwischen Häusern.</td></tr>
@@ -414,6 +416,56 @@
 <p>Vor dem Übernehmen zeigt Logistik Map eine Vorschau: welche Zeilen neu sind, welche geändert werden und welche Fehler haben, z. B. „Start unbekannt“. Übernommen wird erst, wenn alle Zeilen in Ordnung sind. Korrigiere die markierten Zeilen in der Datei und importiere sie erneut.</p>
 </section>
 
+<section id="produktion">
+<h2>Produktion: Küche, Sterilgut, Wäscherei …</h2>
+<p>Manche Bereiche bekommen nicht nur Ware, sie <strong>erzeugen</strong> etwas, das abgeholt werden muss: Die Küche macht Speisenwagen fertig, die Sterilgutversorgung (AEMP) Container, die Wäscherei Wäschewagen, jede Station Abfall. Das bildest du als <strong>Produktion</strong> ab. Du trägst ein, in welchem Takt Wagen fertig werden, wie viele dort stehen können und wann sie abgeholt werden. Die Fahrten entstehen daraus von selbst.</p>
+<p>Du findest sie unter <em>Lieferungen</em> → <em>Produktion</em>. Ändern darf sie, wer Lieferungen ändern darf.</p>
+<div class="hilfe-tipp"><strong>Lieferung oder Produktion?</strong> Kommt alles auf einmal (ein LKW, 12 Wagen um 7 Uhr), nimm eine Lieferung. Wird nach und nach etwas fertig und kann es sich stauen, nimm eine Produktion.</div>
+
+<h3 id="produktion-punkt">Der Punkt auf der Karte</h3>
+<p>Eine Produktion gehört zu einem Punkt. Das kann ein vorhandener Start-/Zielpunkt sein (z. B. „Küche“) oder ein eigener Punkt der Art <strong>Produktion</strong>, auf der Karte mit „P“ gekennzeichnet. Klickst du im Modus „Bearbeiten“ einen solchen Punkt an, stehen seine Produktionen darunter, mit <em>Produktion anlegen</em> kommt eine neue dazu. An einem Punkt kann es mehrere geben, etwa Frühstück, Mittag und Abendessen der Küche.</p>
+
+<h3 id="produktion-formular">Alle Felder</h3>
+<table class="tabelle hilfe-tabelle">
+<tr><th>Feld</th><th>Bedeutung</th></tr>
+<tr><td>Wo wird produziert?</td><td>Der Punkt auf der Karte. Tore, Aufzüge und Übergänge gehen nicht.</td></tr>
+<tr><td>Bezeichnung</td><td>Z. B. „Frühstück“. Leer = Name des Punkts.</td></tr>
+<tr><td>Was wird fertig?</td><td>Der Wagentyp, der abgeholt wird.</td></tr>
+<tr><td>Richtung</td><td>Versorgung, Entsorgung oder Intern, zum Filtern und Einfärben.</td></tr>
+<tr><td>Erster Wagen fertig um / Produktion bis</td><td>Zeitfenster. Der erste Wagen ist genau um die Anfangszeit fertig, der letzte spätestens zur Endzeit. Liegt die Endzeit vor dem Beginn, läuft die Produktion über Mitternacht.</td></tr>
+<tr><td>Takt (Minuten)</td><td>Alle wie viele Minuten etwas fertig wird. Kommazahlen sind erlaubt.</td></tr>
+<tr><td>Wagen je Takt</td><td>Wie viele auf einmal fertig werden, meist 1.</td></tr>
+<tr><td>Stellplätze</td><td>Wie viele fertige Wagen dort stehen können. Sind alle belegt, <strong>steht die Produktion</strong>, bis einer frei wird. Leer = unbegrenzt, dann staut sich nichts. Die Stellplätze gelten je Produktion.</td></tr>
+<tr><td>Schwankung ± Min.</td><td>Wie viel früher oder später die Produktion beginnt. Zählt nur für die <a href="#/hilfe/auswertung-streuung">Streuung</a>.</td></tr>
+<tr><td>Wohin gehen die Wagen?</td><td>Je Ziel eine Anzahl. Verteilt wird der Reihe nach: erst alle für das erste Ziel, dann alle für das zweite. Werden mehr Wagen fertig als verteilt sind, beginnt die Liste von vorn. Darunter steht, wie viele Wagen es insgesamt werden und wie viele jedes Ziel bekommt. <em>Takt anpassen</em> setzt den Takt so, dass im Zeitfenster genau die verteilte Menge fertig wird.</td></tr>
+<tr><td>Abholung</td><td><strong>Sofort:</strong> jeder fertige Wagen ruft eine Fahrt. <strong>Sobald mehrere bereitstehen:</strong> erst ab der angegebenen Anzahl, der Rest am Ende wird auch geholt. Sind vorher alle Stellplätze voll, wird ebenfalls gerufen. <strong>Zu festen Uhrzeiten:</strong> dann wird alles geholt, was fertig ist, sonst nichts.</td></tr>
+<tr><td>Transportart</td><td>Wer abholt. „Automatisch“ nimmt die erste Transportart mit einem Weg zum ersten Ziel.</td></tr>
+<tr><td>Spätestens am Ziel</td><td>Optional. Wagen, die später ankommen, zählen als verspätet.</td></tr>
+<tr><td>Rückweg</td><td>Wie bei <a href="#/hilfe/lieferungen-rueckweg">Lieferungen</a>. Mit <em>später zurück zu fester Uhrzeit</em> werden die benutzten Wagen wieder eingesammelt, mit <em>Rückweg nach</em> z. B. zur Spülküche.</td></tr>
+<tr><td>Wann, Aktiv, Notiz</td><td>Wie bei Lieferungen.</td></tr>
+</table>
+
+<h3 id="produktion-rechnung">So wird gerechnet</h3>
+<ol>
+  <li>Im Takt wird ein Wagen fertig und belegt einen Stellplatz. Ist keiner frei, wartet die Produktion. Der nächste Takt beginnt erst, wenn der Wagen abgestellt ist. Die geplante Menge wird trotzdem fertig, nur später.</li>
+  <li>Je nach Abholregel wird eine Fahrt gerufen. Sie braucht wie jede Fahrt ein freies Fahrzeug bzw. eine freie Person und teilt sich Flure und Aufzüge mit den Lieferungen.</li>
+  <li>Eine Fahrt bedient ein Ziel und nimmt bis zu „Wagen je Fahrt“ mit, auch Wagen, die inzwischen fertig geworden sind.</li>
+  <li>Nach dem Laden ist der Stellplatz wieder frei.</li>
+</ol>
+<p>Hat der Punkt „Gleichzeitig höchstens“, gilt das zusätzlich fürs Laden: Bei 2 wird dort nur an zwei Stellen gleichzeitig geladen.</p>
+
+<h3 id="produktion-ergebnis">Was du im Ergebnis siehst</h3>
+<ul>
+  <li><strong>Ablauf:</strong> An dem Punkt steht, wie viele Wagen gerade warten (z. B. „4/6“). Rot mit Pausezeichen heißt: Die Produktion steht.</li>
+  <li><strong>Auswertung → Tag:</strong> Je Produktion eine Karte: ab wann und wie lange sie steht, wann der letzte Wagen geplant war und wirklich fertig ist, wie viele Stellplätze höchstens belegt waren und wie lange fertige Wagen standen. Das Bild zeigt die wartenden Wagen über die Zeit. Die gestrichelte Linie sind die Stellplätze, rot hinterlegt steht die Produktion. Steht sie mindestens 1 Minute, erscheint sie auch als Engpass.</li>
+  <li><strong>Streuung:</strong> An wie vielen Tagen und wie lange sie steht.</li>
+  <li><strong>Mindestbedarf:</strong> Wie viele Fahrzeuge oder Stellplätze nötig sind, damit sie höchstens X Minuten am Tag steht. 0 heißt: nie.</li>
+  <li><strong>Szenarien:</strong> Zeiten, Takt, Menge, Stellplätze und Transportart lassen sich verändern.</li>
+  <li><strong>Excel</strong> der Auswertung enthält ein Blatt „Produktion“.</li>
+</ul>
+<p>Noch nicht abgebildet: dass eine Produktion erst beginnen kann, wenn Ware oder leere Wagen da sind.</p>
+</section>
+
 <section id="berechnung">
 <h2>So rechnet Logistik Map</h2>
 <p>Dieses Kapitel erklärt, was hinter Ablauf und Auswertung passiert. So kannst du die Ergebnisse einschätzen und die Stammdaten gezielt anpassen.</p>
@@ -506,6 +558,7 @@
 <p><strong>Engpässe:</strong> Jede Karte nennt die Stelle (Aufzug, Engstelle, Lade-/Entladepunkt, Fahrzeuge), die längste und die gesamte Wartezeit, wie viele höchstens gleichzeitig warteten, die Spitzenauslastung mit Uhrzeit und Ideen zur Abhilfe. <em>Auf der Karte zeigen</em> springt zur Stelle.</p>
 <p><strong>Auslastung im Tagesverlauf:</strong> Für jede Stelle ein Band in 5-Minuten-Schritten. Je dunkler bzw. röter, desto voller. Fahr mit der Maus darüber für den genauen Wert.</p>
 <p><strong>Fahrten:</strong> Tabelle aller Fahrten mit geplanter Zeit, Lieferung, von/nach, Losfahrt, Ankunft, Wartezeit und Rückkehr. Verspätete Fahrten sind markiert.</p>
+<p><strong>Produktion:</strong> Gibt es an dem Tag eine Produktion, steht für jede da, ob und wie lange sie steht, siehe <a href="#/hilfe/produktion-ergebnis">Produktion</a>.</p>
 <p><strong>Lieferungen ohne Weg</strong> stehen oben in einem eigenen Kasten mit Grund. Sie werden nicht gerechnet.</p>
 <p><strong>Excel</strong> lädt Kennzahlen, Engpässe und Fahrten als Excel-Datei herunter, <strong>Karte als PDF</strong> die Stockwerke mit Wegen, <strong>Drucken</strong> druckt die Seite.</p>
 
@@ -515,7 +568,7 @@
 <h3 id="auswertung-streuung">Ansicht „Streuung“</h3>
 <p>Der Plan-Tag rechnet mit genauen Uhrzeiten. In Wirklichkeit kommt der LKW mal früher, mal später, und das Entladen dauert unterschiedlich lange. Die Streuung rechnet den gewählten Tag deshalb viele Male mit zufälligen Abweichungen:</p>
 <ul>
-  <li>Ankunft ± <em>Schwankung</em> der Lieferung (Planwert am häufigsten),</li>
+  <li>Ankunft ± <em>Schwankung</em> der Lieferung bzw. Beginn der Produktion (Planwert am häufigsten),</li>
   <li>Entladezeit am Tor zufällig zwischen <em>von</em> und <em>bis</em>,</li>
   <li>Personenfahrten in Aufzügen nach der <em>Grundlast</em>, jedes Mal zu anderen Zeitpunkten.</li>
 </ul>
@@ -535,7 +588,7 @@
 <p>Beantwortet die Frage: <strong>Wie viele brauche ich mindestens, damit niemand länger als X Minuten wartet?</strong> Das System probiert 1, 2, 3 … durch und nennt die kleinste Anzahl, die reicht.</p>
 <table class="tabelle hilfe-tabelle">
 <tr><th>Eingabe / Ergebnis</th><th>Bedeutung</th></tr>
-<tr><td>Was?</td><td>Eine Transportart (Anzahl Fahrzeuge bzw. Mitarbeitende), ein Tor bzw. ein Lade-/Entladepunkt (Anzahl Tore bzw. Plätze) oder eine Engstelle (wie viele gleichzeitig).</td></tr>
+<tr><td>Was?</td><td>Eine Transportart (Anzahl Fahrzeuge bzw. Mitarbeitende), ein Tor bzw. ein Lade-/Entladepunkt (Anzahl Tore bzw. Plätze) oder eine Engstelle (wie viele gleichzeitig). Außerdem Fahrzeuge oder Stellplätze für eine <a href="#/hilfe/produktion">Produktion</a>, dort zählt, wie lange sie am Tag steht.</td></tr>
 <tr><td>höchstens warten (Min.)</td><td>Ziel: Niemand wartet <em>an dieser Stelle</em> länger, z. B. 15 Minuten.</td></tr>
 <tr><td>mit Streuung</td><td>Je Anzahl 30 zufällige Tage rechnen. Es reicht, wenn das Ziel an 9 von 10 Tagen erfüllt ist.</td></tr>
 <tr><td>Spalte „Anzahl“</td><td>Die ausprobierte Zahl. Bei einer Transportart heißt das: so viele Personen bzw. Fahrzeuge <strong>gleichzeitig im Einsatz</strong>, den ganzen Tag über. Das ist kein Stellenschlüssel (keine Vollzeitkräfte): Für die Stellenplanung musst du Schichten, Pausen und Ausfallzeiten dazurechnen.</td></tr>
@@ -555,6 +608,7 @@
 <table class="tabelle hilfe-tabelle">
 <tr><th>Bereich</th><th>Was sich ändern lässt</th></tr>
 <tr><td>Lieferungen</td><td>Aktiv, Uhrzeit, Spätestens, Transportart.</td></tr>
+<tr><td>Produktion</td><td>Aktiv, von, bis, Takt, Wagen je Takt, Stellplätze, Transportart.</td></tr>
 <tr><td>Aufzüge und Treppen</td><td>Außer Betrieb, Plätze, Fahrzeit je Stockwerk.</td></tr>
 <tr><td>Transportarten</td><td>Anzahl und Geschwindigkeit. Eine geänderte Anzahl gilt im Szenario den ganzen Tag, statt der Schichten.</td></tr>
 <tr><td>Rampen und Lade-/Entladepunkte</td><td>Wie viele gleichzeitig be- oder entladen werden können.</td></tr>
@@ -683,6 +737,16 @@
   <li>Ergebnis z. B. „4 Fahrzeuge bzw. Mitarbeiter reichen“, also 4 Personen gleichzeitig im Einsatz.</li>
   <li>Mit „mit Streuung“ wiederholen, um Schwankungen abzusichern.</li>
   <li>In der Ansicht „Tag“ unter Auslastung ansehen, <em>wann</em> diese 4 gebraucht werden, und daraus Schichten bilden (Stammdaten → Transportart → Schichten).</li>
+</ol>
+
+<h3 id="anleitung-kueche">Die Küche: Reichen Transporteure und Stellplätze fürs Frühstück?</h3>
+<ol>
+  <li>Auf der Karte die Ausgabe der Küche als Punkt setzen (Art „Produktion“) und an eine Strecke anschließen.</li>
+  <li>Punkt anklicken → <em>Produktion anlegen</em>: erster Wagen 06:30, bis 08:00, Wagentyp Speisenwagen, Stellplätze z. B. 6.</li>
+  <li>Unter „Wohin gehen die Wagen?“ jede Station mit ihrer Anzahl eintragen, dann <em>Takt anpassen</em>.</li>
+  <li>Abholung wählen, „Spätestens am Ziel“ z. B. 08:15, Rückweg „später zurück“ um 09:30.</li>
+  <li>Auswertung → Tag: Steht die Küche? Kommen Wagen zu spät?</li>
+  <li>Auswertung → <em>Mindestbedarf</em> → die Küche unter „Fahrzeuge / Mitarbeiter, damit die Produktion läuft“ wählen, darf höchstens 0 Minuten stehen → Berechnen. Dasselbe geht mit den Stellplätzen.</li>
 </ol>
 
 <h3 id="anleitung-wartung">Was passiert, wenn ein Aufzug ausfällt?</h3>

@@ -20,7 +20,7 @@ export function zeigeProtokoll(wurzel) {
     )
   );
 
-  const objekte = ["lieferungen", "knoten", "kanten", "flaechen", "stockwerke", "gebaeudeteile", "dokumente", "benutzer", "rollen", "transportarten", "wagentypen", "aufzuege", "szenarien", "sondertage", "einstellungen", "sicherung", "update"];
+  const objekte = ["lieferungen", "produktionen", "knoten", "kanten", "flaechen", "stockwerke", "gebaeudeteile", "dokumente", "benutzer", "rollen", "transportarten", "wagentypen", "aufzuege", "szenarien", "sondertage", "einstellungen", "sicherung", "update"];
   leeren(objektWahl, h("option", { value: "" }, t("protokoll.alle_objekte")), objekte.map((o) => h("option", { value: o }, objektText(o))));
   [benutzerWahl, objektWahl].forEach((s) => s.addEventListener("change", () => laden(true)));
   mehr.addEventListener("click", () => {

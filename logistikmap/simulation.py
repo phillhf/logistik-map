@@ -14,6 +14,9 @@ Grob gerechnet, aber mit echten Wartezeiten (ereignisgesteuerte Simulation):
   Knoten werden während des Ladens bzw. Entladens belegt, Kanten während des Durchfahrens.
 * Grundlast: Aufzüge können zeitweise zu einem Anteil durch Personen belegt sein. Diese Fahrten
   blockieren die Kabine, zählen aber nicht als Wartezeit der Waren.
+* Produktion (Küche, Sterilisation, Wäscherei …): Im Takt werden Wagen fertig und stehen auf Stellplätzen,
+  bis sie abgeholt sind (sofort, ab einer Menge oder zu festen Zeiten). Sind alle Stellplätze belegt,
+  steht die Produktion, bis einer frei wird. Die geplante Menge wird trotzdem fertig, nur später.
 * Mit Zufall (zufall=random.Random) schwanken Ankunftszeiten (± streuung der Lieferung, Dreieck-
   verteilung) und Entladezeiten am Tor (von–bis); ohne Zufall gilt genau der Plan bzw. der Mittelwert.
 
@@ -226,6 +229,7 @@ class Fahrt:
     art: str = "hin"  # hin | spaeter (eigene Rückfahrt zu fester Uhrzeit)
     vortag: bool = False  # Lieferung des Vortags, die über Mitternacht läuft
     lkw: bool = False  # Ware kam per LKW an einem Tor an, Tor ist schon wieder frei
+    quelle: "Produktion | None" = None  # holt fertige Wagen einer Produktion ab
     start: float | None = None
     ankunft: float | None = None
     fertig: float | None = None
@@ -236,6 +240,135 @@ class Fahrt:
     @property
     def plaetze(self) -> float:
         return sum(w["plaetze"] for w in self.wagen)
+
+
+class Produktion:
+    """Ein Produktionslauf an einem Tag: macht Wagen fertig, stellt sie ab und ruft Fahrten zum Abholen."""
+
+    def __init__(self, sim: "Simulation", p: dict, ta: dict, wagen: dict, ziele: list[int], versatz: float, vortag: bool):
+        self.sim, self.p, self.ta, self.wagen, self.ziele = sim, p, ta, wagen, ziele
+        self.vortag = vortag
+        self.takt = p["takt"] * 60
+        self.menge = max(1, p["menge"])
+        self.beginn = zeit_in_sekunden(p["von"]) + versatz
+        self.puffer = Ressource(sim.uhr, "puffer", p["id"], p["name"], p["stellplaetze"] or None, sim.netz.knoten[p["knoten_id"]]["stockwerk_id"])
+        self.bereit: list[tuple[int, float]] = []  # fertig, aber noch keine Fahrt gerufen: (Ziel, fertig seit)
+        self.gerufen: dict[int, deque] = {}  # Ziel → fertige Wagen, für die eine Fahrt gerufen ist
+        self.offene_fahrten: dict[int, int] = {}  # Ziel → gerufene Fahrten, die noch nicht geladen haben
+        self.fertig: list[float] = []
+        self.standzeiten: list[float] = []
+        self.stillstaende: list[list] = []  # [von, bis]; bis None = steht noch
+        self.fahrten: list[Fahrt] = []
+        self.gesamt = len(ziele)
+        self.als_lieferung = {
+            "id": -p["id"], "produktion_id": p["id"], "name": p["name"], "lieferant": "", "richtung": p["richtung"],
+            "transportart_id": ta["id"], "spaetestens": p["spaetestens"],
+            "nach_mitternacht": bool(p["spaetestens"] and p["spaetestens"] < p["von"]), "via": [],
+        }
+
+    @property
+    def abholart(self) -> str:
+        return self.p["abholung"].get("art", "sofort")
+
+    def lauf(self):
+        """Prozess: Takt für Takt fertigstellen, bei vollen Stellplätzen warten."""
+        nr = 0
+        while nr < self.gesamt:
+            stueck = min(self.menge, self.gesamt - nr)
+            voll = not self.puffer._passt(stueck)
+            if voll:
+                self.stillstaende.append([self.sim.uhr.jetzt, None])
+                if self.abholart != "zeiten":
+                    self.abrufen()  # voll: abholen lassen, auch wenn die Menge noch nicht erreicht ist
+            yield ("belege", self.puffer, stueck)
+            jetzt = self.sim.uhr.jetzt
+            if voll:
+                self.stillstaende[-1][1] = jetzt
+            for ziel in self.ziele[nr : nr + stueck]:
+                self.bereit.append((ziel, jetzt))
+                self.fertig.append(jetzt)
+            nr += stueck
+            if self.abholart == "sofort" or (
+                self.abholart == "menge" and (len(self.bereit) >= self.p["abholung"].get("menge", 1) or nr >= self.gesamt)
+            ):
+                self.abrufen()
+            if nr < self.gesamt:
+                yield ("warte", self.takt)
+
+    def feste_abholung(self, runden: int = 3) -> None:
+        # erst nach allem, was zur selben Zeit fertig wird (Takt und Stellplatz sind je ein Schritt der Uhr)
+        if runden:
+            self.sim.uhr.plane(self.sim.uhr.jetzt, self.feste_abholung, runden - 1)
+        else:
+            self.abrufen()
+
+    def abrufen(self) -> None:
+        """Ruft für alle bereitstehenden Wagen Fahrten, je Fahrt ein Ziel und höchstens „Wagen je Fahrt“."""
+        pro = max(1, self.ta["wagen_pro_fahrt"])
+        for ziel, seit in self.bereit:
+            self.gerufen.setdefault(ziel, deque()).append(seit)
+        self.bereit = []
+        for ziel, wartend in self.gerufen.items():
+            while len(wartend) > self.offene_fahrten.get(ziel, 0) * pro:
+                self.offene_fahrten[ziel] = self.offene_fahrten.get(ziel, 0) + 1
+                self._fahrt_rufen(ziel)
+
+    def _fahrt_rufen(self, ziel: int) -> None:
+        sim, p = self.sim, self.p
+        rueck = p["rueckweg"] or {}
+        modus = rueck.get("modus", "leer")
+        rueck_ziel = rueck.get("ziel_id") or p["knoten_id"]
+        if rueck_ziel == ziel:
+            modus = "keiner"
+        f = Fahrt(id=len(sim.fahrten) + 1, lieferung=self.als_lieferung, nr=len(self.fahrten) + 1, von_n=0, geplant=sim.uhr.jetzt,
+                  wagen=[], start_id=p["knoten_id"], ziel_id=ziel, rueck="leer" if modus == "spaeter" else modus,
+                  rueck_ziel_id=rueck_ziel, vortag=self.vortag, quelle=self)
+        self.fahrten.append(f)
+        sim.fahrten.append(f)
+        sim.uhr.plane(sim.uhr.jetzt, _Prozess(sim.uhr, sim._ablauf(f, self.ta)).weiter)
+
+    def aufladen(self, f: Fahrt) -> None:
+        """Fahrzeug ist da: nimmt die ältesten Wagen für sein Ziel mit (auch solche, die inzwischen fertig wurden)."""
+        wartend = self.gerufen[f.ziel_id]
+        n = min(max(1, self.ta["wagen_pro_fahrt"]), len(wartend))
+        for _ in range(n):
+            self.standzeiten.append(self.sim.uhr.jetzt - wartend.popleft())
+        f.wagen = [self.wagen] * n
+        self.offene_fahrten[f.ziel_id] -= 1
+
+    def stillstand_laengen(self) -> list[float]:
+        return [(b if b is not None else max(86400.0, a)) - a for a, b in self.stillstaende]  # steht noch: bis Tagesende
+
+    def auswerten(self) -> dict:
+        takte = math.ceil(self.gesamt / self.menge)
+        belegung = [[round(t, 1), b] for t, b, _ in self.puffer.verlauf]
+        fertig = self.fertig
+        return {
+            "id": self.p["id"], "name": self.p["name"], "knoten_id": self.p["knoten_id"], "stockwerk_id": self.puffer.stockwerk_id,
+            "transportart_id": self.ta["id"], "gesamt": self.gesamt, "fertig": len(fertig), "abgeholt": len(self.standzeiten),
+            "stellplaetze": self.puffer.kapazitaet, "max_wartend": max((b for _, b in belegung), default=0),
+            "stillstand": round(sum(self.stillstand_laengen()), 1),
+            "stillstaende": [[round(a, 1), None if b is None else round(b, 1)] for a, b in self.stillstaende],
+            "erster": fertig[0] if fertig else None, "letzter": fertig[-1] if len(fertig) == self.gesamt else None,
+            "letzter_plan": self.beginn + (takte - 1) * self.takt,
+            "max_standzeit": round(max(self.standzeiten, default=0.0), 1),
+            "mittlere_standzeit": round(sum(self.standzeiten) / len(self.standzeiten), 1) if self.standzeiten else 0.0,
+            "verlauf": belegung,
+        }
+
+
+def produktion_stueck(p: dict) -> int:
+    """Wie viele Wagen in einem Lauf fertig werden: der erste Takt bei „von“, dann alle takt Minuten bis „bis“."""
+    von, bis = zeit_in_sekunden(p["von"]), zeit_in_sekunden(p["bis"])
+    if bis < von:
+        bis += 86400  # über Mitternacht
+    return (int((bis - von) / (p["takt"] * 60) + 1e-9) + 1) * max(1, p["menge"])
+
+
+def produktion_ziele(p: dict, anzahl: int) -> list[int]:
+    """Ziel je Wagen: die Verteilung der Reihe nach, danach wieder von vorn."""
+    runde = [v["ziel_id"] for v in p["verteilung"] for _ in range(max(0, int(v["anzahl"])))]
+    return [runde[i % len(runde)] for i in range(anzahl)] if runde else []
 
 
 def schicht_verlauf(schichten: list[dict], wochentag: int) -> list[tuple[float, int]]:
@@ -277,6 +410,7 @@ class Simulation:
         self.kanten: dict[int, Ressource] = {}
         self.knoten: dict[int, Ressource] = {}
         self.fahrten: list[Fahrt] = []
+        self.produktionen: list[Produktion] = []
         self.fehler: list[dict] = []
         self._wege: dict = {}
 
@@ -404,6 +538,56 @@ class Simulation:
             einheiten = sum(len(f.wagen) for f in lkw_fahrten)
             self.uhr.plane(lkw_fahrten[0].geplant, _Prozess(self.uhr, self._lkw(l["start_id"], lkw_fahrten, einheiten, ta)).weiter)
 
+    def produktion_einplanen(self, p: dict, vortag: bool = False) -> None:
+        """Plant einen Produktionslauf ein. Die Fahrten entstehen erst, wenn Wagen fertig sind."""
+        versatz = -86400 if vortag else 0
+        meldung = {"lieferung_id": -p["id"], "produktion_id": p["id"], "name": p["name"]}
+        ta, wt = self.transportarten.get(p["transportart_id"]), self.wagentypen.get(p["wagentyp_id"])
+        if ta is None:
+            self.fehler.append({**meldung, "code": "transportart_fehlt"})
+            return
+        rueck = p["rueckweg"] or {}
+        modus = rueck.get("modus", "leer")
+        rueck_ziel = rueck.get("ziel_id") or p["knoten_id"]
+        erreichbar = set()
+        for ziel in dict.fromkeys(v["ziel_id"] for v in p["verteilung"]):
+            try:
+                self._weg(p["knoten_id"], ziel, ta, [])
+                if modus != "keiner" and ziel != rueck_ziel:
+                    self._weg(ziel, rueck_ziel, ta, [])
+                erreichbar.add(ziel)
+            except WegFehler as e:
+                self.fehler.append({**meldung, "code": e.code, **e.extra})
+        ziele = [z for z in produktion_ziele(p, produktion_stueck(p)) if z in erreichbar]
+        if not ziele:
+            return
+        wagen = {"wagentyp_id": p["wagentyp_id"], "name": wt["name"] if wt else "", "plaetze": wt["plaetze"] if wt else 1.0}
+        pr = Produktion(self, p, ta, wagen, ziele, versatz, vortag)
+        self.produktionen.append(pr)
+        beginn = pr.beginn
+        if self.zufall and p.get("streuung"):
+            beginn += self.zufall.triangular(-p["streuung"], p["streuung"], 0) * 60
+        self.uhr.plane(beginn, _Prozess(self.uhr, pr.lauf()).weiter)
+
+        def zeitpunkt(hhmm: str) -> float:
+            t = zeit_in_sekunden(hhmm) + versatz
+            return t if t >= pr.beginn else t + 86400  # vor dem Beginn: gemeint ist nach Mitternacht
+
+        if pr.abholart == "zeiten":
+            for z in p["abholung"].get("zeiten", []):
+                self.uhr.plane(zeitpunkt(z), pr.feste_abholung)
+        if modus == "spaeter" and rueck.get("uhrzeit"):  # benutzte Wagen zu fester Uhrzeit zurückholen
+            pro = max(1, ta["wagen_pro_fahrt"])
+            je_ziel: dict[int, int] = {}
+            for z in ziele:
+                je_ziel[z] = je_ziel.get(z, 0) + 1
+            gruppen = [(z, min(pro, n - i)) for z, n in je_ziel.items() if z != rueck_ziel for i in range(0, n, pro)]
+            for nr, (z, n) in enumerate(gruppen, start=1):
+                r = Fahrt(id=len(self.fahrten) + 1, lieferung=pr.als_lieferung, nr=nr, von_n=len(gruppen), geplant=zeitpunkt(rueck["uhrzeit"]),
+                          wagen=[wagen] * n, start_id=z, ziel_id=rueck_ziel, rueck="keiner", rueck_ziel_id=None, art="spaeter", vortag=vortag)
+                self.fahrten.append(r)
+                self.uhr.plane(r.geplant, _Prozess(self.uhr, self._ablauf(r, ta)).weiter)
+
     def _lkw(self, tor_id: int, fahrten: list[Fahrt], einheiten: int, ta: dict):
         """LKW kommt am Tor an, wartet auf ein freies Tor, wird entladen; danach geht die Ware weiter."""
         tor = self._knoten(tor_id)
@@ -439,7 +623,11 @@ class Simulation:
             if uhr.jetzt > seit:
                 self._notiz(f, "warten", f.start_id, seit, uhr.jetzt, grund="fahrzeug")
         f.start = uhr.jetzt
+        if f.quelle:
+            f.quelle.aufladen(f)
         yield from self._an_knoten(f, f.start_id, ta["ladezeit"], "laden", ohne_ressource=f.lkw and f.art == "hin")
+        if f.quelle:
+            f.quelle.puffer.freigeben(len(f.wagen))  # Wagen rollt los: Stellplatz ist frei
         via = f.lieferung["via"] if f.art == "hin" else []
         yield from self._fahren(f, self._weg(f.start_id, f.ziel_id, ta, via), ta, rueck=False)
         f.ankunft = uhr.jetzt
@@ -558,8 +746,22 @@ class Simulation:
         ressourcen += [self._aufzug_auswerten(a) for a in self.aufzuege.values()]
         ressourcen += [self._ressource_auswerten(r) for r in self.kanten.values()]
         ressourcen += [self._ressource_auswerten(r) for r in self.knoten.values()]
+        produktionen = []
+        for p in self.produktionen:
+            for f in p.fahrten:
+                f.von_n = len(p.fahrten)
+            if p.vortag:
+                continue
+            produktionen.append(p.auswerten())
+            if p.puffer.kapazitaet:
+                r = self._ressource_auswerten(p.puffer)
+                # „Wartezeit“ der Stellplätze ist die Zeit, in der die Produktion steht
+                laengen = p.stillstand_laengen()
+                r.update(max_wartezeit=round(max(laengen, default=0.0), 1), summe_wartezeit=round(sum(laengen), 1), anzahl=len(p.fertig))
+                ressourcen.append(r)
         engpaesse = sorted(
-            (r for r in ressourcen if r["max_wartezeit"] >= 60 or r["spitze"] >= 0.9),
+            # volle Stellplätze allein sind kein Engpass, erst wenn die Produktion deshalb steht
+            (r for r in ressourcen if r["max_wartezeit"] >= 60 or (r["spitze"] >= 0.9 and r["typ"] != "puffer")),
             key=lambda r: (r["max_wartezeit"], r["spitze"]),
             reverse=True,
         )
@@ -571,8 +773,12 @@ class Simulation:
             "ressourcen": ressourcen,
             "engpaesse": [{"typ": r["typ"], "id": r["id"]} for r in engpaesse],
             "fehler": self.fehler,
+            "produktionen": produktionen,
             "zusammenfassung": {
-                "lieferungen": len({f.lieferung["id"] for f in self.fahrten if not f.vortag}),
+                "lieferungen": len({f.lieferung["id"] for f in self.fahrten if not f.vortag and f.lieferung["id"] > 0}),
+                "produktionen": len(produktionen),
+                "stillstand": round(sum(p["stillstand"] for p in produktionen), 1),
+                "nicht_abgeholt": sum(p["gesamt"] - p["abgeholt"] for p in produktionen),
                 "fahrten": len(fahrten),
                 "verspaetet": sum(1 for f in fahrten if f["verspaetet"]),
                 "nicht_fertig": sum(1 for f in fahrten if f["ende"] is None),
@@ -585,10 +791,13 @@ class Simulation:
     def _fahrt_dict(self, f: Fahrt) -> dict:
         l = f.lieferung
         spaetestens = zeit_in_sekunden(l["spaetestens"]) - (86400 if f.vortag else 0) if l.get("spaetestens") and f.art == "hin" else None
+        if spaetestens is not None and l.get("nach_mitternacht"):
+            spaetestens += 86400
         verspaetet = spaetestens is not None and (f.ankunft is None or f.ankunft > spaetestens)
         return {
             "id": f.id,
             "lieferung_id": l["id"],
+            "produktion_id": l.get("produktion_id"),
             "name": l["name"],
             "lieferant": l["lieferant"],
             "richtung": {"versorgung": "entsorgung", "entsorgung": "versorgung"}.get(l["richtung"], l["richtung"]) if f.art == "spaeter" else l["richtung"],

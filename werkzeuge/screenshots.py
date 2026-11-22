@@ -154,7 +154,7 @@ def aufbauen(c: httpx.Client) -> dict:
                 continue
             mx = tuer_x(x0, x1, y0)
             y = 385 if y0 < FLUR_Y else 455
-            art = "start" if raum in quellen else "ziel"
+            art = "produktion" if raum == "Küche" else "start" if raum in quellen else "ziel"
             punkte[raum] = knoten(sid, mx, y, art, raum)
             kante(punkte[raum], flur[min(flur, key=lambda fx: abs(fx - mx))])
         if ebene == -1:
@@ -177,15 +177,24 @@ def aufbauen(c: httpx.Client) -> dict:
     lieferung("06:20", "Saubere Wäsche", "Rampe", "Wäscheversorgung", mtd, "Rollcontainer", 8, "Textilservice", streuung=15)
     lieferung("06:30", "Arzneimittel", "Rampe", "Apotheke", mtd, "Palette", 2, "Pharmagroßhandel", streuung=10)
     lieferung("07:00", "Büro- und Verbrauchsmaterial", "Rampe", "Zentrallager", mtd, "Palette", 2, "Bürobedarf", streuung=20)
-    for zeit, station, n in (("07:15", "Station E1", 3), ("07:15", "Station E2", 3), ("07:18", "Station E3", 2),
-                             ("07:20", "Station 2A", 3), ("07:20", "Station 2B", 3), ("07:22", "Station 2C", 2),
-                             ("07:24", "Station 2D", 2), ("07:25", "Intensivstation", 2)):
-        lieferung(zeit, f"Frühstück {station}", "Küche", station, "FTS", "Speisenwagen", n)
+    # Die Küche macht die Frühstückswagen im Takt fertig; auf den 3 Stellplätzen staut es sich
+    stationen = (("Station E1", 3), ("Station E2", 3), ("Station E3", 2), ("Station 2A", 3), ("Station 2B", 3),
+                 ("Station 2C", 2), ("Station 2D", 2), ("Intensivstation", 2))
+    r = c.post("produktionen", json={
+        "name": "Frühstück", "knoten_id": punkte["Küche"], "transportart_id": ta["FTS"]["id"], "wagentyp_id": wt["Speisenwagen"],
+        "von": "06:50", "bis": "07:19", "takt": 1.5, "menge": 1, "stellplaetze": 3, "abholung": {"art": "sofort"}, "streuung": 10,
+        "verteilung": [{"ziel_id": punkte[s], "anzahl": n} for s, n in stationen], "spaetestens": "07:45",
+        "regel": WERKTAGE, "rueckweg": {"modus": "leer"}})
+    assert r.status_code == 200, r.text
     lieferung("07:40", "Modulversorgung 2C", "Zentrallager", "Station 2C", mtd, "Rollcontainer", 2)
     lieferung("07:45", "Wäsche 2A", "Wäscheversorgung", "Station 2A", mtd, "Wäschewagen", 2)
     lieferung("07:50", "Wäsche E3", "Wäscheversorgung", "Station E3", mtd, "Wäschewagen", 2)
     lieferung("08:00", "Arzneimittel Intensiv", "Apotheke", "Intensivstation", mtd, "Rollcontainer", 1)
-    lieferung("08:00", "Sterilgut OP", "Sterilgutversorgung", "OP-Bereich", mtd, "Rollcontainer", 3)
+    r = c.post("produktionen", json={
+        "name": "Sterilgut OP", "knoten_id": punkte["Sterilgutversorgung"], "transportart_id": ta[mtd]["id"], "wagentyp_id": wt["Rollcontainer"],
+        "von": "07:30", "bis": "10:30", "takt": 15, "menge": 1, "stellplaetze": 4, "abholung": {"art": "menge", "menge": 3},
+        "verteilung": [{"ziel_id": punkte["OP-Bereich"], "anzahl": 3}], "regel": WERKTAGE, "rueckweg": {"modus": "leer"}})
+    assert r.status_code == 200, r.text
     lieferung("08:30", "Notfallmedikamente", "Apotheke", "Notaufnahme", mtd, "Rollcontainer", 1)
     lieferung("09:00", "Abfall 2B", "Station 2B", "Entsorgung", mtd, "Rollcontainer", 2, richtung="entsorgung")
     lieferung("09:15", "Abfall E1", "Station E1", "Entsorgung", mtd, "Rollcontainer", 2, richtung="entsorgung")
@@ -246,6 +255,9 @@ def fotografieren(basis: str, sw: dict) -> None:
         foto("editor", f"#/karte/{ug}/bearbeiten", ".leaflet-tile-loaded")
         foto("auswertung", f"#/auswertung/{DATUM}", ".kennzahlen")
         foto("lieferungen", "#/lieferungen", "table")
+        foto("produktion", f"#/auswertung/{DATUM}", ".produktion-karte", vorher=lambda: (
+            seite.wait_for_selector(".produktion-karte"),
+            seite.evaluate("document.querySelector('.produktionen').previousElementSibling.scrollIntoView(); window.scrollBy(0, -70)")))
         foto("start", "#/start", ".schritt, .karte-box")
         foto("hilfe", "#/hilfe/auswertung", ".hilfe-text section")
 

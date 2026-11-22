@@ -29,6 +29,7 @@
 <tr><td>Transport type</td><td>Who or what moves the goods, e.g. “Transport service” (people) or “AGV” (automated guided vehicle).</td></tr>
 <tr><td>Cart type</td><td>What is moved: linen trolley, roll container, pallet, bed … with the space it needs in a lift.</td></tr>
 <tr><td>Delivery</td><td>A recurring transport: what, when, from where to where, how often, with which return trip.</td></tr>
+<tr><td>Production</td><td>A place where trolleys are finished continuously and have to be picked up, e.g. the kitchen. See <a href="#/hilfe/produktion">Production</a>.</td></tr>
 <tr><td>Trip</td><td>A single run of a transport type. A delivery of 6 linen trolleys with “1 trolley per trip” results in six trips.</td></tr>
 <tr><td>Bottleneck</td><td>A place where transports wait (at least 1 minute) or which is 90 % or more utilised.</td></tr>
 <tr><td>Scenario</td><td>A copy of the current state with changes, to try things out.</td></tr>
@@ -208,6 +209,7 @@
 <tr><td>Path point</td><td>Corner or junction of a path. Created automatically while drawing and usually unnamed.</td></tr>
 <tr><td>Start/destination</td><td>A place where goods start or end: store, kitchen, pharmacy, ward, reprocessing … Can be chosen as start and as destination in deliveries.</td></tr>
 <tr><td>Start point / Destination</td><td>As above, but meant only as start or only as destination. If in doubt, use “Start/destination”.</td></tr>
+<tr><td>Production</td><td>A place where something is finished that has to be picked up: kitchen, sterile supply, laundry. Can also be start and destination of deliveries. See <a href="#/hilfe/produktion">Production</a>.</td></tr>
 <tr><td>Gate / dock (truck)</td><td>A gate where trucks are unloaded. The truck waits here until a gate is free; the goods only move on after unloading. See <a href="#/hilfe/berechnung-tor">Truck at the gate</a>.</td></tr>
 <tr><td>Lift/stairs</td><td>A stop of a lift or staircase. Place it on <strong>every</strong> floor where the lift stops and choose the <strong>same</strong> lift each time. This connects all floors.</td></tr>
 <tr><td>Connection</td><td>Link to a point on another floor or in another building section without a lift: bridge, link corridor, ramp between houses.</td></tr>
@@ -415,6 +417,56 @@
 <p>The column headers and the values are the ones in the downloaded file; the sheet “Hinweise” lists the exact spellings. Before applying, Logistik Map shows a preview: which rows are new, which will be changed and which have errors, e.g. “start unknown”. Nothing is applied until all rows are fine. Correct the marked rows in the file and import again.</p>
 </section>
 
+<section id="produktion">
+<h2>Production: kitchen, sterile supply, laundry …</h2>
+<p>Some areas do not only receive goods, they <strong>produce</strong> something that has to be picked up: the kitchen finishes meal trolleys, the sterile supply department (CSSD) containers, the laundry linen trolleys, every ward waste. You model this as <strong>production</strong>. You enter the cycle in which trolleys are finished, how many fit there and when they are picked up. The trips follow from that automatically.</p>
+<p>You find it under <em>Deliveries</em> → <em>Production</em>. Whoever may change deliveries may change it.</p>
+<div class="hilfe-tipp"><strong>Delivery or production?</strong> If everything arrives at once (a truck, 12 trolleys at 7 o'clock), use a delivery. If things are finished bit by bit and can back up, use a production.</div>
+
+<h3 id="produktion-punkt">The point on the map</h3>
+<p>A production belongs to a point. This can be an existing start/destination (e.g. “Kitchen”) or a point of its own of type <strong>Production</strong>, marked “P” on the map. If you click such a point in “Edit” mode, its productions are listed below it; <em>Add production</em> creates a new one. A point can have several, e.g. the kitchen's breakfast, lunch and dinner.</p>
+
+<h3 id="produktion-formular">All fields</h3>
+<table class="tabelle hilfe-tabelle">
+<tr><th>Field</th><th>Meaning</th></tr>
+<tr><td>Where is it produced?</td><td>The point on the map. Gates, lifts and connections are not possible.</td></tr>
+<tr><td>Name</td><td>E.g. “Breakfast”. Empty = name of the point.</td></tr>
+<tr><td>What is finished?</td><td>The trolley type that is picked up.</td></tr>
+<tr><td>Direction</td><td>Supply, disposal or internal, for filtering and colouring.</td></tr>
+<tr><td>First trolley finished at / Production until</td><td>Time window. The first trolley is finished exactly at the start time, the last one by the end time at the latest. If the end is before the start, production runs past midnight.</td></tr>
+<tr><td>Cycle (minutes)</td><td>Every how many minutes something is finished. Decimals are allowed.</td></tr>
+<tr><td>Trolleys per cycle</td><td>How many are finished at once, usually 1.</td></tr>
+<tr><td>Parking spaces</td><td>How many finished trolleys fit there. When all are taken, <strong>production stops</strong> until one becomes free. Empty = unlimited, then nothing backs up. The spaces apply per production.</td></tr>
+<tr><td>Variation ± min</td><td>How much earlier or later production starts. Only used for <a href="#/hilfe/auswertung-streuung">variation</a>.</td></tr>
+<tr><td>Where do the trolleys go?</td><td>A quantity per destination. Distribution is in order: first all for the first destination, then all for the second. If more trolleys are finished than distributed, the list starts again. Below you see how many trolleys there are in total and how many each destination gets. <em>Adjust cycle</em> sets the cycle so that exactly the distributed quantity is finished in the time window.</td></tr>
+<tr><td>Pickup</td><td><strong>Immediately:</strong> every finished trolley calls a trip. <strong>Once several are ready:</strong> only from the given number; the remainder at the end is picked up too. If all parking spaces are full before that, a trip is called as well. <strong>At fixed times:</strong> everything finished by then is picked up, nothing otherwise.</td></tr>
+<tr><td>Transport type</td><td>Who picks up. “Automatic” takes the first transport type with a route to the first destination.</td></tr>
+<tr><td>At destination by</td><td>Optional. Trolleys arriving later count as late.</td></tr>
+<tr><td>Return trip</td><td>As for <a href="#/hilfe/lieferungen-rueckweg">deliveries</a>. With <em>return later at a fixed time</em> the used trolleys are collected again, with <em>return to</em> e.g. to the dishwashing area.</td></tr>
+<tr><td>When, active, note</td><td>As for deliveries.</td></tr>
+</table>
+
+<h3 id="produktion-rechnung">How it is calculated</h3>
+<ol>
+  <li>In each cycle a trolley is finished and takes a parking space. If none is free, production waits. The next cycle only starts once the trolley is parked. The planned quantity is still finished, just later.</li>
+  <li>Depending on the pickup rule a trip is called. Like any trip it needs a free vehicle or person and shares corridors and lifts with the deliveries.</li>
+  <li>A trip serves one destination and takes up to “trolleys per trip”, including trolleys finished in the meantime.</li>
+  <li>After loading, the parking space is free again.</li>
+</ol>
+<p>If the point has “at most at once”, this also applies to loading: with 2, loading only happens at two places at the same time.</p>
+
+<h3 id="produktion-ergebnis">What you see in the result</h3>
+<ul>
+  <li><strong>Timeline:</strong> the point shows how many trolleys are waiting (e.g. “4/6”). Red with a pause sign means production has stopped.</li>
+  <li><strong>Analysis → Day:</strong> one card per production: from when and how long it stops, when the last trolley was planned and is really finished, how many parking spaces were taken at most and how long finished trolleys waited. The picture shows the waiting trolleys over time. The dashed line is the number of parking spaces; production stops where the background is red. If it stops for at least 1 minute, it also appears as a bottleneck.</li>
+  <li><strong>Variation:</strong> on how many days and for how long it stops.</li>
+  <li><strong>Minimum needed:</strong> how many vehicles or parking spaces are needed so that it stops for at most X minutes a day. 0 means never.</li>
+  <li><strong>Scenarios:</strong> times, cycle, quantity, parking spaces and transport type can be changed.</li>
+  <li>The <strong>Excel</strong> file of the analysis contains a sheet “Produktion”.</li>
+</ul>
+<p>Not covered yet: that a production can only start once goods or empty trolleys have arrived.</p>
+</section>
+
 <section id="berechnung">
 <h2>How Logistik Map calculates</h2>
 <p>This chapter explains what happens behind timeline and analysis, so you can judge the results and adjust master data in a targeted way.</p>
@@ -507,6 +559,7 @@
 <p><strong>Bottlenecks:</strong> each card names the place (lift, bottleneck, loading point, vehicles), the longest and total waiting time, how many waited at most at once, the peak utilisation with time and ideas for a remedy. <em>Show on map</em> jumps to the place.</p>
 <p><strong>Utilisation over the day:</strong> one band per place in 5-minute steps. The darker or redder, the fuller. Hover for the exact value.</p>
 <p><strong>Trips:</strong> table of all trips with planned time, delivery, from/to, departure, arrival, waiting time and return. Late trips are marked.</p>
+<p><strong>Production:</strong> if there is a production on that day, each one shows whether and for how long it stops, see <a href="#/hilfe/produktion-ergebnis">Production</a>.</p>
 <p><strong>Deliveries without a route</strong> are listed at the top in a separate box with the reason. They are not calculated.</p>
 <p><strong>Excel</strong> downloads overview, bottlenecks, trips and utilisation as an Excel file, <strong>Map as PDF</strong> the floors with routes, <strong>Print</strong> prints the page.</p>
 
@@ -516,7 +569,7 @@
 <h3 id="auswertung-streuung">“Variation” view</h3>
 <p>The planned day uses exact times. In reality the truck comes earlier or later and unloading takes different amounts of time. The variation therefore calculates the chosen day many times with random deviations:</p>
 <ul>
-  <li>arrival ± the delivery's <em>variation</em> (planned time most frequent),</li>
+  <li>arrival ± the delivery's <em>variation</em>, or start of the production (planned time most frequent),</li>
   <li>unloading time at the gate randomly between <em>from</em> and <em>to</em>,</li>
   <li>passenger trips in lifts according to the <em>base load</em>, at different moments each time.</li>
 </ul>
@@ -537,7 +590,7 @@
 <p>Answers the question: <strong>how many do I need at least so that nobody waits longer than X minutes?</strong> The system tries 1, 2, 3 … and names the smallest number that is enough.</p>
 <table class="tabelle hilfe-tabelle">
 <tr><th>Input / result</th><th>Meaning</th></tr>
-<tr><td>What?</td><td>A transport type (number of vehicles or staff), a gate or loading point (number of gates or places) or a bottleneck (how many at once).</td></tr>
+<tr><td>What?</td><td>A transport type (number of vehicles or staff), a gate or loading point (number of gates or places) or a bottleneck (how many at once). Also vehicles or parking spaces for a <a href="#/hilfe/produktion">production</a>; there it counts how long it stops per day.</td></tr>
 <tr><td>maximum wait (min)</td><td>Goal: nobody waits longer <em>at this place</em>, e.g. 15 minutes.</td></tr>
 <tr><td>with variation</td><td>Calculate 30 random days per number. It is enough if the goal is met on 9 of 10 days.</td></tr>
 <tr><td>“Number” column</td><td>The number tried. For a transport type this means: this many people or vehicles <strong>on duty at the same time</strong>, all day. It is not a staffing ratio (no full-time equivalents): for staff planning add shifts, breaks and absences.</td></tr>
@@ -557,6 +610,7 @@
 <table class="tabelle hilfe-tabelle">
 <tr><th>Section</th><th>What can be changed</th></tr>
 <tr><td>Deliveries</td><td>Active, time, deadline, transport type.</td></tr>
+<tr><td>Production</td><td>Active, from, to, cycle, trolleys per cycle, parking spaces, transport type.</td></tr>
 <tr><td>Lifts and stairs</td><td>Out of service, spaces, travel time per floor.</td></tr>
 <tr><td>Transport types</td><td>Number and speed. A changed number applies all day in the scenario, instead of the shifts.</td></tr>
 <tr><td>Ramps and loading points</td><td>How many can be loaded or unloaded at once, or how many truck gates there are.</td></tr>
@@ -685,6 +739,16 @@
   <li>Result e.g. “4 vehicles or staff are enough”, i.e. 4 people on duty at the same time.</li>
   <li>Repeat “with variation” to cover fluctuations.</li>
   <li>In the “Day” view look at the utilisation to see <em>when</em> these 4 are needed, and build shifts from it (master data → transport type → shifts).</li>
+</ol>
+
+<h3 id="anleitung-kueche">The kitchen: are staff and parking spaces enough for breakfast?</h3>
+<ol>
+  <li>On the map, place the kitchen's dispatch area as a point (type “Production”) and connect it to a path.</li>
+  <li>Click the point → <em>Add production</em>: first trolley 06:30, until 08:00, trolley type meal trolley, parking spaces e.g. 6.</li>
+  <li>Under “Where do the trolleys go?” enter every ward with its quantity, then <em>Adjust cycle</em>.</li>
+  <li>Choose the pickup, “At destination by” e.g. 08:15, return trip “return later” at 09:30.</li>
+  <li>Analysis → Day: does the kitchen stop? Are trolleys late?</li>
+  <li>Analysis → <em>Minimum needed</em> → choose the kitchen under “Vehicles / staff to keep production running”, may stop for at most 0 minutes → Calculate. The same works with parking spaces.</li>
 </ol>
 
 <h3 id="anleitung-wartung">What happens if a lift fails?</h3>

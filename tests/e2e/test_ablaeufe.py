@@ -149,3 +149,99 @@ def test_erste_schritte(angemeldet, haus):
     page.locator("#schritt-stammdaten").get_by_role("button", name="Werte passen").click()
     page.wait_for_function("!document.querySelector('#schritt-stammdaten button')")
     assert kueche
+
+
+def test_produktion_anlegen_und_auswerten(angemeldet, haus):
+    """Punkt anklicken → Produktion anlegen → Rückstau in Auswertung und Ablauf sehen."""
+    page, c = angemeldet, haus["c"]
+    c.put(f"knoten/{haus['rampe']}", json={"art": "produktion", "name": "Küche"})
+    fts = next(t for t in c.get("stammdaten").json()["transportarten"] if t["name"] == "FTS")
+    c.put(f"transportarten/{fts['id']}", json={**fts, "anzahl": 1, "schichten": []})
+    # vom Punkt auf der Karte aus
+    page.goto(f"{haus['basis']}/#/karte/{haus['ug']}/bearbeiten")
+    karte_bereit(page)
+    page.mouse.click(*bildschirm(page, 200, 500))
+    page.get_by_role("link", name="+ Produktion anlegen").click()
+    dlg = page.locator("dialog[open]")
+
+    def feld(name):  # genau dieses Feld – die Hilfetexte nennen auch andere
+        return dlg.locator(f"label.feld:has(> span:text-is('{name}'))").locator("input, select").first
+
+    feld("Bezeichnung").fill("Frühstück")
+    feld("Was wird fertig?").select_option(label="Speisenwagen")
+    feld("Takt (Minuten)").fill("10")
+    feld("Stellplätze").fill("2")
+    feld("Transportart").select_option(label="FTS")
+    dlg.locator(".ladung select").select_option(str(haus["lager"]))
+    dlg.locator(".ladung input").fill("31")
+    assert "Ergibt 10 Wagen" in dlg.locator(".produktion-vorschau").inner_text()
+    dlg.get_by_role("button", name="Takt für 31 Wagen anpassen").click()
+    assert "Ergibt 31 Wagen" in dlg.locator(".produktion-vorschau").inner_text()
+    feld("Abholung").select_option("menge")
+    assert feld("ab wie vielen Wagen").is_visible() and not feld("Uhrzeiten").is_visible()
+    feld("ab wie vielen Wagen").fill("3")
+    dlg.get_by_role("button", name="Speichern").click()  # mehr als Stellplätze: Server lehnt ab, Dialog bleibt offen
+    page.wait_for_selector(".dialog-fehler:not([hidden])")
+    feld("ab wie vielen Wagen").fill("2")
+    dlg.get_by_role("button", name="täglich").click()
+    feld("Feiertage und Sondertage").select_option("auch")
+    screenshot(page, "produktion-dialog")
+    dlg.get_by_role("button", name="Speichern").click()
+    page.wait_for_selector("table.tabelle >> text=Frühstück")
+    screenshot(page, "produktion-liste")
+    p = c.get("produktionen").json()[0]
+    assert p["gesamt"] == 31 and p["takt"] == 3 and p["stellplaetze"] == 2 and p["abholung"]["menge"] == 2
+    # Auswertung: steht, Kennzahl und Bild
+    page.goto(f"{haus['basis']}/#/auswertung/2026-06-05")
+    page.wait_for_selector(".produktion-karte.steht svg.produktion-verlauf rect.steht")
+    assert "Stellplätze: Frühstück" in page.locator(".engpaesse").inner_text()
+    page.locator(".produktion-karte a").click()
+    page.wait_for_selector(".aufzug-status.produktion")
+    screenshot(page, "produktion-ablauf")
+    # am Handy: nichts ragt seitlich heraus
+    page.set_viewport_size({"width": 390, "height": 844})
+    page.goto(f"{haus['basis']}/#/auswertung/2026-06-05")
+    page.wait_for_selector(".produktion-karte")
+    assert page.evaluate("document.documentElement.scrollWidth") <= 390
+    page.locator(".produktion-karte").scroll_into_view_if_needed()
+    screenshot(page, "produktion-handy")
+    page.goto(f"{haus['basis']}/#/lieferungen/produktion")
+    page.get_by_role("button", name="Produktion anlegen").click()
+    page.wait_for_selector("dialog[open] .lieferungsformular")
+    zu_breit = page.evaluate("""(() => { const d = document.querySelector('dialog[open]'); const r = d.getBoundingClientRect().left + d.clientWidth;
+        return d.scrollWidth <= d.clientWidth ? [] : [...d.querySelectorAll('*')].filter(e => e.getBoundingClientRect().right > r).map(e => e.outerHTML.slice(0, 80)); })()""")
+    assert not zu_breit, zu_breit
+    screenshot(page, "produktion-handy-dialog")
+    page.get_by_role("button", name="Abbrechen").click()
+    page.set_viewport_size({"width": 1400, "height": 900})
+    # „?“ führt auf der Seite Produktion zum eigenen Kapitel
+    page.goto(f"{haus['basis']}/#/lieferungen/produktion")
+    page.wait_for_selector("table.tabelle >> text=Frühstück")
+    page.click("#hilfe-knopf")
+    page.wait_for_url("**/#/hilfe/produktion")
+
+
+def test_produktion_mindestbedarf_und_szenario(angemeldet, haus):
+    page, c = angemeldet, haus["c"]
+    sd = c.get("stammdaten").json()
+    fts = next(t for t in sd["transportarten"] if t["name"] == "FTS")
+    c.put(f"transportarten/{fts['id']}", json={**fts, "anzahl": 1, "schichten": []})
+    r = c.post("produktionen", json={
+        "name": "Küche", "knoten_id": haus["rampe"], "transportart_id": fts["id"], "wagentyp_id": sd["wagentypen"][0]["id"],
+        "von": "06:30", "bis": "07:30", "takt": 4, "stellplaetze": 3, "verteilung": [{"ziel_id": haus["lager"], "anzahl": 1}],
+        "regel": {"wochentage": [1, 2, 3, 4, 5]}})
+    assert r.status_code == 200, r.text
+    page.goto(f"{haus['basis']}/#/auswertung/2026-06-05")
+    page.get_by_role("link", name="Mindestbedarf").click()
+    page.get_by_label("Was?").select_option(f"produktion:{r.json()['id']}")
+    assert page.get_by_label("darf höchstens stehen (Min.)").input_value() == "0"
+    page.get_by_role("button", name="Berechnen").click()
+    page.wait_for_selector(".bedarf-ergebnis", timeout=20000)
+    screenshot(page, "produktion-bedarf")
+    sid = c.post("szenarien", json={"name": "Mehr Platz", "aenderungen": {}}).json()["id"]
+    page.goto(f"{haus['basis']}/#/szenarien/{sid}")
+    reihe = page.locator("tr", has_text="Küche").filter(has=page.locator("input[type=time]")).first
+    reihe.locator("input[type=number]").nth(2).fill("12")
+    page.get_by_role("button", name="Speichern").click()
+    page.wait_for_selector(".meldung")
+    assert c.get("szenarien").json()[0]["aenderungen"] == {"produktionen": {str(r.json()["id"]): {"stellplaetze": 12}}}

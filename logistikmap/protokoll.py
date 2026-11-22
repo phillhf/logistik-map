@@ -20,6 +20,7 @@ log = logging.getLogger(__name__)
 # Pfadanfang → (Tabelle, Spalte für die Bezeichnung)
 OBJEKTE = {
     "lieferungen": ("lieferungen", "name"),
+    "produktionen": ("produktionen", "name"),
     "knoten": ("knoten", "name"),
     "kanten": ("kanten", "name"),
     "flaechen": ("flaechen", "name"),

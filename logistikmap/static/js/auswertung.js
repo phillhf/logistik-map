@@ -4,6 +4,7 @@
 import { bedarfZeigen, streuungZeigen } from "./auswertung_plus.js";
 import { api, dauer, fehlerMelden, fehlerText, h, herunterladen, heute, leeren, punktName, sekunden, stammdaten, szenarioAuswahl, t, uhr, zahl } from "./basis.js";
 import { simulationLaden } from "./ablauf.js";
+import { produktionAuswertung } from "./produktion.js";
 
 function merkerLesen() {
   try {
@@ -132,7 +133,8 @@ export async function zeigeAuswertung(wurzel, [datumParam, szenarioParam]) {
     const verspaetet = fahrten.filter((f) => f.verspaetet).length;
     const maxWarte = Math.max(0, ...fahrten.map(warte));
     return {
-      lieferungen: new Set(fahrten.map((f) => f.lieferung_id)).size,
+      lieferungen: new Set(fahrten.filter((f) => !f.produktion_id).map((f) => f.lieferung_id)).size,
+      stillstand: e.zusammenfassung.stillstand || 0,
       fahrten: fahrten.length,
       verspaetet,
       max_warte: maxWarte,
@@ -170,13 +172,15 @@ export async function zeigeAuswertung(wurzel, [datumParam, szenarioParam]) {
         kachel(k.verspaetet, t("auswertung.k.verspaetet"), k.verspaetet ? "schlecht" : "gut", kIst?.verspaetet ?? null),
         kachel(dauer(k.max_warte), t("auswertung.k.max_warte"), k.max_warte >= 300 ? "schlecht" : k.max_warte >= 60 ? "mittel" : "gut", kIst ? dauer(kIst.max_warte) : null),
         kachel(dauer(k.summe_warte), t("auswertung.k.summe_warte"), "", kIst ? dauer(kIst.summe_warte) : null),
-        kachel(k.engpaesse, t("auswertung.k.engpaesse"), k.engpaesse ? "schlecht" : "gut", kIst?.engpaesse ?? null)
+        kachel(k.engpaesse, t("auswertung.k.engpaesse"), k.engpaesse ? "schlecht" : "gut", kIst?.engpaesse ?? null),
+        sim.produktionen.length ? kachel(dauer(k.stillstand), t("auswertung.k.stillstand"), k.stillstand >= 60 ? "schlecht" : "gut", kIst ? dauer(kIst.stillstand) : null) : null
       ),
       kIst ? vergleichsSatz(k, kIst) : null,
       gefiltert ? h("p.hinweis", t("auswertung.gefiltert")) : null,
       sim.fehler.length ? h("div.fehlerbox", h("h3", t("auswertung.fehler_titel")), h("ul", sim.fehler.map((f) => h("li", h("strong", f.name), ": ", fehlerText(f))))) : null,
       h("h3", t("auswertung.engpaesse")),
       engpaesse.length ? h("div.engpaesse", engpaesse.map((r) => engpassKarte(r))) : h("p.gut", sim.fahrten.length ? t("auswertung.keine_engpaesse") : t("auswertung.keine_fahrten")),
+      sim.produktionen.length ? [h("h3", t("auswertung.produktion")), produktionAuswertung(sim, ist, punkte, kartenLink)] : null,
       sim.ressourcen.length ? [h("h3", t("auswertung.auslastung")), zeitleiste(sim.ressourcen)] : null,
       h("h3", t("auswertung.fahrten", { anzahl: fahrten.length })),
       fahrten.length ? fahrtenTabelle(fahrten) : h("p.leer", t("auswertung.keine_fahrten"))
@@ -214,7 +218,10 @@ export async function zeigeAuswertung(wurzel, [datumParam, szenarioParam]) {
     const spitze = r.raster.reduce((a, b) => (b[1] > a[1] ? b : a), [0, 0]);
     const ersteWarte = r.verlauf.find((v) => v[2] > 0)?.[0] ?? spitze[0];
     const link = kartenLink(r, ersteWarte);
-    const zeilen = [
+    const zeilen = r.typ === "puffer" ? [
+      t("engpass.stillstand", { max: dauer(r.max_wartezeit), summe: dauer(r.summe_wartezeit) }),
+      t("engpass.stellplaetze", { anzahl: r.kapazitaet }),
+    ] : [
       t("engpass.wartezeit", { max: dauer(r.max_wartezeit), summe: dauer(r.summe_wartezeit) }),
       t("engpass.schlange", { anzahl: r.max_schlange }),
       t("engpass.spitze", { prozent: zahl(r.spitze * 100, 0), von: uhr(spitze[0]), bis: uhr(spitze[0] + 300) }),

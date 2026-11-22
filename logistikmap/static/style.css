@@ -297,6 +297,9 @@ main.seite-karte .kartenrahmen { overflow: hidden; }
 .aufzug-status.faehrt { background: #1c7ed6; }
 .aufzug-status.wartend { background: #e67700; }
 .aufzug-status.stau { background: var(--rot); animation: pulsieren 1s infinite; }
+.aufzug-status.produktion { background: #c2255c; }
+.aufzug-status.produktion.stau { background: var(--rot); }
+.produktion-marke { text-align: center; }
 @keyframes pulsieren { 50% { transform: scale(1.15); } }
 .fahrzeug .fz {
   display: flex; align-items: center; justify-content: center; width: 100%; height: 100%; border-radius: 50%;
@@ -312,6 +315,7 @@ main.seite-karte .kartenrahmen { overflow: hidden; }
 .tagesvorschau .tag.feiertag { background: #fff3bf; border-color: #fab005; }
 .tagesvorschau .tag:hover { border-color: var(--blau); }
 .lieferungsformular .raster { display: grid; grid-template-columns: 1fr 1fr; gap: 0 16px; }
+.lieferungsformular .raster > *, .lieferungsformular .feld select, .lieferungsformular .feld input { min-width: 0; max-width: 100%; }
 .lieferungsformular .zeile { display: flex; gap: 8px; align-items: center; margin-bottom: 6px; }
 .lieferungsformular .zeile select { flex: 1; min-width: 0; }
 .lieferungsformular .zeile input.anzahl { width: 80px; }
@@ -339,6 +343,23 @@ main.seite-karte .kartenrahmen { overflow: hidden; }
 .engpass-kopf { display: flex; justify-content: space-between; align-items: center; gap: 4px 8px; flex-wrap: wrap; }
 .engpass-kopf > a { white-space: nowrap; }
 .engpass ul { margin: 6px 0; padding-left: 18px; font-size: 0.9rem; }
+.produktionen { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(420px, 100%), 1fr)); gap: 12px; margin-bottom: 18px; }
+.produktion-karte { border: 1px solid var(--linie); border-left: 4px solid var(--gruen); border-radius: var(--radius); padding: 10px 14px; break-inside: avoid; }
+.produktion-karte.steht { border-left-color: var(--rot); }
+.produktion-karte ul { margin: 6px 0; padding-left: 18px; font-size: 0.9rem; }
+.produktion-satz { margin: 6px 0 0; font-weight: 600; }
+.produktion-verlauf { width: 100%; height: auto; display: block; }
+.produktion-karte .engpass-kopf .gedimmt { font-size: 0.85rem; }
+.produktion-verlauf text { font-size: 14px; fill: var(--gedimmt); }
+.produktion-verlauf .steht { fill: #ffc9c9; opacity: 0.75; }
+.produktion-verlauf .gitter { stroke: #eceff2; }
+.produktion-verlauf .achse { stroke: #adb5bd; }
+.produktion-verlauf .flaeche { fill: #c2255c; opacity: 0.12; }
+.produktion-verlauf .linie { fill: none; stroke: #c2255c; stroke-width: 1.6; }
+.produktion-verlauf .grenze { stroke: var(--rot); stroke-dasharray: 5 4; }
+.produktion-vorschau { display: flex; flex-direction: column; gap: 3px; margin: 10px 0 4px; padding: 8px 12px; border-radius: 8px; background: #f1f6fb; font-size: 0.9rem; }
+.produktion-vorschau:empty { display: none; }
+.produktion-hier > div { margin-bottom: 4px; }
 .engpass .tipp { margin: 0; color: var(--gedimmt); font-size: 0.85rem; }
 .zeitleiste { display: grid; grid-template-columns: minmax(140px, 220px) 1fr; gap: 3px 10px; align-items: center; font-size: 0.8rem; }
 .zl-name { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
@@ -350,7 +371,7 @@ main.seite-karte .kartenrahmen { overflow: hidden; }
 .zl-feld { padding: 1px 8px; border-radius: 3px; color: #fff; }
 
 @media (max-width: 900px) {
-  .lieferungsformular .raster { grid-template-columns: 1fr; }
+  .lieferungsformular .raster { grid-template-columns: minmax(0, 1fr); }
   .eigenschaften { left: 12px; right: 12px; width: auto; top: auto; bottom: 12px; max-height: 50%; }
   .zeitleiste { grid-template-columns: 100px 1fr; }
 }

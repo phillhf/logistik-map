@@ -1,5 +1,24 @@
 # Änderungen
 
+## [0.11.0] - 2026-11-22
+
+Neu:
+
+- **Produktion:** Bereiche, in denen laufend etwas entsteht, das abgeholt werden muss – Küche,
+  Sterilgut, Wäscherei, Apotheke, Abfall. Unter *Lieferungen → Produktion* trägst du Zeitfenster,
+  Takt, Stellplätze, Ziele und die Abholung ein (sofort, ab einer Menge oder zu festen Zeiten). Die
+  Fahrten entstehen von selbst.
+- **Rückstau:** Sind alle Stellplätze belegt, steht die Produktion. Die Auswertung zeigt, ab wann und
+  wie lange, den Verlauf der wartenden Wagen und wann der letzte wirklich fertig wird. Im Ablauf
+  steht am Punkt, wie viele Wagen gerade warten.
+- **Punkt der Art „Produktion“** auf der Karte, mit der Produktion direkt im Punktformular.
+- **Mindestbedarf:** wie viele Fahrzeuge oder Stellplätze nötig sind, damit eine Produktion nicht
+  steht. Auch in Streuung, Szenarien, „Erste Schritte“ und im Excel-Export.
+
+Verbessert:
+
+- **Handy:** Die Dialoge für Lieferungen und Produktion ragen nicht mehr über den Bildschirm hinaus.
+
 ## [0.10.1] - 2026-11-19
 
 Verbessert:

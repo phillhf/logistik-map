@@ -28,8 +28,8 @@ export const ll = (x, y) => L.latLng(y, x);
 export const xy = (latlng) => ({ x: latlng.lng, y: latlng.lat });
 export const abstand = (a, b) => Math.hypot(a.x - b.x, a.y - b.y);
 
-export const KNOTEN_FARBEN = { weg: "#868e96", start: "#2b8a3e", ziel: "#c92a2a", punkt: "#1c7ed6", tor: "#7c5a3c", aufzug: "#7048e8", uebergang: "#e67700" };
-const KNOTEN_ZEICHEN = { start: "S", ziel: "Z", punkt: "•", tor: "T", aufzug: "⇅", uebergang: "↔" };
+export const KNOTEN_FARBEN = { weg: "#868e96", start: "#2b8a3e", ziel: "#c92a2a", punkt: "#1c7ed6", produktion: "#c2255c", tor: "#7c5a3c", aufzug: "#7048e8", uebergang: "#e67700" };
+const KNOTEN_ZEICHEN = { start: "S", ziel: "Z", punkt: "•", produktion: "P", tor: "T", aufzug: "⇅", uebergang: "↔" };
 
 export function zeigeKarte(wurzel, [stockwerkParam, modusParam, ...rest]) {
   const seitenleiste = h("aside.seitenleiste");

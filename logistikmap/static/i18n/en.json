@@ -67,7 +67,7 @@
       "plaene": "With plan: {mit_plan} of {stockwerke}",
       "karte": "Path segments: {wege} · Start/destination points: {punkte} · Lifts/stairs: {aufzuege}",
       "stammdaten": "Transport types: {transportarten} · Trolley types: {wagentypen} · Lifts/stairs: {aufzuege}",
-      "lieferungen": "Active deliveries: {lieferungen}"
+      "lieferungen": "Active deliveries: {lieferungen} · Productions: {produktionen}"
     },
     "schritt": {
       "bundesland": {
@@ -140,7 +140,8 @@
       "lieferung_aufzug_nicht_erlaubt": "“{lieferung}”: {transportart} may not use {aufzuege}, and there is no other route from “{von}” to “{nach}”.",
       "lieferung_weg_gesperrt": "“{lieferung}”: the route from “{von}” to “{nach}” is blocked for {transportart}.",
       "lieferung_kein_weg": "“{lieferung}”: there is no route from “{von}” to “{nach}”.",
-      "lieferung_punkt_fehlt": "“{lieferung}”: a start or destination point was deleted."
+      "lieferung_punkt_fehlt": "“{lieferung}”: a start or destination point was deleted.",
+      "produktion_leer": "No production has been entered for “{name}” ({stockwerk}) yet."
     }
   },
   "menue": {
@@ -346,8 +347,8 @@
     "dokument_in_verwendung": "The PDF is still used as a plan. Remove the plan from the floors first.",
     "in_verwendung": "This is still in use (e.g. by a delivery) and cannot be deleted.",
     "knoten_in_verwendung": "This point is used by a delivery. Change or delete the delivery first.",
-    "transportart_in_verwendung": "This transport type is still used by deliveries.",
-    "wagentyp_in_verwendung": "This trolley type is still used in deliveries.",
+    "transportart_in_verwendung": "This transport type is still used by deliveries or a production.",
+    "wagentyp_in_verwendung": "This trolley type is still used in deliveries or a production.",
     "farbe_ungueltig": "Invalid colour.",
     "art_ungueltig": "Invalid type.",
     "zu_wenige_punkte": "An area needs at least three points.",
@@ -400,7 +401,15 @@
     "name_fehlt": "Please enter a name.",
     "standort_benutzer": "This is the only hospital {namen} may access. Change the assignment under Users first, then delete.",
     "standort_unbekannt": "This hospital does not exist (anymore). Please reload the page.",
-    "zu_viele_rechnungen": "Several long calculations are already running. Please wait a moment and try again."
+    "zu_viele_rechnungen": "Several long calculations are already running. Please wait a moment and try again.",
+    "knoten_in_produktion": "This point is used by the production “{name}”. Change or delete it first.",
+    "produktion_ort": "Production is only possible at a start, destination or production point.",
+    "produktion_ohne_ziel": "Please enter at least one destination.",
+    "abholung_ungueltig": "Invalid pickup rule.",
+    "abholung_zeiten_fehlen": "Please enter at least one pickup time, e.g. 07:00.",
+    "stellplaetze_zu_wenig": "Each cycle finishes {anzahl} trolleys, so at least that many parking spaces are needed.",
+    "abholmenge_zu_gross": "There are only {anzahl} parking spaces, so that many trolleys never come together.",
+    "produktion_zu_viel": "That would be more than {anzahl} trolleys a day. Please check cycle, quantity or period."
   },
   "knoten": {
     "art": {
@@ -410,7 +419,8 @@
       "punkt": "Start/destination",
       "tor": "Gate / dock (truck)",
       "aufzug": "Lift/stairs",
-      "uebergang": "Connection"
+      "uebergang": "Connection",
+      "produktion": "Production (kitchen, CSSD, laundry …)"
     },
     "art_label": "Type",
     "name": "Name",
@@ -537,7 +547,9 @@
     "pruefen_beenden": "End check",
     "strecke_absetzen": "Lift pen",
     "flaeche_fertig": "Finish area",
-    "punkt_zurueck": "Undo last point"
+    "punkt_zurueck": "Undo last point",
+    "produktion": "Production at this point",
+    "produktion_leer": "Nothing entered yet: when are how many trolleys finished here?"
   },
   "aufzug": {
     "art": {
@@ -651,7 +663,11 @@
       "ohne_weg": "Added: {name}. There is no route there yet, “Getting started” shows why."
     },
     "streuung": "Variation ± min",
-    "streuung_hilfe": "How many minutes earlier or later the arrival can be. Only used in the “Variation” analysis."
+    "streuung_hilfe": "How many minutes earlier or later the arrival can be. Only used in the “Variation” analysis.",
+    "ansicht": {
+      "lieferungen": "Deliveries",
+      "produktion": "Production"
+    }
   },
   "stamm": {
     "transportarten": "Transport types",
@@ -743,7 +759,7 @@
     "wartend_hier": "{anzahl} waiting on this floor",
     "engpaesse": "{anzahl} bottlenecks – to the analysis",
     "keine_engpaesse": "no bottlenecks",
-    "fehler": "{anzahl} deliveries without route",
+    "fehler": "{anzahl} without a route",
     "fahrt_nr": "Trip {nr} of {von}",
     "von": "From",
     "nach": "To",
@@ -766,7 +782,11 @@
       "lieferung": "Delivery",
       "richtung": "Direction"
     },
-    "legende_mehr": "+ {anzahl} more"
+    "legende_mehr": "+ {anzahl} more",
+    "produktion_wartet": "{anzahl} finished trolleys waiting for pickup",
+    "produktion_steht": "Production stopped: no parking space free ({anzahl} trolleys waiting)",
+    "stillstand": "Production stops for {dauer} today",
+    "produktionen": "{anzahl}× production"
   },
   "auswertung": {
     "titel": "Analysis",
@@ -781,10 +801,11 @@
       "verspaetet": "late",
       "max_warte": "longest wait",
       "engpaesse": "bottlenecks",
-      "summe_warte": "total waiting time"
+      "summe_warte": "total waiting time",
+      "stillstand": "production stopped"
     },
     "gefiltert": "The figures refer to the filtered trips. Bottlenecks and utilisation apply to the whole day.",
-    "fehler_titel": "These deliveries cannot be calculated",
+    "fehler_titel": "These deliveries or productions cannot be calculated",
     "engpaesse": "Bottlenecks",
     "keine_engpaesse": "No bottlenecks: nobody waits longer than a minute, nothing is 90 % utilised.",
     "keine_fahrten": "There are no deliveries on this day.",
@@ -818,13 +839,15 @@
     "vergleich_verspaetet": "Late trips: {vorher} → {nachher}.",
     "woche_hilfe": "Each cell is one hour: number = trips, colour = longest wait. A click opens the day.",
     "woche_zelle": "{fahrten} trips, longest wait {warte}, late: {verspaetet}",
-    "woche_legende": "Longest wait:"
+    "woche_legende": "Longest wait:",
+    "produktion": "Production"
   },
   "ressource": {
     "aufzug": "Lift",
     "kante": "Bottleneck",
     "knoten": "Loading point",
-    "fahrzeuge": "Vehicles"
+    "fahrzeuge": "Vehicles",
+    "puffer": "Parking spaces"
   },
   "engpass": {
     "wartezeit": "Waiting up to {max}, {summe} in total",
@@ -836,9 +859,12 @@
       "aufzug": "Ideas: spread delivery times, allow another lift (via point), check trolleys per trip.",
       "kante": "Ideas: draw an alternative route or stagger the trips.",
       "knoten": "Ideas: more loading spaces or stagger the deliveries.",
-      "fahrzeuge": "Ideas: more vehicles or staff at this time, or spread the trips."
+      "fahrzeuge": "Ideas: more vehicles or staff at this time, or spread the trips.",
+      "puffer": "Ideas: more vehicles or staff at that time, earlier pickup (smaller quantity or other times), more parking spaces, more trolleys per trip."
     },
-    "ist_vergleich": "Current state: up to {max}"
+    "ist_vergleich": "Current state: up to {max}",
+    "stillstand": "Production stops for up to {max} at a time, {summe} in total",
+    "stellplaetze": "{anzahl} parking spaces for finished trolleys"
   },
   "recht": {
     "ansehen": "View",
@@ -972,7 +998,8 @@
       "update": "Update",
       "import": "Import",
       "plaene": "Plan",
-      "neustart": "Restart"
+      "neustart": "Restart",
+      "produktionen": "Production"
     }
   },
   "import": {
@@ -1013,8 +1040,8 @@
     "vergleichen": "Compare",
     "ansehen": "View",
     "uebernehmen": "Apply",
-    "uebernehmen_frage": "Apply the changed deliveries from “{name}” to the current state? Changes to lifts and transport types are not applied.",
-    "uebernommen": "{anzahl} deliveries applied.",
+    "uebernehmen_frage": "Apply the changed deliveries and productions from “{name}” to the current state? Changes to lifts and transport types are not applied.",
+    "uebernommen": "{anzahl} entries applied.",
     "name": "Name",
     "name_beispiel": "e.g. linen at 7:30, west lift under maintenance",
     "beschreibung": "Description",
@@ -1032,7 +1059,8 @@
     "engstellen": "Block path segments",
     "engstellen_hilfe": "Named path segments and bottlenecks, e.g. a door closed for construction work.",
     "gesperrt": "blocked",
-    "keine_engstellen": "No named path segments yet. Give path segments a name in the map editor to be able to block them here."
+    "keine_engstellen": "No named path segments yet. Give path segments a name in the map editor to be able to block them here.",
+    "produktion": "Production"
   },
   "zeit": {
     "vortag": "previous day"
@@ -1059,7 +1087,7 @@
   },
   "streuung": {
     "hilfe": "Calculates the selected day many times with random deviations: arrival ± variation of the delivery, unloading time at the gate from–to, passenger trips in lifts (base load). This shows how often it gets tight – not just on the planned day.",
-    "eingetragen": "Entered: variation for {lieferungen} of {von} deliveries, base load for {aufzuege} lifts.",
+    "eingetragen": "Entered: variation for {lieferungen} of {von} deliveries and productions, base load for {aufzuege} lifts.",
     "noch_keine": "Without variation every delivery arrives on time – enter it under Deliveries → Edit (“Variation ± min”).",
     "laeufe": "Days",
     "schwelle": "Threshold (min)",
@@ -1084,11 +1112,12 @@
       "fahrzeuge": "Vehicles / staff",
       "aufzug": "Lift",
       "kante": "Bottleneck",
-      "knoten": "Gate / dock / receiving"
+      "knoten": "Gate / dock / receiving",
+      "puffer": "Production stopped"
     }
   },
   "bedarf": {
-    "hilfe": "How many vehicles, staff, gates or places at a bottleneck are enough so that nobody waits there longer than the chosen time? The system tries 1, 2, 3 … and names the smallest number.",
+    "hilfe": "How many vehicles, staff, gates or places at a bottleneck are enough so that nobody waits there longer than desired – or so that a production does not stop? The system tries 1, 2, 3 … and names the smallest number.",
     "was": "What?",
     "ziel": "maximum wait (min)",
     "mit_streuung": "with variation (30 days, 9 of 10 must fit)",
@@ -1097,12 +1126,16 @@
     "gruppe": {
       "transportart": "Number of vehicles / staff",
       "knoten": "Gates, docks, receiving",
-      "kante": "Bottlenecks"
+      "kante": "Bottlenecks",
+      "produktion": "Vehicles / staff to keep production running",
+      "stellplaetze": "Parking spaces to keep production running"
     },
     "einheit": {
       "transportart": "vehicles or staff",
       "knoten": "gates or places at once",
-      "kante": "at once on the bottleneck"
+      "kante": "at once on the bottleneck",
+      "produktion": "vehicles or staff",
+      "stellplaetze": "parking spaces"
     },
     "ergebnis": "Minimum needed: {anzahl} – {einheit}. At “{name}” nobody then waits longer than {minuten} min.",
     "reicht_nicht": "Even with {anzahl} ({einheit}) someone waits at “{name}” longer than {minuten} min. The bottleneck is probably elsewhere (e.g. lift or vehicles) – check the “Day” view.",
@@ -1113,7 +1146,11 @@
     "auslastung": "Utilisation (peak)",
     "verspaetet": "late trips",
     "reicht": "enough",
-    "anzahl_hinweis": "“Number” means: this many on duty at the same time, all day. It is not a staffing ratio – shifts, breaks and absences must be added for staff planning."
+    "anzahl_hinweis": "“Number” means: this many on duty at the same time, all day. It is not a staffing ratio – shifts, breaks and absences must be added for staff planning.",
+    "ziel_produktion": "may stop for at most (min)",
+    "ergebnis_produktion": "Minimum needed: {anzahl} × {einheit}. “{name}” then stops for at most {minuten} min a day.",
+    "reicht_nicht_produktion": "Even with {anzahl} ({einheit}) “{name}” stops for more than {minuten} min. Then it is probably due to the pickup times, the lift, or too little space or too few vehicles.",
+    "stillstand": "production stopped"
   },
   "hilfe": {
     "titel": "Help",
@@ -1123,5 +1160,84 @@
     "keine_treffer": "Nothing found.",
     "nicht_gefunden": "The help could not be loaded.",
     "zu_dieser_seite": "Help for this page"
+  },
+  "produktion": {
+    "titel": "Production",
+    "hilfe": "Places where something is produced continuously and has to be picked up: kitchen, sterile supply, laundry, pharmacy, waste. Trips are created automatically as soon as trolleys are finished. When no parking space is left, production stops.",
+    "mehr": "More in the help",
+    "keine": "No production yet. Example: from 6:30 to 8:00 the kitchen finishes one meal trolley every 8 minutes. Create it with “Add production”.",
+    "neu": "Add production",
+    "bearbeiten": "Edit production",
+    "erst_wagentyp": "First create a trolley type under master data.",
+    "spalte": {
+      "zeit": "Time",
+      "name": "Production",
+      "output": "Output",
+      "abholung": "Pickup",
+      "ziele": "Destinations",
+      "wann": "When"
+    },
+    "ablauf": "Timeline",
+    "wagen": "{anzahl} trolleys",
+    "takt_text": "every {takt} min {menge}× {wagentyp}",
+    "stellplaetze_text": "{anzahl} parking spaces",
+    "stellplaetze_unbegrenzt": "unlimited parking spaces",
+    "abholung_kurz": {
+      "sofort": "immediately",
+      "menge": "from {anzahl} trolleys",
+      "zeiten": "at {zeiten}"
+    },
+    "name_auto": "empty = name of the point",
+    "ort": "Where is it produced?",
+    "ort_hilfe": "A point on the map, e.g. the kitchen’s dispatch area.",
+    "ort_fehlt": "Please choose where it is produced.",
+    "wagentyp": "What is finished?",
+    "output": "When and how much is finished?",
+    "von": "First trolley finished at",
+    "bis": "Production until",
+    "bis_hilfe": "If this is before the start, production runs past midnight.",
+    "von_kurz": "from",
+    "bis_kurz": "to",
+    "takt": "Cycle (minutes)",
+    "menge": "Trolleys per cycle",
+    "stellplaetze": "Parking spaces",
+    "stellplaetze_hilfe": "How many finished trolleys fit there. When all are taken, production stops. Empty = unlimited.",
+    "streuung": "Variation ± min",
+    "streuung_hilfe": "How much earlier or later production may start. Only used for “Variation”.",
+    "verteilung": "Where do the trolleys go?",
+    "verteilung_hilfe": "In order: first the trolleys for the first destination, then those for the second, and so on.",
+    "anzahl": "Quantity",
+    "ziel_hinzu": "Add destination",
+    "vorschau": "Makes {anzahl} trolleys, the first at {von}, the last at {bis}.",
+    "verteilung_wiederholt": "{soll} are distributed, {anzahl} are finished: the distribution then starts again from the top.",
+    "verteilung_unvollstaendig": "{soll} are distributed but only {anzahl} are finished: the last destinations get fewer.",
+    "takt_anpassen": "Adjust cycle for {anzahl} trolleys",
+    "menge_passt_nicht": "With {menge} trolleys per cycle, {soll} cannot be matched exactly.",
+    "abholung_titel": "How is it picked up?",
+    "abholart": "Pickup",
+    "abholung": {
+      "sofort": "immediately when a trolley is finished",
+      "menge": "once several trolleys are ready",
+      "zeiten": "at fixed times"
+    },
+    "abholmenge": "from how many trolleys",
+    "abholmenge_hilfe": "The remainder at the end is picked up too. If all parking spaces are full before that, pickup also happens.",
+    "abholzeiten": "Times",
+    "abholzeiten_hilfe": "Separated by commas. Everything finished by then is picked up.",
+    "rueck_uhrzeit": "Collect trolleys at",
+    "zum_ort": "to the production point",
+    "steht": "It backs up from {zeit}: production stops for {dauer} in total ({anzahl}×).",
+    "steht_ab": "From {zeit} production stands still until the end of the day: nobody picks up any more.",
+    "laeuft_durch": "Production runs without stopping.",
+    "zeile_wagen": "{fertig} of {gesamt} trolleys finished, {abgeholt} picked up",
+    "zeile_ende": "Last trolley: planned {plan}, finished {ist}",
+    "zeile_ende_offen": "Last trolley: planned {plan}, not finished",
+    "zeile_plaetze": "At most {anzahl} of {plaetze} parking spaces taken",
+    "zeile_plaetze_frei": "At most {anzahl} finished trolleys at once",
+    "zeile_standzeit": "Waiting time until pickup: up to {max}, {mittel} on average",
+    "zeile_offen": "{anzahl} trolleys are not finished",
+    "zeile_liegen": "{anzahl} finished trolleys are not picked up",
+    "zeile_ist": "In the current state it stops for {dauer}",
+    "verlauf": "Finished trolleys over time"
   }
 }

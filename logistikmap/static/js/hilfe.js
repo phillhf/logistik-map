@@ -9,6 +9,7 @@ export const KAPITEL_JE_SEITE = {
   karte: "karte",
   stammdaten: "stammdaten",
   lieferungen: "lieferungen",
+  "lieferungen/produktion": "produktion",
   auswertung: "auswertung",
   szenarien: "szenarien",
   benutzer: "benutzer",
